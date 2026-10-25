@@ -1,0 +1,590 @@
+<!doctype html>
+<!-- Stack It Up: Rust/Wasm rules with a WebGL 2 interface. Serve over HTTP. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#111519" />
+    <title>Stack It Up</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Stack It Up home"
+          ><span class="brand-icon" aria-hidden="true">▦</span> Stack It Up</a
+        >
+        <nav class="app-tabs" role="tablist" aria-label="Applications">
+          <button
+            id="gameTab"
+            role="tab"
+            aria-selected="true"
+            aria-controls="gamePage"
+          >
+            Game
+          </button>
+          <button
+            id="explorerTab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="explorerPage"
+            tabindex="-1"
+          >
+            Packing
+          </button>
+        </nav>
+      </header>
+
+      <div id="gamePage" role="tabpanel" aria-labelledby="gameTab">
+        <div class="workspace">
+          <section class="game-panel" aria-label="Game board">
+            <div class="views combined">
+              <div class="piece-hud" aria-label="Current piece and queue">
+                <span id="fragmentBadge" class="fragment-badge" hidden></span>
+                <div class="current-piece">
+                  <span class="hud-caption">BUILD</span>
+                  <div
+                    id="target"
+                    class="shape large"
+                    aria-label="Target tetromino"
+                  ></div>
+                  <span id="pieceName" class="sr-only">—</span>
+                </div>
+                <button
+                  id="holdPiece"
+                  class="hold-pocket"
+                  title="Hold / swap (C)"
+                  aria-label="Hold current piece"
+                >
+                  <span class="hud-caption">HOLD · C</span
+                  ><span id="heldShape" class="shape"></span
+                  ><span id="holdStatus">Empty</span>
+                </button>
+                <div class="upcoming">
+                  <span class="hud-caption">NEXT</span>
+                  <div id="queue" class="queue"></div>
+                </div>
+              </div>
+              <div class="stage-tools">
+                <button id="shareState">Share / load state</button><span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
+                <button id="turnWidth" aria-pressed="false" title="Face turns: regular or two layers. Hold Shift while dragging for wide turns.">Regular turns</button>
+                <button id="resetView" title="Reset camera">↺ View</button
+                ><button
+                  id="viewMode"
+                  aria-pressed="false"
+                  aria-label="Separate active cube and stack"
+                >
+                  Split cubes</button
+                ><button id="stageUndo" disabled>↶ Undo</button>
+              </div>
+              <div class="score-hud">
+                <span class="hud-caption">SCORE</span
+                ><strong id="score">0</strong
+                ><button
+                  id="settingsOpen"
+                  aria-haspopup="dialog"
+                  aria-label="Open settings"
+                >
+                  ⚙ Settings
+                </button>
+              </div>
+              <div class="viewport" id="controlViewport">
+                <div
+                  id="cubeMoves"
+                  class="cube-moves"
+                  role="group"
+                  aria-label="Turns around the cube"
+                ></div>
+                <div
+                  id="sliceMoves"
+                  class="slice-moves"
+                  role="group"
+                  aria-label="Middle slice turns"
+                ></div>
+
+                <div id="gameOver" class="game-over" role="alert" hidden>
+                  <div>
+                    <span class="hud-caption">NO ROOM LEFT</span>
+                    <h1>TOP OUT</h1>
+                    <p>No placement fits. Undo your last turn or try again.</p>
+                    <strong id="finalScore"></strong>
+                    <div class="end-actions">
+                      <button id="overUndo">↶ Undo</button
+                      ><button id="overNew" class="primary">Play again</button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  id="choice"
+                  class="choice"
+                  role="group"
+                  aria-label="Choose placement face"
+                  hidden
+                >
+                  <strong>Choose a face to place this piece</strong>
+                  <p>
+                    Highlighted face buttons place the piece without turning the
+                    cube. Hover or focus to preview.
+                  </p>
+                  <div id="faceChoices"></div>
+                </div>
+                <canvas
+                  id="control"
+                  aria-label="Active pieces in a rotatable 3D cube"
+                ></canvas
+                ><canvas
+                  class="labels"
+                  id="controlLabels"
+                  aria-hidden="true"
+                ></canvas>
+              </div>
+              <div class="viewport stack-viewport">
+                <div class="view-title">
+                  <span class="dot stack-dot"></span> Your stack
+                  <span class="view-caption">Stays fixed</span>
+                </div>
+                <canvas
+                  id="stack"
+                  aria-label="Fixed connected tetromino stack"
+                ></canvas
+                ><canvas
+                  class="labels"
+                  id="stackLabels"
+                  aria-hidden="true"
+                ></canvas
+                ><span id="emptyStack" class="empty-stack"
+                  >Your first piece starts here.</span
+                >
+              </div>
+            </div>
+
+            <section
+              class="controls"
+              id="legacyControls"
+              hidden
+              aria-label="Cube turns"
+            >
+              <div class="control-heading">
+                <div class="tabs" role="tablist" aria-label="Turn type">
+                  <button
+                    role="tab"
+                    id="tab-face"
+                    aria-selected="true"
+                    aria-controls="moves"
+                    data-mode="face"
+                  >
+                    Faces <span></span></button
+                  ><button
+                    role="tab"
+                    id="tab-slice"
+                    aria-selected="false"
+                    aria-controls="moves"
+                    data-mode="slice"
+                    tabindex="-1"
+                  >
+                    Slices <span></span></button
+                  ><button
+                    role="tab"
+                    id="tab-wide"
+                    aria-selected="false"
+                    aria-controls="moves"
+                    data-mode="wide"
+                    tabindex="-1"
+                  >
+                    Wide <span></span>
+                  </button>
+                </div>
+                <button id="undo" class="quiet" disabled>↶ Undo</button>
+              </div>
+
+              <div
+                id="moves"
+                class="moves"
+                role="tabpanel"
+                aria-labelledby="tab-face"
+              ></div>
+              <p id="hint" class="hint">
+                Winning turns are marked with a check.
+              </p>
+              <p class="shortcut">
+                U D F B L R · M E S for slices · Shift for prime · Alt + face
+                for wide · Ctrl/⌘ Z to undo
+              </p>
+            </section>
+            <div class="status-strip">
+              <span id="message" role="status" aria-live="polite"
+                >Loading game…</span
+              >
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <span id="engineStatus" class="sr-only">Starting</span>
+      <section
+        id="explorerPage"
+        role="tabpanel"
+        aria-labelledby="explorerTab"
+        hidden
+      >
+        <div id="explorer" aria-label="Tetromino packing explorer"></div>
+      </section>
+    </main>
+    <dialog id="setupDialog" class="settings-dialog">
+      <h2>Set up your game</h2><p>Choose the rules, then start.</p><div id="setupRules"></div>
+      <div class="session-actions"><button id="setupCancel">Cancel</button><button id="setupStart" class="primary">Start game</button></div>
+    </dialog>
+    <dialog id="stateDialog" class="settings-dialog"><h2>Share or load a puzzle</h2>
+      <p>Includes hex bitmasks, queue, groups, rules, and random state. This format is for the 3×3 game.</p>
+      <label for="stateText">Complete game state</label><textarea id="stateText" rows="8" spellcheck="false"></textarea>
+      <p id="stateStatus" role="status"></p><div class="session-actions"><button id="copyState">Copy state</button><button id="loadState">Load state</button><button id="stateClose">Close</button></div>
+    </dialog>
+    <dialog id="settingsDialog" class="settings-dialog">
+      <div class="settings-title">
+        <h2>Settings</h2>
+        <button id="settingsClose" aria-label="Close settings">✕</button>
+      </div>
+      <div class="settings-actions">
+        <button id="new" class="quiet" disabled>New game</button>
+      </div>
+      <input id="combined" type="checkbox" checked hidden />
+      <details class="settings-section" name="settings-section" open>
+        <summary>Controls<small>Input and camera</small></summary>
+        <div class="settings-section-body">
+          <fieldset>
+            <legend>Input</legend>
+            <label
+              ><input id="classicControls" type="checkbox" /> Show classic
+              button grid</label
+            ><label
+              ><input id="showArrows" type="checkbox" /> Show arrow
+              buttons</label
+            ><label
+              ><input id="arrowGuides" type="checkbox" /> Sticker-to-arrow guide
+              lines</label
+            >
+          </fieldset>
+          <fieldset>
+            <legend>Hover feedback</legend>
+            <label
+              ><input id="hoverRings" type="checkbox" checked /> Slice
+              rings</label
+            ><label
+              ><input id="ringLabels" type="checkbox" /> Move letters on
+              rings</label
+            ><label
+              ><input id="hoverOutline" type="checkbox" /> Cel-style outlines on
+              affected cubies</label
+            >
+          </fieldset>
+          <fieldset>
+            <legend>Camera</legend>
+            <label
+              ><input id="freeOrbit" type="checkbox" checked /> Free 360°
+              rotation</label
+            >
+          </fieldset>
+          <p class="muted">
+            Drag a sticker to turn a slice. Drag outside the cube or right-drag
+            to orbit. Alt-drag turns a wide layer. Press C to hold once per
+            placement.
+          </p>
+        </div>
+      </details>
+      <details class="settings-section" name="settings-section">
+        <summary>
+          Appearance<small>Cubies, transparency and previews</small>
+        </summary>
+        <div class="settings-section-body">
+          <fieldset>
+            <legend>Cubie shape</legend>
+            <label
+              ><input id="activeSpheres" type="checkbox" /> Spherical loose white
+              fragments</label
+            >
+            <p class="muted">
+              Current piece: colored spheres. Rebuildable pieces: colored rounded
+              cubes. Loose white fragments: diamonds (or spheres above).
+              Bandaged white pieces retain their connected shape.
+            </p>
+          </fieldset>
+          <fieldset>
+            <legend>Animation & visibility</legend>
+            <label
+              ><input id="animations" type="checkbox" checked />
+              Animations</label
+            ><label
+              ><input id="xray" type="checkbox" checked /> See through empty
+              cells</label
+            ><label
+              ><input id="activeOutlines" type="checkbox" /> Active cubie
+              outlines</label
+            >
+          </fieldset>
+          <fieldset class="transparency-settings">
+            <legend>Cubie transparency</legend>
+            <label for="activeTransparency"
+              >Active cubies
+              <output id="activeTransparencyValue">0%</output></label
+            ><input
+              id="activeTransparency"
+              type="range"
+              min="0"
+              max="100"
+              value="0"
+              step="1"
+            />
+            <label for="centerTransparency"
+              >Active centers
+              <output id="centerTransparencyValue">0%</output></label
+            ><input
+              id="centerTransparency"
+              type="range"
+              min="0"
+              max="100"
+              value="0"
+              step="1"
+            />
+            <label for="stackTransparency"
+              >Placed cubies
+              <output id="stackTransparencyValue">0%</output></label
+            ><input
+              id="stackTransparency"
+              type="range"
+              min="0"
+              max="100"
+              value="0"
+              step="1"
+            />
+            <p class="muted">0% is fully opaque. 100% is invisible.</p>
+          </fieldset>
+          <fieldset>
+            <legend>Placement previews</legend>
+            <label
+              ><input id="placementGlow" type="checkbox" checked /> Lightweight markers on
+              placement-making cubies</label
+            >
+            <p class="muted">
+              Hover a sticker or arrow to mark the active cubies that would
+              form the target after a successful move. No extra cells or grid
+              lines are drawn.
+            </p>
+          </fieldset>
+        </div>
+      </details>
+      <details class="settings-section" name="settings-section">
+        <summary>Grids<small>Visibility and layering</small></summary>
+        <div class="settings-section-body">
+          <fieldset>
+            <legend>Show grids</legend>
+            <label
+              ><input id="controlGrid" type="checkbox" checked /> Active cube
+              grid (split view)</label
+            ><label
+              ><input id="stackGrid" type="checkbox" checked /> Stack cube
+              outline (split view)</label
+            ><label
+              ><input id="combinedGrid" type="checkbox" checked /> Combined cube
+              grid</label
+            >
+          </fieldset>
+          <fieldset>
+            <legend>Grid visibility</legend>
+            <label
+              ><input id="rearGridOnly" type="checkbox" checked /> Grid on
+              rear-facing faces only</label
+            >
+          </fieldset>
+        </div>
+      </details>
+      <details class="settings-section" name="settings-section">
+        <summary>
+          Rendering order<small>Camera depth or custom layers</small>
+        </summary>
+        <div class="settings-section-body">
+          <label
+            ><input id="customLayers" type="checkbox" /> Custom layer
+            order</label
+          >
+          <p class="muted">
+            Off: all scene elements use their actual distance from the camera.
+            On: items at the top draw over those below, with normal depth inside
+            each item. Transparency still applies. HUD and Settings stay outside
+            the 3D scene.
+          </p>
+          <ol id="renderLayers" class="render-layers"></ol>
+          <button id="resetLayers">Restore normal depth</button>
+          <p id="layerOrderStatus" class="sr-only" role="status"></p>
+        </div>
+      </details>
+      <div id="gameplayHome"><details id="gameplaySettings" class="settings-section" name="settings-section">
+        <summary>
+          Gameplay<small>Gravity and combinable clear rewards</small>
+        </summary>
+        <div class="settings-section-body">
+          <fieldset>
+            <legend>Piece selection</legend><label><input id="chooseNext" type="checkbox" /> Choose the next queued tetromino</label><p class="muted">Theorycrafting: set the next piece from the playfield. The current piece stays unchanged.</p></fieldset><fieldset><legend>Clearing</legend>
+<label for="sliceClearMode">Faces and slices</label>
+<select id="sliceClearMode"><option value="1" selected>Full slice — interior required (default)</option><option value="2">Surface ring — interior not required</option></select>
+<p class="muted">A full middle slice needs all 9 cells, including the core. Surface-ring mode needs only its 8 surface cells. Either mode clears the entire slice. Each cleared face or slice grants the same score and perks.</p>
+</fieldset><fieldset><legend>Gravity</legend>
+            <label for="gravityMode">Mode</label
+            ><select id="gravityMode">
+              <option value="0">Clears only (default)</option>
+              <option value="1">Off completely</option>
+              <option value="2">Always on · random changes each move</option>
+            </select>
+            <p class="muted">
+              Clears only: fall toward the most recently cleared face or slice for that
+              cascade, then stop. Always on: begins downward; each move has a
+              50% chance to keep its direction and a 50% chance to choose
+              another face. Undo restores the random result.
+            </p>
+          </fieldset>
+          <fieldset>
+            <legend>Floating fragments</legend>
+            <label
+              ><input id="fragmentPerk" type="checkbox" checked /> Release
+              broken pieces after clears</label
+            >
+            <p class="muted">
+              Each cleared face grants one completed-piece turn. Broken pieces
+              turn white and move with your active cubies, but do not count
+              toward the target. White cubies must be clear of the fixed stack
+              before they lock with your completed piece. Multi-clears and
+              cascades add turns. Switching this off lets existing white cubies
+              finish their current turn.
+            </p>
+            <label
+              ><input id="bandagedFragments" type="checkbox" checked /> Bandage
+              connected white fragments</label
+            >
+            <p class="muted">
+              Connected white cubies from the same original piece stay together.
+              Turns that split their bandage are blocked. White groups retain their connected shape.
+            </p>
+            <label><input id="earlyLock" type="checkbox" checked /> Allow early locking of white bandaged groups</label>
+<p class="muted">Use Lock white pieces below the cube, then click a white group. Occupied stack cells block locking. Clears wait for normal piece placement; Undo restores the group.</p>
+<label
+              ><input id="randomCubies" type="checkbox" /> Free one random cubie
+              per cleared plane</label
+            >
+            <p class="muted">
+              Each clear selects distinct cubies from the remaining stack. They
+              turn white and relock with your next completed piece. Can be
+              combined with broken fragments and reconstruction.
+            </p>
+            <label for="rebuildMode"
+              >Rebuild whole tetrominoes after clears</label
+            >
+            <select id="rebuildMode">
+              <option value="0">Off</option>
+              <option value="1">Free all still-whole pieces</option>
+              <option value="2">
+                Free one random whole piece per cleared plane
+              </option>
+            </select>
+            <p class="muted">
+              Released whole pieces keep their colors. Same-colored rebuildable
+              cubies can mix freely; form complete planar tetrominos from all of them.
+              The current piece must use its own spheres. All must be
+              valid, and clear of the stack, when your current piece locks.
+              Rebuilding pieces are not bandaged. Whole pieces are selected
+              first, then broken fragments, then random individual cubies; a
+              cubie is never selected twice. New options default off and can be
+              combined independently. Disabling release modes leaves already
+              freed cubies playable until they lock.
+            </p>
+            <p id="rebuildStatus" class="muted" role="status"></p>
+            <p id="fragmentStatus" class="muted" role="status"></p>
+          </fieldset>
+        </div>
+      </details></div>
+      <details class="settings-section" name="settings-section">
+        <summary>
+          Game information<small>Statistics, face map and rules</small>
+        </summary>
+        <div class="settings-section-body">
+          <div class="settings-stats">
+            <div>Pieces <strong id="pieces">0</strong></div>
+            <div>Planes cleared <strong id="clears">0</strong></div>
+            <div class="capacity">
+              <span id="capacityLabel">0 / 27 cells</span
+              ><meter id="capacity" min="0" max="27" value="0"></meter>
+            </div>
+            <p id="inventory" class="muted"></p>
+          </div>
+          <details class="face-card" open>
+            <summary>Face map <span>Outside views</span></summary>
+            <div class="net" id="net"></div>
+            <p class="map-note">
+              Filled = stack · ring = active<br />Pink ring = overlap; keep
+              turning
+            </p>
+          </details>
+          <details class="help">
+            <summary>
+              How to play <span>Rules & keyboard controls</span>
+            </summary>
+            <div class="help-grid">
+              <div>
+                <h2>Build, then stack</h2>
+                <p>
+                  Turn the active segments until they form the target tetromino
+                  on a face. Centers are active cubies too: a center is usable
+                  only when your active center occupies it. It locks
+                  automatically when only one face fits. When multiple faces
+                  fit, choose a highlighted face button. Unused active segments
+                  disappear. A brief ghost marks the last placement. Active
+                  segments may pass through the fixed stack, but a placement
+                  needs four empty cells.
+                </p>
+              </div>
+              <div>
+                <h2>Clear a whole face</h2>
+                <p>
+                  Fill all nine cells of a face to clear it. Full faces clear
+                  simultaneously. By default, connected fragments fall toward
+                  the last cleared face (ties use D, F, R, B, L, U order), then
+                  gravity switches off. Settings also offers no gravity or
+                  continuous gravity with random direction changes on moves.
+                </p>
+              </div>
+              <div>
+                <h2>Every turn is available</h2>
+                <p>
+                  Face turns use U D F B L R. Middle slices use M E S. Hold
+                  Shift for the inverse, or Alt with a face key for a wide turn.
+                  M turns like R, E like D, S like F. A ✓ highlights any turn
+                  that immediately places your piece, including in other tabs.
+                </p>
+              </div>
+              <div>
+                <h2>Gaps keep you alive</h2>
+                <p>
+                  Unfinished spawns include one active center plus edges and
+                  corners, spread across empty cells. If no unfinished spawn
+                  fits, the piece fills a facebound gap automatically. If no
+                  facebound gap fits, it tries a planar surface-only gap, then
+                  one through the core. Only failure of all three tiers ends the
+                  game. Automatic fills can clear faces and continue into the
+                  next piece. Undo restores the entire chain.
+                </p>
+              </div>
+            </div>
+          </details>
+        </div>
+      </details>
+    </dialog>
+    <dialog id="newDialog">
+      <h2>Start a new game?</h2>
+      <p>Your current stack and undo history will be cleared.</p>
+      <form method="dialog">
+        <button value="cancel">Keep playing</button
+        ><button id="confirmNew" value="new" class="primary">New game</button>
+      </form>
+    </dialog>
+    <noscript>This game requires JavaScript and WebGL 2.</noscript>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

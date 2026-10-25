@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stack It Up - Packing explorer</title>
+    <link rel="stylesheet" href="./style.css" />
+<link rel="stylesheet" href="./workspace.css" />
+  </head>
+  <body>
+    <div class="app">
+<section class="toolbar" aria-label="Explorer controls">
+        <div class="navigation">
+          <div class="nav-primary">
+            <button id="previous" aria-label="Previous packing">←</button
+            ><button id="random" class="primary">Random</button
+            ><button id="next" aria-label="Next packing">→</button>
+          </div>
+
+
+        </div>
+        <details class="settings" id="settingsPanel">
+          <summary>
+            <span class="settings-open-label">⚙ Open settings</span
+            ><span class="settings-close-label">✕ Close settings</span>
+          </summary>
+          <div class="settings-content">
+            <div class="settings-heading">
+              <strong>Filters &amp; display</strong
+              ><button type="button" id="closeSettings">
+                ✕ Close settings
+              </button>
+            </div>
+                      <div class="nav-steps" aria-label="Skip matching packings">
+            <button id="back100">−100</button><button id="back10">−10</button
+            ><button id="forward10">+10</button
+            ><button id="forward100">+100</button>
+          </div>
+          <form id="sourceJump" class="source-jump">
+            <label for="sourceLine">Source line</label
+            ><input
+              id="sourceLine"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              required
+            /><button type="submit">Go</button
+            ><span id="jumpStatus" role="status"></span>
+          </form>
+<fieldset class="family-controls">
+              <legend>Filters</legend>
+              <label
+                >Edge family
+                <select id="familySelect">
+                  <option value="">All families</option>
+                </select></label
+              >
+              <label
+                >Bag
+                <select id="familyBag">
+                  <option value="">All bags</option>
+                </select></label
+              >
+              <div class="filter-flags">
+                <label
+                  ><input type="checkbox" id="oneOfEach" checked /> JLOSTZ
+                  bag</label
+                >
+                <label
+                  ><input type="checkbox" id="allSurfaceIdentities" checked />
+                  Facebound</label
+                >
+                <label
+                  ><input type="checkbox" id="officialOnly" /> Official
+                  compatible</label
+                >
+                <label
+                  ><input type="checkbox" id="surfaceOnly" /> Surface
+                  only</label
+                >
+                <label
+                  ><input type="checkbox" id="nonSurfaceOnly" /> Non-surface
+                  only</label
+                >
+                <label
+                  ><input type="checkbox" id="nonFaceboundSurface" />
+                  Non-Facebound surface only</label
+                >
+                <label
+                  ><input type="checkbox" id="ungroupedOnly" /> No edge
+                  family</label
+                >
+                <label
+                  title="A straight empty 1 by 1 passage through the cube along any axis. Extra cubies are treated as empty space."
+                  ><input type="checkbox" id="iTunnelOnly" /> I-piece
+                  tunnel</label
+                >
+              </div>
+              <div class="extra-filters">
+                <label
+                  >Extra edges
+                  <select id="extraEdges">
+                    <option value="any">Any</option>
+                    <option value="yes">Contains</option>
+                    <option value="no">No extra edges</option>
+                  </select></label
+                >
+                <label
+                  >Extra corners
+                  <select id="extraCorners">
+                    <option value="any">Any</option>
+                    <option value="yes">Contains</option>
+                    <option value="no">No extra corners</option>
+                  </select></label
+                >
+                <label
+                  >Extra centers
+                  <select id="extraCenters">
+                    <option value="any">Any</option>
+                    <option value="yes">Contains</option>
+                    <option value="no">No extra centers</option>
+                  </select></label
+                >
+              </div>
+              <button id="exploreFamily" type="button">Whole family</button>
+              <p id="familySummary" role="status"></p>
+            </fieldset>
+            <div class="control-groups">
+              <fieldset class="color-controls">
+                <legend>Colors</legend>
+                <label
+                  ><input type="radio" name="colorMode" id="canonicalColors" />
+                  Canonical</label
+                >
+                <label
+                  ><input type="radio" name="colorMode" id="positionalColors" />
+                  Multicolor</label
+                >
+                <label
+                  ><input
+                    type="radio"
+                    name="colorMode"
+                    id="officialColors"
+                    checked
+                  />
+                  Official</label
+                >
+              </fieldset>
+              <fieldset class="window-controls">
+                <legend>Windows</legend>
+                <label
+                  ><input type="checkbox" id="showSolved" checked />
+                  Target cube</label
+                >
+                <label
+                  ><input type="checkbox" id="showScrambled" checked />
+                  Scrambled</label
+                >
+              </fieldset>
+            </div>
+            <div class="status-row">
+              <span id="status" role="status">Loading…</span
+              ><span id="colorStatus" role="status"></span>
+            </div>
+          </div>
+        </details>
+      </section>
+      <section class="loader" hidden>
+        <label for="packingData">Packing list</label
+        ><textarea id="packingData"></textarea
+        ><button id="loadPackings">Load packing list</button>
+      </section>
+      <div class="practice-toggle">
+        <label
+          ><input id="practiceMode" type="checkbox" /> Two-packing
+          practice</label
+        ><span>Turn the start cube into the target.</span>
+      </div>
+      <section id="practicePanel" hidden>
+        <details class="practice-config"><summary>Practice setup</summary><form id="practiceLoad" class="practice-controls">
+          <label
+            >Start source line
+            <input id="practiceA" type="number" min="1" required
+          /></label>
+          <label
+            >Target source line
+            <input id="practiceB" type="number" min="1" required
+          /></label>
+          <button type="submit">Load pair</button>
+          <button id="practiceUseSelected" type="button">
+            Use selection as start
+          </button>
+          <button id="practiceRandom" type="button">
+            Random pair in same family
+          </button>
+          <button id="practiceUseTarget" type="button">
+            Use selection as target
+          </button>
+          <button id="practiceSwap" type="button">Swap start / target</button>
+        </form>
+        <p id="practiceStatus" role="status">
+          Random pairs respect the current explorer filters.
+        </p>
+        <p class="hint">
+          Drag stickers to turn the start cube. Drag the target to inspect it.
+          Colors identify physical pieces, not their current letters. Random
+          pairs respect the explorer filters.
+        </p>
+        </details><div class="practice-cubes">
+          <section class="cube-card">
+            <h2 id="practiceLeftTitle">Start</h2>
+            <div id="practiceLeft" class="cube"></div>
+          </section>
+          <section class="cube-card">
+            <h2 id="practiceRightTitle">Target</h2>
+            <div id="practiceRight" class="cube"></div>
+          </section>
+        </div>
+        <p id="practiceProgress" role="status"></p>
+      </section>
+      <nav id="viewTabs" class="view-tabs" aria-label="Cube view">
+        <button id="viewSolved" aria-pressed="true">Target cube</button
+        ><button id="viewScrambled" aria-pressed="false">Scrambled cube</button>
+      </nav>
+      <div id="cubeLayout" class="cube-layout">
+        <p id="emptyView" class="empty-view" hidden>
+          All cube views are hidden. Enable a view in Display to continue
+          exploring.
+        </p>
+        <section id="scrambledPanel" class="cube-card">
+          <h2>Scrambled cube</h2>
+          <div id="scrambledCube" class="cube"></div>
+          <p class="hint">
+            Drag a sticker to turn. Right-drag or drag outside the cube to
+            orbit.
+          </p>
+          <button id="playSolution" type="button">
+            Play solution from here
+          </button>
+          <details class="scramble-details">
+            <summary>Scramble &amp; solution</summary>
+            <div class="scramble-info">
+              <strong>Scramble</strong>
+              <code id="scrambleText">—</code>
+              <strong>Solution</strong>
+              <code id="solutionText">—</code>
+            </div>
+          </details>
+        </section>
+
+        <section id="solvedPanel" class="cube-card">
+          <h2>Target cube</h2>
+          <div class="target-display"><label><input id="targetComposite" type="checkbox" checked /> Tetromino composite</label>
+          <label>Transparency <output id="transparencyValue">0%</output><input id="targetTransparency" type="range" min="0" max="100" value="0" /></label></div>
+          <div id="solvedCube" class="cube"></div>
+<details class="packing-overlay"><summary>Packing <span id="packingIndex">-</span> · details</summary>      <div class="packing-info">
+        <details class="packing-details">
+          <summary>Packing code</summary>
+          <code id="packingCode">—</code
+          ><button id="copyCode">Copy packing code</button>
+        </details>
+        <p id="packingFamily"></p>
+        <div id="pieceIdentities"></div>
+        <details class="technical-details">
+          <summary>Facelet data</summary>
+          <code id="solvedFacelets"></code>
+        </details>
+      </div>
+</details>
+        </section>
+
+
+      </div>
+      <section class="facelet-debug"></section>
+
+      <footer>
+        Shape colors: J blue · L orange · S green · Z red · T purple · O yellow
+      </footer>
+    </div>
+
+    <!-- AnimCube3.js and legacy/animcube-explorer.js are preserved as reference only. -->
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>

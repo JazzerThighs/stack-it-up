@@ -1,0 +1,19 @@
+[package]
+name = "cube-stack"
+version = "0.1.0"
+edition = "2024"
+description = "A facebound tetromino puzzle engine and browser WebAssembly game"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+test-api = []
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+

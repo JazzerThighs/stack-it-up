@@ -1,0 +1,46 @@
+name: Publish Stack It Up and Packing Explorer
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.91.1 --profile minimal --target wasm32-unknown-unknown
+      - name: Select Rust toolchain
+        run: rustup default 1.91.1
+      - name: Test rules
+        run: cargo test --offline
+      - name: Build browser app
+        run: node tools/build.mjs
+      - name: Verify current rules and browser modules
+        run: |
+          node tests/current-parity.cjs
+          node tests/frontend-smoke.mjs
+          node tests/explorer-model.mjs
+          node tests/explorer-smoke.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,14 @@
+import {spawnSync} from 'node:child_process';
+import {mkdir,copyFile,cp,rm} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+const root=fileURLToPath(new URL('..',import.meta.url));
+const result=spawnSync('cargo',['build','--offline','--release','--target','wasm32-unknown-unknown'],{cwd:root,stdio:'inherit'});
+if(result.status!==0)process.exit(result.status||1);
+const output=path.resolve(root,'dist');
+if(path.dirname(output)!==path.resolve(root)||path.basename(output)!=='dist')throw Error('Invalid build output');
+await rm(output,{recursive:true,force:true});
+await mkdir(output,{recursive:true});
+await cp(path.join(root,'web'),path.join(root,'dist'),{recursive:true});
+await copyFile(path.join(root,'target/wasm32-unknown-unknown/release/cube_stack.wasm'),path.join(root,'dist/cube_stack.wasm'));
+console.log('Built dist/. Run: node tools/serve.mjs');

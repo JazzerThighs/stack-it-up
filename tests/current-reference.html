@@ -1,0 +1,1251 @@
+<!doctype html>
+<!-- Stack It Up / pure JavaScript CodePen edition.
+Paste this entire file into the HTML panel. Leave CSS/JS panels empty,
+remove old external scripts, and select no preprocessors. Use full-page preview.
+Also opens directly from disk. No WebAssembly, base64 payload, or network assets.
+Original JavaScript rules and rounded geometry updated to match the Rust game;
+current JavaScript WebGL renderer and controls reused. Packing explorer excluded.
+-->
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111519"><title>Stack It Up</title><style>:root{color-scheme:dark;--bg:#111519;--panel:#181e23;--line:#2c353b;--muted:#95a2a9;--ink:#eef2ef;--mint:#b8e4ca;--pink:#ff739c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,summary{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;color:var(--ink);background:#222b31;padding:9px 14px;transition:background .12s,border-color .12s}button:hover{background:#303d44;border-color:#6b7d87}button:disabled{opacity:.38;cursor:default}button:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--mint);outline-offset:4px}main{max-width:1400px;margin:auto;padding:0 36px}.topbar{height:100px;display:flex;align-items:center;gap:28px}.brand{font-weight:700;font-size:26px;letter-spacing:-1px;color:var(--ink);text-decoration:none;display:flex;align-items:center}.brand-icon{font-size:32px;margin-right:13px;color:var(--mint)}.slash{color:var(--mint);padding:0 4px}.tagline{font-size:13px;color:var(--muted)}.topbar>button{margin-left:auto}.quiet,.icon-button{background:transparent}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 286px;gap:22px}.game-panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;align-self:start}.panel-header{padding:24px 26px 0;display:flex;justify-content:space-between;align-items:center;gap:10px}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--mint);font-weight:700}h1{font-size:21px;font-weight:500;letter-spacing:-.6px;margin:6px 0 0}.icon-button{font-size:12px;color:var(--muted);white-space:nowrap}.views{display:grid;grid-template-columns:1.13fr 1fr;min-height:330px}.viewport{position:relative;height:360px;overflow:hidden}.viewport>canvas:not(.labels){display:block;width:100%;height:100%;touch-action:none;cursor:grab}.viewport>canvas:active{cursor:grabbing}.labels{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.view-title{position:absolute;top:19px;left:25px;font-size:12px;z-index:1;display:flex;align-items:center;gap:7px}.view-caption{color:var(--muted);margin-left:5px;font-size:11px}.dot{width:6px;height:6px;border-radius:50%;display:inline-block}.active-dot{background:#ffd35c}.stack-dot{background:var(--mint)}.empty-stack{position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted);pointer-events:none}.view-footer{padding:0 26px 18px;display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--muted)}label{display:flex;gap:7px;align-items:center}input{accent-color:var(--mint)}.status-strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:13px 26px;min-height:56px;display:flex;gap:12px;align-items:center;justify-content:space-between;font-size:12px}.gravity{white-space:nowrap;color:var(--mint);font-size:11px}#message{max-width:75%}.controls{padding:20px 26px}.control-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.tabs{display:flex;gap:4px;background:#11171c;padding:4px;border-radius:9px}.tabs button{border:0;background:transparent;padding:7px 13px;color:var(--muted);font-size:12px}.tabs button[aria-selected=true]{background:#303c43;color:#fff}.tabs span:not(:empty){font-size:10px;margin-left:4px;color:var(--mint)}.moves{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:18px}.move-pair{display:flex;flex-direction:column;gap:6px}.move{font-size:16px;position:relative;min-height:43px;padding:8px 4px;background:#222b31}.move.prime{color:#bdc8cb;font-size:14px}.move.winning{border-color:var(--mint);background:#254238;color:#dcffea}.move.winning::after{content:'✓';font-size:10px;position:absolute;top:3px;right:6px;color:var(--mint)}.hint{font-size:12px;color:var(--mint);min-height:18px;margin:15px 0 6px}.shortcut{font-size:10px;color:var(--muted);margin:0}aside{display:flex;flex-direction:column;gap:16px}.target-card,.score-card,.face-card{border:1px solid var(--line);border-radius:13px;padding:20px;background:var(--panel)}.target-card{background:linear-gradient(145deg,#24352f,#1a2325)}.target-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:15px}.piece-name{font-size:52px;font-weight:650;line-height:1;letter-spacing:-3px}.muted{color:var(--muted);font-size:11px;margin:8px 0 0}.shape{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:30px;height:30px;gap:2px}.shape.large{width:76px;height:76px;gap:4px;flex-shrink:0}.shape i{border-radius:3px}.shape i.filled{background:currentColor;box-shadow:inset 0 -3px 0 #0002}.target-note{font-size:11px;color:#abbdb5;line-height:1.65;margin:14px 0 19px}.queue-heading{color:var(--muted);font-size:9px;letter-spacing:1.5px;margin-bottom:9px}.queue{display:flex;gap:5px;justify-content:space-between}.queue-item{display:flex;flex-direction:column;align-items:center;gap:5px}.queue-item small{font-size:9px;color:var(--muted)}.score-card{display:grid;grid-template-columns:repeat(3,1fr);padding:17px 20px;gap:10px}.score-card>div>span{font-size:10px;color:var(--muted)}.score-card strong{display:block;font-weight:500;font-size:23px;line-height:1.6}.capacity{grid-column:1/-1;border-top:1px solid var(--line);padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:14px}meter{width:115px;height:6px}meter::-webkit-meter-bar{background:#303c43;border:0}meter::-webkit-meter-optimum-value{background:var(--mint)}summary{cursor:pointer;list-style:none;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:10px}summary::-webkit-details-marker{display:none}summary::before{content:'+';color:var(--mint)}details[open]>summary::before{content:'−'}summary>span{font-size:10px;color:var(--muted);margin-left:auto}.net{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:15px}.face-label{font-size:10px;color:var(--muted);display:block;margin-bottom:3px}.face-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}.face-grid i{aspect-ratio:1;border-radius:3px;background:#2a343b;position:relative}.face-grid i.active{outline:2px solid #fff5cd;outline-offset:-2px}.face-grid i.overlap{outline-color:var(--pink)}.map-note{font-size:10px;color:var(--muted);line-height:1.6;margin:12px 0 0}.help{margin:24px 0 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 0}.help>summary{justify-content:flex-start}.help>summary>span{margin-left:10px}.help-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;padding:12px 0}.help h2{font-size:13px;font-weight:500}.help p{font-size:12px;color:var(--muted);line-height:1.8}footer{display:flex;justify-content:space-between;padding:24px 0;color:#718189;font-size:10px}dialog{background:var(--panel);border:1px solid #53655e;border-radius:15px;padding:25px;max-width:380px;color:var(--ink)}dialog::backdrop{background:#0009}dialog h2{font-size:19px}dialog p{color:var(--muted)}dialog form{display:flex;gap:10px;justify-content:flex-end;margin-top:25px}.primary{background:var(--mint);color:#163023}#engineStatus{color:var(--mint)}@media(min-width:1400px){.viewport{height:410px}}@media(max-width:1050px){main{padding:0 20px}.tagline{display:none}.workspace{grid-template-columns:minmax(0,1fr) 248px;gap:14px}.viewport{height:300px}.view-caption{display:none}.panel-header,.controls{padding-left:20px;padding-right:20px}h1{font-size:18px}.view-title{left:20px}.status-strip{padding:12px 20px;flex-wrap:wrap;gap:3px}#message{max-width:100%}.view-footer{padding-left:20px;padding-right:20px;flex-wrap:wrap}.help-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){main{padding:0 12px}.topbar{height:76px}.brand{font-size:23px}.workspace{display:flex;flex-direction:column}aside{display:grid;grid-template-columns:1fr 1fr;gap:12px}.target-card{grid-row:span 2}.face-card{grid-column:1/-1}.net{grid-template-columns:repeat(6,1fr);gap:12px}.viewport{height:290px}.controls{padding:16px}.panel-header{padding:19px 16px 0}h1{font-size:18px}.view-title{left:16px;font-size:11px}.view-footer{padding:0 16px 12px;font-size:10px}.status-strip{padding:12px 16px}.moves{gap:6px}.move{min-height:45px}.shortcut{line-height:1.8}.tabs button{padding:7px 12px}.help-grid{gap:18px}.score-card{grid-template-columns:1fr;gap:6px}.score-card>div:not(.capacity){display:flex;justify-content:space-between;align-items:center}.score-card strong{font-size:19px}.capacity{flex-wrap:wrap}.capacity meter{width:100%}.help>summary>span{font-size:9px}}@media(max-width:420px){.viewport{height:235px}.view-title{top:14px}.empty-stack{font-size:10px;bottom:13px}.view-footer>span{display:none}.queue{gap:3px}.shape{width:25px;height:25px}.target-card,.score-card{padding:15px}.shape.large{width:59px;height:59px}.piece-name{font-size:43px}.net{gap:7px}.help-grid{grid-template-columns:1fr}.panel-header h1{font-size:16px}.icon-button{padding:7px}.gravity{font-size:10px}}@media(prefers-reduced-motion:reduce){button{transition:none}}
+
+[hidden]{display:none!important}.app-tabs{display:flex;gap:8px;margin-bottom:18px}.app-tabs [aria-selected=true]{background:var(--mint);color:#163023}.views.combined{grid-template-columns:1fr}.views.combined .stack-viewport{display:none}.views.combined .viewport{height:460px}.view-footer{flex-wrap:wrap}.choice{padding:14px;margin-top:16px;border:1px solid var(--mint);border-radius:10px;background:#20372f}.choice p{font-size:12px;color:#b6c9bf;margin:6px 0 12px}.choice #faceChoices{display:flex;gap:8px;flex-wrap:wrap}.choice button{min-width:52px}.choice button:not(:disabled){border-color:var(--mint);background:#365547}.app-tabs button:focus-visible{outline:2px solid var(--mint)}#explorer{width:100%;height:calc(100vh - 180px);min-height:650px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}@media(max-width:760px){.views.combined .viewport{height:370px}.app-tabs{margin-top:0}#explorer{min-height:700px}}
+
+/* Compact desktop gameplay: the board and sidebar share the available height. */
+.queue-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.queue-top #new{font-size:11px;padding:5px 10px}
+@media(min-width:900px){
+ main{max-width:1500px;padding:0 20px}.topbar{height:52px;gap:20px}.brand{font-size:23px}.brand-icon{font-size:25px}.app-tabs{margin:0 0 10px;gap:6px}.app-tabs button{padding:6px 12px;font-size:12px}
+ .workspace{grid-template-columns:minmax(0,1fr) 260px;gap:14px;height:calc(100dvh - 126px);min-height:470px;max-height:850px}
+ .game-panel{height:100%;display:flex;flex-direction:column;min-height:0}.panel-header{padding:12px 18px 0;flex-shrink:0}.panel-header .eyebrow{display:none}h1{font-size:18px;margin:0}.views,.views.combined{flex:1;min-height:150px}.views .viewport,.views.combined .viewport{height:100%;min-height:0}.view-title{top:10px;left:18px}.view-footer{padding:4px 18px 10px;gap:8px;flex-shrink:0}.status-strip{padding:8px 18px;min-height:38px;flex-shrink:0}.controls{padding:10px 18px 12px;flex-shrink:0}.moves{margin-top:10px;gap:7px}.move{min-height:36px;padding:5px}.move-pair{gap:4px}.tabs button{padding:5px 10px}.control-heading>.quiet{padding:5px 10px}.hint{margin:8px 0 3px;min-height:16px}.shortcut{font-size:9px}.choice{margin-top:8px;padding:10px}.choice p{margin:4px 0 8px}.choice button{padding:6px 10px}
+ aside{height:100%;gap:10px;min-height:0}.target-card{padding:12px 15px}.target-row{margin-top:8px}.piece-name{font-size:38px}.shape.large{width:58px;height:58px}.target-note{font-size:10px;margin:7px 0 10px}.queue-heading{margin-bottom:6px}.score-card{padding:10px 15px;gap:5px}.score-card strong{font-size:20px}.capacity{padding-top:6px}.face-card{padding:12px 15px;flex:1;min-height:0}.net{gap:8px;margin-top:8px;max-width:210px;margin-left:auto;margin-right:auto}.face-label{margin-bottom:2px}.face-grid{gap:2px}.map-note{font-size:9px;margin:7px 0 0}.help{margin-top:10px;padding:10px 0}footer{padding:12px 0}
+}
+@media(min-width:900px) and (max-height:720px){
+ .workspace{grid-template-columns:minmax(0,1fr) 240px}.target-note{display:none}.target-card{padding:10px 12px}.shape.large{width:48px;height:48px}.piece-name{font-size:32px}.target-row{margin-top:5px}.target-row .muted{margin:4px 0 0}.queue-heading{margin-top:8px}.queue .shape{width:24px;height:24px}.score-card{padding:8px 12px}.face-card{padding:8px 12px}.net{max-width:166px;gap:5px}.map-note{margin-top:5px}.view-caption{display:none}
+}
+/* The cube is the play surface. Ancillary information lives in Settings. */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+main{max-width:none;padding:0 14px}.topbar{height:48px}.brand{font-size:22px}.brand-icon{font-size:26px}.app-tabs{position:absolute;top:7px;left:200px;margin:0;z-index:2}.app-tabs button{padding:6px 12px;font-size:12px}
+.workspace{display:block;height:calc(100dvh - 62px);min-height:500px;max-height:none}.game-panel{height:100%;display:flex;flex-direction:column;position:relative;border-radius:18px;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#253139 0%,#181f25 50%,#13191e 100%)}
+.views,.views.combined{display:grid;flex:1;min-height:0;margin:0}.views .viewport,.views.combined .viewport{height:100%;min-height:0;position:relative;overflow:hidden}.viewport canvas{width:100%;height:100%;touch-action:none}.labels{pointer-events:none}.status-strip{flex-shrink:0;text-align:center;justify-content:center;font-size:12px;min-height:34px;padding:7px 16px;background:#10171bc9;border-top:1px solid #2c353b}
+.piece-hud{position:absolute;z-index:5;left:22px;top:19px;display:flex;gap:26px;align-items:flex-start;pointer-events:none}.hud-caption{display:block;font-size:9px;letter-spacing:2px;font-weight:700;color:#a1afb6;margin-bottom:9px}.current-piece .shape.large{width:58px;height:58px;filter:drop-shadow(0 3px 9px #0005)}.queue{gap:16px;margin:0}.queue-item small{display:none}.queue .shape{width:30px;height:30px;filter:drop-shadow(0 2px 5px #0005)}.shape i{border-radius:3px}.shape i:not(.filled){background:transparent!important;border-color:transparent!important}.score-hud{position:absolute;z-index:6;right:22px;top:18px;text-align:right}.score-hud strong{font-size:26px;font-variant-numeric:tabular-nums;display:block;line-height:1.1}.score-hud button{margin-top:10px;font-size:11px;padding:6px 10px;background:#1b262bd9}.stage-tools{position:absolute;bottom:12px;left:16px;display:flex;gap:6px;z-index:5}.stage-tools button{font-size:11px;padding:7px 10px;background:#182328cc}
+.cube-moves{position:absolute;inset:0;z-index:4;pointer-events:none}.move-station{position:absolute;left:calc(50% + var(--x));top:calc(50% + var(--y));transform:translate(-50%,-50%);display:flex;gap:5px;align-items:center;pointer-events:auto}.arrow-pair{display:grid;grid-template-columns:34px 34px;gap:4px;position:relative;padding-top:15px}.arrow-pair:before{content:attr(data-label);position:absolute;top:0;left:0;right:0;text-align:center;font-size:10px;color:#bbc9cf;font-weight:700}.arrow-pair.outer:before{font-size:8px;color:#8f9fa7}.cube-arrow{width:34px;height:32px;padding:0;border-radius:11px;font-size:23px;line-height:1;background:#172329db;border-color:#40515a;color:#d9e7ea;box-shadow:0 3px 12px #0002}.outer .cube-arrow{background:#16202699;border-color:#324049;color:#94abb6;font-size:21px}.cube-arrow.winning{border-color:#b8e4ca;color:#d9ffe6;box-shadow:0 0 12px #8fdfb533}.cube-arrow.winning:after{content:'✓';font-size:8px;position:absolute;bottom:-7px;color:#b8e4ca}.cube-arrow:hover{background:#3a505b;border-color:#b8e4ca;transform:scale(1.08)}
+.slice-moves{position:absolute;z-index:5;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:14px}.slice-moves .cube-arrow{height:27px;width:29px;font-size:19px}.slice-moves .arrow-pair{grid-template-columns:29px 29px}.slice-moves .arrow-pair:before{font-size:9px}.choice{position:absolute;z-index:8;bottom:58px;left:50%;transform:translateX(-50%);width:min(400px,90%);padding:12px 16px;margin:0;background:#17352ff0;box-shadow:0 8px 40px #0008;text-align:center}.choice p{font-size:11px}.choice #faceChoices{justify-content:center}.choice button{min-width:35px}.controls{max-height:170px;flex-shrink:0;padding:8px 20px;background:#11191e}.controls .hint{margin:4px 0}.controls .shortcut{margin:0}.controls .move{min-height:28px;padding:3px}.controls .moves{margin-top:5px}.controls .control-heading{margin:0}
+.settings-dialog{width:min(580px,94vw);max-height:88dvh;padding:22px;border-radius:18px;background:#182128;color:#eef2ef;overflow:auto}.settings-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.settings-title h2{font-size:20px;margin:0}.settings-title button{padding:5px 9px}.settings-actions{margin-bottom:14px}.settings-dialog fieldset{border:1px solid #34434c;border-radius:10px;padding:14px}.settings-dialog legend{font-size:12px;color:#c5d6dd;padding:0 5px}.settings-dialog label{display:flex;align-items:center;gap:8px;padding:7px 0}.settings-dialog .view-footer{display:block;padding:0}.settings-dialog .muted{font-size:12px}.settings-stats{padding:18px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}.settings-stats strong{float:right}.settings-stats .capacity,.settings-stats p{grid-column:1/-1}.settings-dialog .face-card{padding:14px}.settings-dialog .help-grid{grid-template-columns:1fr}.settings-dialog .net{max-width:230px}.settings-dialog .capacity meter{flex:1}.settings-dialog::backdrop{background:#050b12bb;backdrop-filter:blur(5px)}
+.game-over{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#0c101ad9;backdrop-filter:blur(5px);text-align:center;border:2px solid #ff718d88;border-radius:16px}.game-over>div{padding:25px;max-width:440px}.game-over h1{font-size:clamp(36px,7vw,70px);letter-spacing:5px;margin:0;color:#ff8c9f}.game-over p{color:#bcc7ce;font-size:14px}.game-over strong{display:block;font-size:24px;margin:16px}.game-over .hud-caption{color:#ffa3b1}.end-actions{display:flex;gap:12px;justify-content:center}.topped-out .score-hud strong{color:#ff8c9f}
+@media(max-width:700px){main{padding:0 6px}.topbar{height:43px}.brand{font-size:18px}.app-tabs{left:auto;right:8px;top:6px}.app-tabs button{font-size:10px;padding:5px 7px}.workspace{height:calc(100dvh - 49px);min-height:510px}.piece-hud{left:13px;top:13px;gap:16px}.current-piece .shape.large{width:42px;height:42px}.queue{gap:8px}.queue .shape{width:22px;height:22px}.score-hud{top:12px;right:12px}.score-hud strong{font-size:21px}.score-hud button{font-size:0;padding:6px}.score-hud button:after{content:'⚙';font-size:20px}.hud-caption{font-size:8px;letter-spacing:1px}.stage-tools{bottom:60px;left:10px}.slice-moves{bottom:10px}.arrow-pair{grid-template-columns:28px 28px;gap:3px}.cube-arrow{width:28px;height:28px;font-size:21px}.move-station{gap:3px}.outer .cube-arrow{font-size:18px}.arrow-pair.outer:before{font-size:7px}.status-strip{font-size:10px;min-height:32px}.views:not(.combined){grid-template-columns:1fr 1fr}.views:not(.combined) .piece-hud{gap:6px}.views:not(.combined) .upcoming{display:none}}
+@media(prefers-reduced-motion:reduce){.cube-arrow:hover{transform:none}}
+
+.attached-arrow{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;width:36px;height:41px;background:#172329b8;pointer-events:auto;transition:opacity .1s,background .12s;border-radius:12px}.attached-arrow:hover{transform:translate(-50%,-50%) scale(1.1)}.attached-arrow .arrow-vector{display:block;line-height:24px;font-size:24px}.attached-arrow small{font-size:8px;line-height:10px;color:#c8d6dc}.attached-arrow.wide-arrow{background:#18222a88;border-style:dashed}.attached-arrow.winning:after{right:-4px;bottom:-3px}.settings-dialog select{width:100%;padding:9px;background:#202c35;color:#eef2ef;border:1px solid #43535e;border-radius:7px}.settings-dialog fieldset+fieldset{margin-top:14px}.slice-moves{display:none}
+
+.aura-arrow{width:42px;height:42px;background:transparent;border-color:transparent;box-shadow:none;color:#c8dfe7}.aura-arrow .arrow-vector{font-size:34px;line-height:30px}.aura-arrow small{font-size:8px;opacity:.55}.aura-arrow:hover{background:#253945b8;border-color:#6a909e}.aura-arrow.winning{background:#29443888}.aura-arrow:focus-visible{background:#253945;outline:2px solid #b8e4ca}.aura-arrow.wide-arrow{border-style:solid}
+.views,.views.combined{display:block;position:relative}
+.views .viewport,.views.combined .viewport{position:absolute;top:0;bottom:0;height:100%;width:50%;transition:left .4s ease-in-out,width .4s ease-in-out}
+.views #controlViewport{left:0;z-index:2}
+.views .stack-viewport{display:block!important;left:50%;z-index:1}
+.views.combined #controlViewport,.views.combined .stack-viewport{width:100%;left:0}
+.views.combined .stack-viewport{visibility:hidden;pointer-events:none}
+.views.view-moving .stack-viewport{visibility:visible}
+.views.view-moving .stack-viewport .view-title,.views.view-moving .stack-viewport .empty-stack{visibility:hidden}
+.views.view-instant .viewport{transition:none}
+@media(prefers-reduced-motion:reduce){.views .viewport{transition:none}}
+
+.transparency-settings input[type=range]{width:100%;margin:8px 0 16px}.transparency-settings label{display:flex;justify-content:space-between}.transparency-settings output{font-variant-numeric:tabular-nums}
+.sticker-arrow{width:38px;height:38px}.sticker-arrow .arrow-vector{font-size:32px;line-height:29px}.sticker-arrow small{font-size:7px;line-height:8px}.sticker-arrow-stem{position:absolute;height:1px;background:#c8dfe74a;transform-origin:0 50%;pointer-events:none}
+/* One typography and touch-target scale across the game and settings. */
+:root{--ui-panel:#1b272f;--ui-border:#425762;--ui-radius:14px;--ui-copy:clamp(20px,1.7vw,26px)}
+body{font-size:var(--ui-copy);line-height:1.5;-webkit-text-size-adjust:100%}
+main{padding:0 max(10px,env(safe-area-inset-left)) 0 max(10px,env(safe-area-inset-right))}
+.topbar{height:64px}.brand{font-size:36px;letter-spacing:-1px}.brand-icon{font-size:40px}
+.workspace{height:calc(100dvh - 76px);min-height:320px}
+button,select,input,summary{font:inherit}button,summary,select{touch-action:manipulation}
+button{min-height:48px;border-radius:var(--ui-radius);padding:10px 16px;border-color:var(--ui-border)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+.hud-caption{font-size:18px;letter-spacing:1.5px;margin-bottom:8px}
+.views>.score-hud{top:16px;right:18px;z-index:8}.score-hud strong{font-size:52px}
+.score-hud button{font-size:22px;padding:8px 14px;background:var(--ui-panel);margin-top:8px}.score-hud button:after{content:none}
+.views>.piece-hud{top:18px;left:18px;z-index:6;gap:24px}
+.current-piece .shape.large{width:64px;height:64px}.queue .shape{width:36px;height:36px}.queue{gap:12px}
+.views>.stage-tools{bottom:12px;left:14px;right:14px;z-index:9;gap:10px;flex-wrap:wrap;pointer-events:none}
+.stage-tools button{font-size:22px;min-height:48px;padding:8px 14px;background:var(--ui-panel);pointer-events:auto}
+.status-strip{font-size:22px;line-height:1.35;min-height:48px;padding:10px 16px}#message{max-width:100%;overflow-wrap:anywhere}
+.view-title{font-size:24px;top:140px;left:18px}.view-caption{font-size:20px}.empty-stack{font-size:22px;bottom:80px;padding:0 14px}
+.sticker-arrow{width:57px;height:57px;min-height:57px;padding:0;border-radius:16px}
+.sticker-arrow .arrow-vector{font-size:48px;line-height:43px}.sticker-arrow small{font-size:14px;line-height:14px;opacity:.8}
+.cube-arrow.winning:after{font-size:14px}
+.settings-dialog{width:min(840px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:24px;border:1px solid var(--ui-border);border-radius:20px;font-size:26px;overscroll-behavior:contain;scrollbar-gutter:stable}
+.settings-title{gap:12px}.settings-title h2{font-size:38px}.settings-title button{min-width:48px;min-height:48px;font-size:24px}
+.settings-dialog fieldset{padding:18px;border-radius:var(--ui-radius);border-color:var(--ui-border);min-width:0}
+.settings-dialog legend{font-size:24px}.settings-dialog label{font-size:26px;line-height:1.4;gap:14px;padding:12px 0;cursor:pointer}
+.settings-dialog input[type=checkbox]{width:26px;height:26px;flex:0 0 26px;margin:0}
+.settings-dialog input[type=range]{height:44px;cursor:pointer;margin:4px 0 16px}
+.settings-dialog select{min-height:52px;font-size:24px;border-radius:var(--ui-radius)}
+.settings-dialog .muted,.map-note,.help p,.help li,.shortcut,.hint{font-size:22px;line-height:1.5}
+.settings-dialog .view-footer{font-size:26px}.settings-dialog summary{font-size:26px;padding:10px 0}.settings-dialog summary span{font-size:18px}
+.settings-stats{font-size:24px;gap:16px}.settings-dialog .net{max-width:340px}.face-label{font-size:20px}.help h2{font-size:28px}
+.controls{max-height:40dvh;overflow:auto;padding:12px}.control-heading{gap:12px;flex-wrap:wrap}.tabs button{font-size:22px;min-height:48px;padding:8px 12px}.tabs span:not(:empty){font-size:18px}
+.controls .move,.move.prime{font-size:30px;min-height:48px;padding:6px}.controls .hint,.controls .shortcut{font-size:20px}
+.choice{width:min(600px,94%);bottom:84px;padding:18px;font-size:26px}.choice p{font-size:22px}.choice button{min-width:52px;font-size:24px}
+.game-over p{font-size:26px}.game-over strong{font-size:40px}.game-over .end-actions{flex-wrap:wrap}.game-over button{font-size:22px}
+@media(max-width:700px){
+ main{padding:0 max(6px,env(safe-area-inset-left)) 0 max(6px,env(safe-area-inset-right))}.topbar{height:54px}.brand{font-size:30px}.brand-icon{font-size:34px}
+ .workspace{height:calc(100dvh - 62px - env(safe-area-inset-bottom));min-height:320px}.game-panel{border-radius:16px}
+ .views>.piece-hud{top:12px;left:12px;gap:14px;max-width:calc(100% - 112px);flex-wrap:wrap}
+ .hud-caption{font-size:16px}.current-piece .shape.large{width:48px;height:48px}.queue .shape{width:24px;height:24px}.queue{gap:6px}.upcoming{max-width:100%}
+ .views:not(.combined)>.piece-hud .upcoming{display:block}
+ .views>.score-hud{top:12px;right:12px}.score-hud strong{font-size:42px}.score-hud button{font-size:18px;padding:8px 10px;min-height:46px}
+ .views>.stage-tools{left:8px;right:8px;bottom:8px;gap:6px;flex-wrap:nowrap}.stage-tools button{font-size:18px;padding:8px 10px;flex:1;white-space:nowrap;min-width:0}
+ .status-strip{font-size:18px;padding:8px 10px;min-height:42px}.view-title{font-size:18px;top:142px}.view-caption{display:none}.empty-stack{font-size:18px;bottom:70px}
+ .settings-dialog{font-size:22px;padding:16px;width:calc(100vw - 12px);max-height:calc(100dvh - 12px)}.settings-title h2{font-size:32px}
+ .settings-dialog label{font-size:22px}.settings-dialog fieldset{padding:12px}.settings-dialog legend{font-size:22px}.settings-dialog select{font-size:20px}
+ .settings-dialog .muted,.settings-dialog .view-footer,.map-note,.help p,.help li{font-size:20px}.settings-stats{font-size:20px;grid-template-columns:1fr}.settings-stats .capacity,.settings-stats p{grid-column:auto}
+ .settings-dialog summary{font-size:22px}.settings-dialog summary span{font-size:16px}.help h2{font-size:24px}
+ .controls .move,.move.prime{font-size:24px}.tabs button{font-size:18px}.controls .hint,.controls .shortcut{font-size:18px}
+ .choice{font-size:22px}.choice p{font-size:20px}.game-over p{font-size:22px}
+}
+@media(max-height:520px) and (orientation:landscape){.topbar{height:42px}.brand{font-size:26px}.workspace{height:calc(100dvh - 48px);min-height:260px}.hud-caption{font-size:14px}.score-hud strong{font-size:32px}.current-piece .shape.large{width:40px;height:40px}.views>.piece-hud{gap:12px}.stage-tools button{font-size:18px}.status-strip{font-size:16px}}
+
+.fragment-badge{position:absolute;top:100%;left:0;max-width:300px;margin-top:10px;font-size:18px;line-height:1.3;color:#fff;background:#30404bd9;padding:7px 10px;border-radius:10px}.fragment-badge[hidden]{display:none}
+@media(max-width:700px){.fragment-badge{font-size:15px;margin-top:6px}}
+
+/* Keep HUDs fixed; only the two viewports separate. */
+.views .viewport,.views.combined .viewport{transition:left .4s ease-in-out,top .4s ease-in-out,width .4s ease-in-out,height .4s ease-in-out}
+.views.vertical:not(.combined) .viewport{width:100%;height:50%;bottom:auto;left:0}
+.views.vertical:not(.combined) #controlViewport{top:0}
+.views.vertical:not(.combined) .stack-viewport{top:50%}
+.views.combined .viewport{top:0;height:100%}
+.settings-dialog{box-sizing:border-box;width:1100px;min-width:0;max-width:calc(100vw - 24px);margin:auto;padding:clamp(16px,3vw,32px)}
+.settings-dialog fieldset{min-width:0;width:auto;box-sizing:border-box}
+.settings-dialog label,.settings-dialog p{overflow-wrap:anywhere}
+.settings-dialog select{max-width:100%}
+@media(prefers-reduced-motion:reduce){.views .viewport{transition:none}}
+.views.view-instant .viewport{transition:none}
+
+.hold-pocket{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 12px;background:#182328dd;min-width:80px}
+.hold-pocket .hud-caption{margin:0;font-size:14px}.hold-pocket .shape{width:42px;height:42px;display:grid}.hold-pocket #holdStatus{font-size:13px;line-height:1.2}
+.hold-pocket:disabled{opacity:.55}.views>.piece-hud{gap:14px}
+@media(max-width:700px){.hold-pocket{min-width:60px;padding:5px}.hold-pocket .shape{width:30px;height:30px}.hold-pocket .hud-caption{font-size:11px}.hold-pocket #holdStatus{font-size:11px}.views>.piece-hud{gap:9px}}
+
+.settings-title{position:sticky;top:-1px;background:#182128;z-index:2;padding:12px 0}
+.settings-section{border:1px solid #34434c;border-radius:12px;margin:12px 0;overflow:hidden}
+.settings-dialog .settings-section>summary{padding:16px 20px;font-size:25px;cursor:pointer;font-weight:650}
+.settings-section>summary small{display:block;margin:4px 0 0 22px;font-size:16px;font-weight:400;color:#aebdc6}
+.settings-section[open]>summary{border-bottom:1px solid #34434c;background:#223039}
+.settings-section-body{padding:16px}.settings-dialog .settings-section-body fieldset{margin:0 0 16px}
+.settings-dialog .settings-section-body .muted{font-size:18px}
+@media(max-width:700px){.settings-section-body{padding:10px}.settings-dialog .settings-section>summary{font-size:22px;padding:14px}}
+
+.render-layers{list-style:none;padding:0;margin:16px 0}.render-layers li{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #34434c}.render-layers li span{flex:1;font-size:20px}.render-layers button{min-width:44px;min-height:44px;padding:6px;font-size:20px}.render-layers[aria-disabled=true]{opacity:.6}
+/* Keep native focus, keyboard and pointer hit targets; visuals live in WebGL. */
+.attached-arrow,.attached-arrow:hover{background:transparent!important;border-color:transparent!important;box-shadow:none!important}.attached-arrow>*{visibility:hidden!important}.attached-arrow:after,.sticker-arrow-stem{display:none!important}
+</style></head>
+<body>
+<main>
+  <header class="topbar"><a class="brand" href="#" aria-label="Stack It Up home"><span class="brand-icon" aria-hidden="true">▦</span> Stack It Up</a></header>
+  
+  <div id="gamePage" role="tabpanel" aria-labelledby="gameTab">
+  <div class="workspace">
+    <section class="game-panel" aria-label="Game board">
+      
+      <div class="views combined">
+<div class="piece-hud" aria-label="Current piece and queue"><span id="fragmentBadge" class="fragment-badge" hidden></span><div class="current-piece"><span class="hud-caption">BUILD</span><div id="target" class="shape large" aria-label="Target tetromino"></div><span id="pieceName" class="sr-only">—</span></div><button id="holdPiece" class="hold-pocket" title="Hold / swap (C)" aria-label="Hold current piece"><span class="hud-caption">HOLD · C</span><span id="heldShape" class="shape"></span><span id="holdStatus">Empty</span></button><div class="upcoming"><span class="hud-caption">NEXT</span><div id="queue" class="queue"></div></div></div>
+<div class="stage-tools"><button id="resetView" title="Reset camera">↺ View</button><button id="viewMode" aria-pressed="false" aria-label="Separate active cube and stack">Split cubes</button><button id="stageUndo" disabled>↶ Undo</button></div>
+<div class="score-hud"><span class="hud-caption">SCORE</span><strong id="score">0</strong><button id="settingsOpen" aria-haspopup="dialog" aria-label="Open settings">⚙ Settings</button></div>
+        <div class="viewport" id="controlViewport">
+
+
+<div id="cubeMoves" class="cube-moves" role="group" aria-label="Turns around the cube"></div>
+<div id="sliceMoves" class="slice-moves" role="group" aria-label="Middle slice turns"></div>
+
+<div id="gameOver" class="game-over" role="alert" hidden><div><span class="hud-caption">NO ROOM LEFT</span><h1>TOP OUT</h1><p>No placement fits. Undo your last turn or try again.</p><strong id="finalScore"></strong><div class="end-actions"><button id="overUndo">↶ Undo</button><button id="overNew" class="primary">Play again</button></div></div></div>
+<div id="choice" class="choice" role="group" aria-label="Choose placement face" hidden><strong>Choose a face to place this piece</strong><p>Highlighted face buttons place the piece without turning the cube. Hover or focus to preview.</p><div id="faceChoices"></div></div><canvas id="control" aria-label="Active pieces in a rotatable 3D cube"></canvas><canvas class="labels" id="controlLabels" aria-hidden="true"></canvas></div>
+        <div class="viewport stack-viewport"><div class="view-title"><span class="dot stack-dot"></span> Your stack <span class="view-caption">Stays fixed</span></div><canvas id="stack" aria-label="Fixed connected tetromino stack"></canvas><canvas class="labels" id="stackLabels" aria-hidden="true"></canvas><span id="emptyStack" class="empty-stack">Your first piece starts here.</span></div>
+      </div>
+      
+      <section class="controls" id="legacyControls" hidden aria-label="Cube turns">
+        <div class="control-heading"><div class="tabs" role="tablist" aria-label="Turn type"><button role="tab" id="tab-face" aria-selected="true" aria-controls="moves" data-mode="face">Faces <span></span></button><button role="tab" id="tab-slice" aria-selected="false" aria-controls="moves" data-mode="slice" tabindex="-1">Slices <span></span></button><button role="tab" id="tab-wide" aria-selected="false" aria-controls="moves" data-mode="wide" tabindex="-1">Wide <span></span></button></div><button id="undo" class="quiet" disabled>↶ Undo</button></div>
+        
+        <div id="moves" class="moves" role="tabpanel" aria-labelledby="tab-face"></div>
+        <p id="hint" class="hint">Winning turns are marked with a check.</p>
+        <p class="shortcut">U D F B L R · M E S for slices · Shift for prime · Alt + face for wide · Ctrl/⌘ Z to undo</p>
+      </section>
+<div class="status-strip"><span id="message" role="status" aria-live="polite">Loading game…</span></div>
+      
+    </section>
+    
+  </div>
+  
+  </div>
+
+  <span id="engineStatus" class="sr-only">Starting</span>
+</main>
+<dialog id="settingsDialog" class="settings-dialog"><div class="settings-title"><h2>Settings</h2><button id="settingsClose" aria-label="Close settings">✕</button></div>
+<div class="settings-actions"><button id="new" class="quiet" disabled>New game</button></div>
+<input id="combined" type="checkbox" checked hidden><details class="settings-section" name="settings-section" open><summary>Controls<small>Input and camera</small></summary><div class="settings-section-body"><fieldset><legend>Input</legend><label><input id="classicControls" type="checkbox"> Show classic button grid</label><label><input id="showArrows" type="checkbox"> Show arrow buttons</label><label><input id="arrowGuides" type="checkbox"> Sticker-to-arrow guide lines</label></fieldset><fieldset><legend>Hover feedback</legend><label><input id="hoverRings" type="checkbox" checked> Slice rings</label><label><input id="ringLabels" type="checkbox"> Move letters on rings</label><label><input id="hoverOutline" type="checkbox"> Cel-style outlines on affected cubies</label></fieldset><fieldset><legend>Camera</legend><label><input id="freeOrbit" type="checkbox" checked> Free 360° rotation</label></fieldset><p class="muted">Drag a sticker to turn a slice. Drag outside the cube or right-drag to orbit. Alt-drag turns a wide layer. Press C to hold once per placement.</p></div></details><details class="settings-section" name="settings-section"><summary>Appearance<small>Cubies, transparency and previews</small></summary><div class="settings-section-body"><fieldset><legend>Cubie shape</legend><label><input id="activeSpheres" type="checkbox"> Spherical active cubies</label><p class="muted">Includes active centers and white fragments. Off uses rounded cubes.</p></fieldset><fieldset><legend>Animation & visibility</legend><label><input id="animations" type="checkbox" checked> Animations</label><label><input id="xray" type="checkbox" checked> See through empty cells</label><label><input id="activeOutlines" type="checkbox"> Active cubie outlines</label></fieldset><fieldset class="transparency-settings"><legend>Cubie transparency</legend>
+<label for="activeTransparency">Active cubies <output id="activeTransparencyValue">0%</output></label><input id="activeTransparency" type="range" min="0" max="100" value="0" step="1">
+<label for="centerTransparency">Active centers <output id="centerTransparencyValue">0%</output></label><input id="centerTransparency" type="range" min="0" max="100" value="0" step="1">
+<label for="stackTransparency">Placed cubies <output id="stackTransparencyValue">0%</output></label><input id="stackTransparency" type="range" min="0" max="100" value="0" step="1">
+<p class="muted">0% is fully opaque. 100% is invisible.</p>
+</fieldset><fieldset><legend>Placement previews</legend><label><input id="placementGlow" type="checkbox" checked> Glow on placement-making cubies</label><p class="muted">Hover a sticker or arrow to light up the active cubies that would form the target after a successful move. No extra cells or grid lines are drawn.</p></fieldset></div></details><details class="settings-section" name="settings-section"><summary>Grids<small>Visibility and layering</small></summary><div class="settings-section-body"><fieldset><legend>Show grids</legend><label><input id="controlGrid" type="checkbox" checked> Active cube grid (split view)</label><label><input id="stackGrid" type="checkbox" checked> Stack cube outline (split view)</label><label><input id="combinedGrid" type="checkbox" checked> Combined cube grid</label></fieldset><fieldset><legend>Grid visibility</legend><label><input id="rearGridOnly" type="checkbox" checked> Grid on rear-facing faces only</label></fieldset></div></details><details class="settings-section" name="settings-section"><summary>Rendering order<small>Camera depth or custom layers</small></summary><div class="settings-section-body"><label><input id="customLayers" type="checkbox"> Custom layer order</label><p class="muted">Off: all scene elements use their actual distance from the camera. On: items at the top draw over those below, with normal depth inside each item. Transparency still applies. HUD and Settings stay outside the 3D scene.</p><ol id="renderLayers" class="render-layers"></ol><button id="resetLayers">Restore normal depth</button><p id="layerOrderStatus" class="sr-only" role="status"></p></div></details><details class="settings-section" name="settings-section"><summary>Gameplay<small>Gravity and floating fragments</small></summary><div class="settings-section-body"><fieldset><legend>Gravity</legend><label for="gravityMode">Mode</label><select id="gravityMode"><option value="0">Clears only (default)</option><option value="1">Off completely</option><option value="2">Always on · random changes each move</option></select><p class="muted">Clears only: fall toward the most recently cleared face for that cascade, then stop. Always on: begins downward; each move has a 50% chance to keep its direction and a 50% chance to choose another face. Undo restores the random result.</p></fieldset><fieldset><legend>Floating fragments</legend><label><input id="fragmentPerk" type="checkbox" checked> Release broken pieces after clears</label><p class="muted">Each cleared face grants one completed-piece turn. Broken pieces turn white and move with your active cubies, but do not count toward the target. White cubies must be clear of the fixed stack before they lock with your completed piece. Multi-clears and cascades add turns. Switching this off lets existing white cubies finish their current turn.</p><p id="fragmentStatus" class="muted" role="status"></p></fieldset></div></details><details class="settings-section" name="settings-section"><summary>Game information<small>Statistics, face map and rules</small></summary><div class="settings-section-body"><div class="settings-stats"><div>Pieces <strong id="pieces">0</strong></div><div>Faces cleared <strong id="clears">0</strong></div><div class="capacity"><span id="capacityLabel">0 / 27 cells</span><meter id="capacity" min="0" max="27" value="0"></meter></div><p id="inventory" class="muted"></p></div><details class="face-card" open><summary>Face map <span>Outside views</span></summary><div class="net" id="net"></div><p class="map-note">Filled = stack · ring = active<br>Pink ring = overlap; keep turning</p></details><details class="help"><summary>How to play <span>Rules & keyboard controls</span></summary><div class="help-grid"><div><h2>Build, then stack</h2><p>Turn the active segments until they form the target tetromino on a face. Centers are active cubies too: a center is usable only when your active center occupies it. It locks automatically when only one face fits. When multiple faces fit, choose a highlighted face button. Unused active segments disappear. A brief ghost marks the last placement. Active segments may pass through the fixed stack, but a placement needs four empty cells.</p></div><div><h2>Clear a whole face</h2><p>Fill all nine cells of a face to clear it. Full faces clear simultaneously. By default, connected fragments fall toward the last cleared face (ties use D, F, R, B, L, U order), then gravity switches off. Settings also offers no gravity or continuous gravity with random direction changes on moves.</p></div><div><h2>Every turn is available</h2><p>Face turns use U D F B L R. Middle slices use M E S. Hold Shift for the inverse, or Alt with a face key for a wide turn. M turns like R, E like D, S like F. A ✓ highlights any turn that immediately places your piece, including in other tabs.</p></div><div><h2>Gaps keep you alive</h2><p>Unfinished spawns include one active center plus edges and corners, spread across empty cells. If no unfinished spawn fits, the piece fills a facebound gap automatically. If no facebound gap fits, it tries a planar surface-only gap, then one through the core. Only failure of all three tiers ends the game. Automatic fills can clear faces and continue into the next piece. Undo restores the entire chain.</p></div></div></details></div></details></dialog>
+<dialog id="newDialog"><h2>Start a new game?</h2><p>Your current stack and undo history will be cleared.</p><form method="dialog"><button value="cancel">Keep playing</button><button id="confirmNew" value="new" class="primary">New game</button></form></dialog>
+<noscript>This game requires JavaScript and WebGL 2.</noscript>
+<script>(()=>{
+'use strict';
+const CubeStack = (() => {
+const shapes = {
+O: [
+[0, 0],
+[1, 0],
+[0, 1],
+[1, 1]
+],
+T: [
+[0, 0],
+[1, 0],
+[2, 0],
+[1, 1]
+],
+L: [
+[0, 0],
+[0, 1],
+[0, 2],
+[1, 2]
+],
+J: [
+[1, 0],
+[1, 1],
+[1, 2],
+[0, 2]
+],
+S: [
+[1, 0],
+[2, 0],
+[0, 1],
+[1, 1]
+],
+Z: [
+[0, 0],
+[1, 0],
+[1, 1],
+[2, 1]
+]
+};
+const colors = {
+O: "#ffd35c",
+T: "#bd8cff",
+J: "#649aff",
+L: "#ffab5c",
+S: "#62d9ad",
+Z: "#ff718d"
+};
+const faces = [
+["U", 1, 2],
+["D", 1, 0],
+["F", 2, 0],
+["B", 2, 2],
+["L", 0, 0],
+["R", 0, 2]
+];
+const faceLabel = (name) =>
+({ L: "R", R: "L", l: "r", r: "l" })[name] || name;
+const slices = [
+["M", 0, 1, 0],
+["E", 1, 1, 0],
+["S", 2, 1, 0]
+];
+const wide = faces.map(([name, axis, side]) => [
+name.toLowerCase(),
+axis,
+"wide",
+side
+]);
+const moves = [
+...faces.map(([name, axis, layer]) => [name, axis, layer, layer]),
+...slices,
+...wide
+];
+const xyz = (i) => [Math.floor(i / 9), Math.floor(i / 3) % 3, i % 3],
+idx = (p) => p[0] * 9 + p[1] * 3 + p[2];
+const kind = (i) => xyz(i).filter((v) => v !== 1).length;
+// Local face coordinates are viewed from outside, preserving chirality.
+function cell(f, u, v) {
+// Screen right × screen down points inward on every face.
+// Keep this flip: removing it mirrors J/L and S/Z on all faces.
+u = 2 - u;
+return idx(
+f === "U"
+? [u, 2, 2 - v]
+: f === "D"
+? [u, 0, v]
+: f === "F"
+? [u, 2 - v, 0]
+: f === "B"
+? [2 - u, 2 - v, 2]
+: f === "L"
+? [0, 2 - v, 2 - u]
+: [2, 2 - v, u]
+);
+}
+const placements = {};
+for (const [name, shape] of Object.entries(shapes)) {
+placements[name] = [];
+let s = shape;
+for (let r = 0; r < 4; r++) {
+let minX = Math.min(...s.map((p) => p[0])),
+minY = Math.min(...s.map((p) => p[1]));
+s = s.map(([x, y]) => [x - minX, y - minY]);
+let w = Math.max(...s.map((p) => p[0])),
+h = Math.max(...s.map((p) => p[1]));
+for (const [f] of faces)
+for (let u = 0; u < 3 - w; u++)
+for (let v = 0; v < 3 - h; v++) {
+let cells = s.map(([x, y]) => cell(f, u + x, v + y));
+if (
+!placements[name].some(
+(p) =>
+p.f === f &&
+p.cells.slice().sort().join() ===
+cells.slice().sort().join()
+)
+)
+placements[name].push({ f, cells });
+}
+s = s.map(([x, y]) => [-y, x]);
+}
+}
+function inventory(name) {
+let p = placements[name];
+return {
+centers: 1,
+edges: Math.max(
+...p.map((p) => p.cells.filter((i) => kind(i) === 2).length)
+),
+corners: Math.max(
+...p.map((p) => p.cells.filter((i) => kind(i) === 3).length)
+)
+};
+}
+const mask = cells => cells.reduce((m,i)=>m|1<<i,0);
+const letters=['','O','T','L','J','S','Z'];
+function floatingMask(s){return mask((s.floating||[]).map(f=>f.cell));}
+function floatingBlocked(s){return (s.floating||[]).some(f=>s.board[f.cell]);}
+function matches(s){if(floatingBlocked(s))return [];const active=new Set(s.active),floating=floatingMask(s);return placements[s.queue[0]].filter(p=>p.cells.every(i=>!s.board[i]&&!(floating&(1<<i))&&active.has(i)));}
+// Original placement identity distinguishes a cut piece from intact neighboring pieces.
+function releaseFragments(s){
+ if(!s.fragmentEnabled||!s.fragmentTurns)return;
+ const counts=new Map();for(let i=0;i<27;i++)if(s.board[i])counts.set(s.ids[i],(counts.get(s.ids[i])||0)+1);
+ for(const f of s.floating||[])counts.set(f.id,(counts.get(f.id)||0)+1);
+ const released=[];s.floating??=[];
+ for(let i=0;i<27;i++)if(s.board[i]&&counts.get(s.ids[i])<4){s.floating.push({cell:i,color:s.board[i],id:s.ids[i]});released.push(i);s.board[i]=null;s.ids[i]=null;}
+ if(released.length)record(s,5,released);
+}
+function floatingAfterTurn(s,name,reverse=false){const cells=activeAfterTurn({...s,active:(s.floating||[]).map(f=>f.cell)},name,reverse);return cells?.map((cell,k)=>({...s.floating[k],cell}));}
+function setFragments(s,enabled){s.fragmentEnabled=!!enabled;if(!enabled)s.fragmentTurns=s.floating?.length?1:0;}
+
+function match(s){return matches(s)[0];}
+function record(s,type,cells=[],face=null,origins=Array.from({length:27},(_,i)=>i)){
+if(s.events)s.events.push({kind:type,mask:mask(cells),face:face?faces.findIndex(f=>f[0]===face)+1:0,board:s.board.map(p=>letters.indexOf(p)>0?letters.indexOf(p):0),ids:s.ids.map(x=>x||0),origins,floatMask:floatingMask(s),fragmentTurns:s.fragmentTurns||0});
+}
+function rotate(i, axis, reverse) {
+let p = xyz(i).map((v) => v - 1),
+a = (axis + 1) % 3,
+b = (axis + 2) % 3;
+[p[a], p[b]] = reverse ? [p[b], -p[a]] : [-p[b], p[a]];
+return idx(p.map((v) => v + 1));
+}
+const clearOrder = ["D", "F", "L", "B", "R", "U"];
+// Keep individual piece identities even when their colors match.
+function groups(s) {
+const seen = new Set(),
+out = [];
+for (let i = 0; i < 27; i++)
+if (s.board[i] && !seen.has(i)) {
+const cells = [],
+todo = [i],
+id = s.ids?.[i] ?? "legacy-" + i;
+seen.add(i);
+while (todo.length) {
+const j = todo.pop();
+cells.push(j);
+const p = xyz(j);
+for (let k = 0; k < 3; k++)
+for (const d of [-1, 1]) {
+const q = p.slice();
+q[k] += d;
+if (q[k] < 0 || q[k] > 2) continue;
+const n = idx(q);
+if (
+!seen.has(n) &&
+s.board[n] &&
+s.board[n] === s.board[i] &&
+(s.ids?.[n] ?? "legacy-" + n) === id
+) {
+seen.add(n);
+todo.push(n);
+}
+}
+}
+out.push({ id, color: s.board[i], cells });
+}
+return out;
+}
+function settle(s, name) {
+if (!name) return;
+const [, axis, side] = faces.find((f) => f[0] === name),
+step = side === 0 ? -1 : 1;
+const pieces = groups(s);
+s.ids ??= Array(27).fill(null);
+let moved;
+do {
+moved = false;
+for (const piece of pieces) {
+const own = new Set(piece.cells),
+next = piece.cells.map((i) => {
+const p = xyz(i);
+p[axis] += step;
+return p[axis] < 0 || p[axis] > 2 ? -1 : idx(p);
+});
+if (next.some((i) => i < 0 || (s.board[i] && !own.has(i))))
+continue;
+for (const i of piece.cells) {
+s.board[i] = null;
+s.ids[i] = null;
+}
+for (const i of next) {
+s.board[i] = piece.color;
+s.ids[i] = piece.id;
+}
+const origins=Array.from({length:27},(_,i)=>i);next.forEach((v,k)=>origins[v]=piece.cells[k]);
+record(s,3,next,name,origins);
+piece.cells = next;
+moved = true;
+}
+} while (moved);
+}
+function clear(state) {
+let total = 0;
+if(state.gravityMode===1)state.gravity=null;
+state.lastClears = [];
+// Check the just-locked placement before gravity moves it.
+while (true) {
+let full = clearOrder.filter((f) =>
+Array.from({ length: 9 }, (_, i) =>
+cell(f, i % 3, Math.floor(i / 3))
+).every((i) => state.board[i])
+);
+if (!full.length) {
+settle(state, state.gravity);
+full = clearOrder.filter((f) =>
+Array.from({ length: 9 }, (_, i) =>
+cell(f, i % 3, Math.floor(i / 3))
+).every((i) => state.board[i])
+);
+}
+if (!full.length) break;
+const removed = new Set(
+full.flatMap((f) =>
+Array.from({ length: 9 }, (_, i) =>
+cell(f, i % 3, Math.floor(i / 3))
+)
+)
+);
+for (const i of removed) {
+state.board[i] = null;
+if (state.ids) state.ids[i] = null;
+}
+record(state,2,[...removed]);
+state.lastClears.push(...full);
+if(state.gravityMode!==1){if(state.gravityMode!==2)state.gravity=full[full.length-1];settle(state,state.gravity);}
+total += full.length;
+}
+if(state.gravityMode!==2)state.gravity=null;
+state.clears += total;
+state.score += total * 500;
+if(state.fragmentEnabled)state.fragmentTurns=(state.fragmentTurns||0)+total;
+releaseFragments(state);
+return total;
+}
+function range(s,n){let x,limit=0xffffffff-0xffffffff%n;do{x=s.rng;x^=x<<13;x^=x>>>17;x^=x<<5;s.rng=x>>>0;}while(s.rng>limit);return (s.rng-1)%n;}
+function refill(s){while(s.queue.length<7){const bag=letters.slice(1);for(let i=5;i>0;i--){const j=range(s,i+1);[bag[i],bag[j]]=[bag[j],bag[i]];}s.queue.push(...bag);}}
+function combinations(a,n,start=0,p=[],out=[]){if(!n){out.push(p);return out;}for(let i=start;i<=a.length-n;i++)combinations(a,n-1,i+1,[...p,a[i]],out);return out;}
+function separation(c){let min=12,total=0;for(let i=0;i<c.length;i++)for(let j=i+1;j<c.length;j++){const a=xyz(c[i]),b=xyz(c[j]),d=a.reduce((n,v,k)=>n+(v-b[k])**2,0);min=Math.min(min,d);total+=d;}return min*256+total;}
+const spawnTables={},fallback={};
+for(const name of letters.slice(1)){
+const inv=inventory(name),all=Array.from({length:27},(_,i)=>i);
+spawnTables[name]=combinations(all.filter(i=>kind(i)===2),inv.edges).flatMap(e=>combinations(all.filter(i=>kind(i)===3),inv.corners).flatMap(c=>all.filter(i=>kind(i)===1).map(center=>{const cells=[...e,...c,center];return {cells,mask:mask(cells),score:separation(cells)};}))).sort((a,b)=>b.score-a.score||a.mask-b.mask);
+const found=new Map();
+for(let a=0;a<3;a++)for(let b=0;b<3;b++)if(a!==b)for(const sa of [-1,1])for(const sb of [-1,1]){
+let shape=shapes[name].map(([x,y])=>{const p=[0,0,0];p[a]=x*sa;p[b]=y*sb;return p;});
+const lo=[0,1,2].map(k=>Math.min(...shape.map(p=>p[k])));shape=shape.map(p=>p.map((v,k)=>v-lo[k]));
+const hi=[0,1,2].map(k=>Math.max(...shape.map(p=>p[k])));
+for(let x=0;x<3-hi[0];x++)for(let y=0;y<3-hi[1];y++)for(let z=0;z<3-hi[2];z++){
+const cells=shape.map(p=>idx([p[0]+x,p[1]+y,p[2]+z]));
+if(faces.some(([,axis,side])=>cells.every(i=>xyz(i)[axis]===side)))continue;
+found.set(mask(cells),{cells,mask:mask(cells),tier:cells.includes(13)?2:1});
+}
+}
+fallback[name]=[...found.values()].sort((a,b)=>a.tier-b.tier||a.mask-b.mask);
+}
+function lock(s,hit){
+ if(floatingBlocked(s)||hit.cells.some(i=>s.board[i]||(floatingMask(s)&(1<<i))))return false;
+ const piece=s.queue.shift();s.holdUsed=false;s.ids??=Array(27).fill(null);
+ const fragments=s.floating||[];s.floating=[];
+ for(const f of fragments){s.board[f.cell]=f.color;s.ids[f.cell]=f.id;}
+ if(s.fragmentTurns>0)s.fragmentTurns--;
+ if(fragments.length)record(s,4,fragments.map(f=>f.cell));
+ for(const i of hit.cells){s.board[i]=piece;s.ids[i]=s.pieces+1;}
+ s.pieces++;s.score+=100;s.active=[];s.lastLock={...hit,piece};record(s,1,hit.cells);clear(s);return true;
+}
+function spawn(s){s.auto=0;s.tiers=0;let allClears=s.lastClears.slice();
+while(true){refill(s);s.active=[];s.over=false;const name=s.queue[0],gap=placements[name].find(p=>p.cells.every(i=>!s.board[i]));
+if(gap){let chosen=null,best=-1,count=0;for(const p of spawnTables[name]){if(chosen&&p.score<best)break;if(p.cells.some(i=>s.board[i]||(floatingMask(s)&(1<<i))))continue;s.active=p.cells;if(match(s))continue;best=p.score;if(range(s,++count)===0)chosen=p.cells;}s.active=chosen||[];if(chosen){s.lastClears=allClears;if(s.gravityMode!==2)s.gravity=null;return true;}}
+// Automatic placements must be disjoint from the fragments that lock with them.
+const free=p=>p.cells.every(i=>!s.board[i]&&!(floatingMask(s)&(1<<i)));
+const hit=!floatingBlocked(s)&&(placements[name].find(free)||fallback[name].find(free));
+if(!hit){s.active=[];s.over=true;s.lastClears=allClears;if(s.gravityMode!==2)s.gravity=null;return false;}
+lock(s,hit);s.auto++;s.tiers|=1<<(hit.f?0:hit.tier);allClears.push(...s.lastClears);
+}
+}
+function create(seed=1) {
+let s = {
+rng:Math.max(1,seed>>>0),gravityMode:0,pending:[],events:[],fragmentEnabled:true,fragmentTurns:0,floating:[],
+board: Array(27).fill(null),
+ids: Array(27).fill(null),
+gravity: null,
+lastClears: [],
+active: [],
+queue: [],held:null,holdUsed:false,
+pieces: 0,
+clears: 0,
+score: 0,
+over: false
+};
+spawn(s);
+return s;
+}
+// Shared by real turns and hints; previewing never locks or spawns pieces.
+function activeAfterTurn(s, name, reverse = false) {
+const f = moves.find((f) => f[0] === name);
+if (!f) return null;
+let [, axis, layer, side] = f;
+return s.active.map((i) =>
+(
+layer === "wide"
+? xyz(i)[axis] !== 2 - side
+: xyz(i)[axis] === layer
+)
+? rotate(i, axis, reverse === (side === 0))
+: i
+);
+}
+function wouldPlace(s, name, reverse = false) {
+if (s.over || s.pending?.length) return false;
+const active = activeAfterTurn(s, name, reverse),floating=floatingAfterTurn(s,name,reverse);
+if(active===null)return false;
+if(s.gravityMode===2){const trial={...s,board:s.board.slice(),ids:s.ids.slice(),queue:s.queue.slice(),pending:s.pending.slice(),active,floating,events:null,lastClears:[]};const old=trial.gravity?faces.findIndex(f=>f[0]===trial.gravity):1;if(range(trial,2)===1)trial.gravity=faces[(old+1+range(trial,5))%6][0];else trial.gravity=faces[old][0];clear(trial);if(trial.active.some(i=>floatingMask(trial)&(1<<i))){spawn(trial);return trial.pieces>s.pieces;}return !!match(trial);}
+return !!match({ ...s, active, floating });
+}
+function turn(s,name,reverse=false){if(s.over||s.pending.length)return {ok:false};const next=activeAfterTurn(s,name,reverse);if(!next)return {ok:false};s.events=[];s.lastClears=[];s.lastLock=null;s.auto=0;s.tiers=0;s.floating=floatingAfterTurn(s,name,reverse);s.active=next;if(s.gravityMode===2){const old=s.gravity?faces.findIndex(f=>f[0]===s.gravity):1;if(range(s,2)===1)s.gravity=faces[(old+1+range(s,5))%6][0];else s.gravity=faces[old][0];clear(s);if(s.active.some(i=>floatingMask(s)&(1<<i))){spawn(s);return {ok:true};}}const hits=matches(s);if(new Set(hits.map(p=>p.f)).size>1)s.pending=hits;else if(hits.length){lock(s,hits[0]);spawn(s);}return {ok:true};}
+function hold(s){
+if(s.over||s.pending.length||s.holdUsed)return false;
+const current=s.queue.shift(),held=s.held;s.held=current;if(held)s.queue.unshift(held);
+s.holdUsed=true;s.events=[];s.lastClears=[];s.lastLock=null;spawn(s);return true;
+}
+function choose(s,face){const hit=s.pending.find(p=>p.f===face);if(!hit)return false;s.pending=[];s.events=[];lock(s,hit);spawn(s);return true;}
+return {
+hold,choose,matches,mask,spawnTables,fallback,separation,lock,releaseFragments,floatingAfterTurn,floatingMask,setFragments,
+create,
+turn,
+activeAfterTurn,
+wouldPlace,
+spawn,
+match,
+groups,
+settle,
+clear,
+clearOrder,
+placements,
+shapes,
+inventory,
+xyz,
+idx,
+kind,
+faces,
+faceLabel,
+slices,
+wide,
+moves,
+cell,
+colors,
+rotate
+};
+})();
+function jellyField(cells, connectivity = 1) {
+// Merge complete runs/rectangles BEFORE rounding. Shared segment faces
+// disappear, giving straight Tengen-like bars rather than pinched beads.
+const occupied = new Set(cells.map((c) => c.join(","))),
+candidates = [];
+for (const lo of cells)
+for (const hi of cells) {
+if (lo.some((v, k) => v > hi[k])) continue;
+let filled = true;
+for (let x = lo[0]; x <= hi[0]; x++)
+for (let y = lo[1]; y <= hi[1]; y++)
+for (let z = lo[2]; z <= hi[2]; z++) {
+if (!occupied.has([x, y, z].join(","))) filled = false;
+}
+if (filled) candidates.push({ lo, hi });
+}
+const boxes = candidates
+.filter(
+(a) =>
+!candidates.some(
+(b) =>
+a !== b &&
+a.lo.every((v, k) => v >= b.lo[k]) &&
+a.hi.every((v, k) => v <= b.hi[k])
+)
+)
+.map(({ lo, hi }) => ({
+c: lo.map((v, k) => (v + hi[k]) / 2),
+h: lo.map((v, k) => (hi[k] - v + 1) / 2 - 0.055),
+r: 0.16
+}));
+const separate = cells.map((c) => ({
+c,
+h: [0.445, 0.445, 0.445],
+r: 0.19
+}));
+const distance = (p, parts, smooth) => {
+let d = 10;
+for (const box of parts) {
+const x = Math.abs(p[0] - box.c[0]) - box.h[0] + box.r;
+const y = Math.abs(p[1] - box.c[1]) - box.h[1] + box.r;
+const z = Math.abs(p[2] - box.c[2]) - box.h[2] + box.r;
+const a = Math.max(x, 0),
+b0 = Math.max(y, 0),
+c = Math.max(z, 0);
+const b =
+Math.sqrt(a * a + b0 * b0 + c * c) +
+Math.min(Math.max(x, y, z), 0) -
+box.r;
+const h = Math.max(0.06 - Math.abs(d - b), 0) / 0.06;
+d = Math.min(d, b) - (smooth ? h * h * 0.06 * 0.25 : 0);
+}
+return d;
+};
+return (p) =>
+connectivity
+? distance(p, boxes, true)
+: distance(p, separate, false);
+}
+// Marching tetrahedra generates a single seamless surface, with field normals.
+function jellySurface(cells, connectivity = 1) {
+const field = jellyField(cells, connectivity),
+step = 0.14;
+const lo = [0, 1, 2].map(
+(k) => Math.min(...cells.map((c) => c[k])) - 0.6
+);
+const n = [0, 1, 2].map((k) =>
+Math.ceil((Math.max(...cells.map((c) => c[k])) + 0.6 - lo[k]) / step)
+);
+const positions = [],
+normals = [],
+cache = new Map();
+const corners = [
+[0, 0, 0],
+[1, 0, 0],
+[1, 1, 0],
+[0, 1, 0],
+[0, 0, 1],
+[1, 0, 1],
+[1, 1, 1],
+[0, 1, 1]
+];
+const tets = [
+[0, 5, 1, 6],
+[0, 1, 2, 6],
+[0, 2, 3, 6],
+[0, 3, 7, 6],
+[0, 7, 4, 6],
+[0, 4, 5, 6]
+];
+const gradient = (p) =>
+[0, 1, 2].map((k) => {
+const a = p.slice(),
+b = p.slice();
+a[k] += 0.001;
+b[k] -= 0.001;
+return (field(a) - field(b)) / 0.002;
+});
+function triangle(a, b, c) {
+const normal = gradient(a.map((v, k) => (v + b[k] + c[k]) / 3));
+const u = b.map((v, k) => v - a[k]),
+v = c.map((v, k) => v - a[k]);
+const cross = [
+u[1] * v[2] - u[2] * v[1],
+u[2] * v[0] - u[0] * v[2],
+u[0] * v[1] - u[1] * v[0]
+];
+if (cross.reduce((s, v, k) => s + v * normal[k], 0) < 0)
+[b, c] = [c, b];
+for (const p of [a, b, c]) {
+positions.push(...p);
+const g = gradient(p),
+l = Math.hypot(...g) || 1;
+normals.push(...g.map((v) => v / l));
+}
+}
+for (let x = 0; x < n[0]; x++)
+for (let y = 0; y < n[1]; y++)
+for (let z = 0; z < n[2]; z++) {
+const vertices = corners.map((c) => {
+const grid = [x + c[0], y + c[1], z + c[2]],
+key = grid.join(",");
+if (!cache.has(key)) {
+const p = grid.map((v, k) => lo[k] + v * step);
+cache.set(key, { p, d: field(p) });
+}
+return cache.get(key);
+});
+for (const tet of tets) {
+const inside = tet.filter((i) => vertices[i].d < 0),
+outside = tet.filter((i) => vertices[i].d >= 0);
+const edge = (a, b) => {
+const A = vertices[a],
+B = vertices[b],
+t = A.d / (A.d - B.d);
+return A.p.map((v, k) => v + (B.p[k] - v) * t);
+};
+if (inside.length === 1)
+triangle(...outside.map((i) => edge(inside[0], i)));
+if (inside.length === 3)
+triangle(...inside.map((i) => edge(outside[0], i)));
+if (inside.length === 2) {
+const [a, b] = inside,
+[c, d] = outside;
+const ac = edge(a, c),
+ad = edge(a, d),
+bc = edge(b, c),
+bd = edge(b, d);
+triangle(ac, ad, bc);
+triangle(ad, bd, bc);
+}
+}
+}
+return { positions, normals };
+}
+function createEngine(){
+const E=CubeStack,names=['','O','T','L','J','S','Z'];
+let s,history=[],revision=0,meshKey='',mesh=new Float32Array();
+const code=p=>Math.max(0,names.indexOf(p));
+return {
+game_init(seed){s=E.create(seed);history=[];revision++;},
+game_set_fragments(enabled){E.setFragments(s,enabled);revision++;},
+ game_set_gravity(mode){s.gravityMode=Math.max(0,Math.min(2,mode));s.gravity=mode===2?(s.gravity||'D'):null;revision++;},
+game_turn(m){if(s.over||s.pending.length)return false;const previous=structuredClone(s);previous.events=[];const result=E.turn(s,E.moves[m%15][0],m>=15);if(result.ok){history.push(previous);if(history.length>100)history.shift();revision++;}return result.ok;},
+game_hold(){const previous=structuredClone(s);previous.events=[];if(!E.hold(s))return false;history.push(previous);if(history.length>100)history.shift();revision++;return true;},
+placement_previews(moves){const found=new Map();for(const m of moves){if(!E.wouldPlace(s,E.moves[m%15][0],m>=15))continue;const moved=E.activeAfterTurn(s,E.moves[m%15][0],m>=15),trial=structuredClone(s);E.turn(trial,E.moves[m%15][0],m>=15);const collect=mask=>{const sourceMask=E.mask(s.active.filter((_,i)=>mask&(1<<moved[i]))),old=found.get(mask);found.set(mask,{mask,piece:code(s.queue[0]),sourceMask:sourceMask|(old?.sourceMask||0)});};for(const hit of trial.pending||[])collect(E.mask(hit.cells));for(const event of trial.events||[])if(event.kind===1){collect(event.mask);break;}}return [...found.values()];},
+game_choose(f){if(!E.choose(s,E.faces[f][0]))return false;revision++;return true;},
+game_undo(){if(!history.length)return false;s=history.pop();s.events=[];revision++;return true;},
+events(){return s.events.map(e=>({...e,board:Uint32Array.from(e.board),ids:Uint32Array.from(e.ids),origins:Uint32Array.from(e.origins)}));},
+snapshot(){const v=new Uint32Array(166);s.board.forEach((p,i)=>v[i]=code(p));s.ids.forEach((id,i)=>v[27+i]=id||0);v[54]=E.mask(s.active);v[55]=code(s.queue[0]);s.queue.slice(1,7).forEach((p,i)=>v[56+i]=code(p));v[62]=s.pieces;v[63]=s.clears;v[64]=s.score;v[65]=s.gravity?E.faces.findIndex(f=>f[0]===s.gravity)+1:0;v[66]=+s.over;
+for(let m=0;m<30;m++)if(E.wouldPlace(s,E.moves[m%15][0],m>=15))v[67]|=1<<m;
+v[68]=history.length;if(s.lastLock){v[69]=s.lastLock.f?E.faces.findIndex(f=>f[0]===s.lastLock.f)+1:0;v[70]=code(s.lastLock.piece);v[79]=E.mask(s.lastLock.cells);}for(const f of s.lastClears)v[71]|=1<<E.faces.findIndex(a=>a[0]===f);
+v[72]=revision;v[73]=s.board.filter(Boolean).length+(s.floating?.length||0);v[74]=2;v[75]=s.auto||0;v[76]=s.tiers||0;v[77]=s.lastClears.length;
+for(const p of s.pending){const f=E.faces.findIndex(a=>a[0]===p.f);v[78]|=1<<f;if(!v[152+f])v[152+f]=E.mask(p.cells);}
+for(let f=0;f<6;f++)for(let i=0;i<9;i++)v[80+f*9+i]=E.cell(E.faces[f][0],i%3,Math.floor(i/3));
+names.slice(1).forEach((name,p)=>{v[134+p]=E.shapes[name].reduce((m,[x,y])=>m|1<<(y*3+x),0);const inv=E.inventory(name);v[140+p*2]=inv.edges;v[141+p*2]=inv.corners;});v[158]=s.gravityMode||0;v[159]=E.floatingMask(s);v[160]=s.fragmentTurns||0;v[161]=+s.fragmentEnabled;v[162]=s.floating?.length||0;v[163]=(s.floating||[]).filter(f=>s.board[f.cell]).length;v[164]=code(s.held);v[165]=+!!s.holdUsed;return v;},
+mesh(){const key=JSON.stringify([s.board,s.ids]);if(key===meshKey)return mesh;const data=[];
+for(const g of E.groups(s)){const geo=jellySurface(g.cells.map(i=>E.xyz(i).map(v=>v-1))),hex=E.colors[g.color].slice(1),rgb=[0,2,4].map(k=>parseInt(hex.slice(k,k+2),16)/255);
+for(let i=0;i<geo.positions.length;i+=3)data.push(...geo.positions.slice(i,i+3),...geo.normals.slice(i,i+3),...rgb);}
+meshKey=key;mesh=Float32Array.from(data);return mesh;}
+};
+}
+const {Renderer,colors,faceLabels}=(()=>{
+// Retained WebGL geometry. Orbiting changes uniforms only; no mesh rebuilds,
+// triangle sorting, or continuous animation loop while the game is idle.
+const VS=`#version 300 es
+in vec3 position; in vec3 normal; in vec3 color;
+uniform mat3 orientation; uniform vec2 scale; uniform float breath;
+out vec3 n; out vec3 rgb;
+vec3 rotate(vec3 p){return orientation*p;}
+void main(){vec3 cell=floor(position+vec3(.5));vec3 p=rotate(cell+(position-cell)*breath);gl_Position=vec4(p.xy*scale,-p.z/8.,1.);n=rotate(normal);rgb=color;}`;
+const FS=`#version 300 es
+precision highp float;
+in vec3 n;in vec3 rgb;uniform bool unlit;uniform float opacity;out vec4 outColor;
+void main(){vec3 norm=normalize(n);float light=max(0.,dot(norm,normalize(vec3(-.35,.65,.68))));float shine=pow(max(0.,dot(norm,normalize(vec3(-.18,.32,.93)))),28.)*.24;outColor=vec4(unlit?rgb:rgb*(.48+.52*light)+shine,opacity);}`;
+const colors=['#000000','#ffd35c','#bd8cff','#ffab5c','#649aff','#62d9ad','#ff718d'];
+const faceLabels=['U','D','F','B','R','L'];
+const faces=[[1,2],[1,0],[2,0],[2,2],[0,0],[0,2]];
+const xyz=i=>[Math.floor(i/9)-1,Math.floor(i/3)%3-1,i%3-1];
+const rgb=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
+function box(out,p,h,color){for(let axis=0;axis<3;axis++)for(let side of [-1,1]){const a=(axis+1)%3,b=(axis+2)%3,n=[0,0,0];n[axis]=side;
+const q=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([u,v])=>{const q=p.slice();q[axis]+=side*h;q[a]+=u*h;q[b]+=v*h;return q;});
+for(const i of side===1?[0,1,2,0,2,3]:[0,2,1,0,3,2])out.push(...q[i],...n,...color);
+}}
+function wire(out,p,h,color){for(let axis=0;axis<3;axis++)for(const a of [-1,1])for(const b of [-1,1])for(const side of [-1,1]){let q=p.slice();q[axis]+=side*h;q[(axis+1)%3]+=a*h;q[(axis+2)%3]+=b*h;out.push(...q,0,0,1,...color);}}
+// One shared grid on the cube surface: 12 edges and 24 face divisions.
+function surfaceGrid(out,project=null){
+const color=[.52,.64,.68],seen=new Set();
+for(let axis=0;axis<3;axis++)for(const side of [-1.5,1.5]){
+const normal=[0,0,0];normal[axis]=Math.sign(side);if(project&&project(normal)[2]>0)continue;
+for(const offset of [-1.5,-.5,.5,1.5])for(const direction of [1,2]){
+const a=(axis+direction)%3,b=3-axis-a,ends=[-1.5,1.5].map(end=>{const p=[0,0,0];p[axis]=side;p[a]=end;p[b]=offset;return p;});
+const key=ends.map(p=>p.join(',')).sort().join('|');if(seen.has(key))continue;seen.add(key);for(const p of ends)out.push(...p,0,0,1,...color);
+}}
+}
+// Rounded cells shrink about their own center, including the internal core cell.
+function sphere(out,p,h,color){
+if(h<.001)return;const rows=16,cols=24;
+const vertex=(row,col)=>{const phi=row*Math.PI/rows,theta=col*Math.PI*2/cols,n=[Math.sin(phi)*Math.cos(theta),Math.cos(phi),Math.sin(phi)*Math.sin(theta)];return [...p.map((v,i)=>v+n[i]*h),...n,...color];};
+for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){const q=[vertex(row,col),vertex(row+1,col),vertex(row+1,col+1),vertex(row,col+1)];for(const i of [0,1,2,0,2,3])out.push(...q[i]);}
+}
+function balloon(out,p,h,color){
+if(h<.001)return;
+const r=h*.32,inner=h-r,N=4;
+for(let axis=0;axis<3;axis++)for(const side of [-1,1]){
+const a=(axis+1)%3,b=(axis+2)%3;
+const vertex=(u,v)=>{const q=[0,0,0];q[axis]=side*h;q[a]=(u/N*2-1)*h;q[b]=(v/N*2-1)*h;
+const c=q.map(x=>Math.max(-inner,Math.min(inner,x))),n=q.map((x,k)=>x-c[k]),length=Math.hypot(...n);
+for(let k=0;k<3;k++)n[k]/=length;
+return [...c.map((x,k)=>p[k]+x+n[k]*r),...n,...color];};
+for(let u=0;u<N;u++)for(let v=0;v<N;v++){const q=[vertex(u,v),vertex(u+1,v),vertex(u+1,v+1),vertex(u,v+1)];for(const i of side===1?[0,1,2,0,2,3]:[0,2,1,0,3,2])out.push(...q[i]);}
+}
+}
+function rotateCell(out,start,i,move,t){
+const m=move%15,reverse=move>=15;let axis,side,layer,wide=false;
+if(m<6){[axis,side]=faces[m];layer=side;}else if(m<9){axis=m-6;side=0;layer=1;}else{[axis,side]=faces[m-9];layer=side;wide=true;}
+const p=xyz(i).map(x=>x+1);if(wide?p[axis]===2-side:p[axis]!==layer)return;
+const angle=(reverse===(side===0)?-1:1)*Math.PI/2*t,c=Math.cos(angle),sn=Math.sin(angle),a=(axis+1)%3,b=(axis+2)%3;
+for(let j=start;j<out.length;j+=9)for(const offset of [0,3]){const x=out[j+offset+a],y=out[j+offset+b];out[j+offset+a]=x*c-y*sn;out[j+offset+b]=x*sn+y*c;}
+}
+function overlapMarks(out,p){const color=[1,.39,.56];wire(out,p,.466,color);for(let axis=0;axis<3;axis++)for(const side of [-1,1])for(const diagonal of [-1,1])for(const end of [-1,1]){const q=p.slice();q[axis]+=side*.469;q[(axis+1)%3]+=end*.25;q[(axis+2)%3]+=end*diagonal*.25;out.push(...q,0,0,1,...color);}}
+class Renderer{
+constructor(canvas,labels,{stack=false,onOrbit,onLayout}={}){
+this.onLayout=onLayout;this.canvas=canvas;this.labels=labels;this.isStack=stack;this.yaw=Math.PI-.55;this.pitch=.4;this.resetOrientation();this.xray=true;this.gravity=0;this.activeOutlines=false;this.breathing=true;this.controlGrid=true;this.stackGrid=true;this.combinedGrid=true;this.activeOpacity=1;this.centerOpacity=1;this.stackOpacity=1;
+const gl=this.gl=canvas.getContext('webgl2',{alpha:true,antialias:true,stencil:true,powerPreference:'low-power'});
+if(!gl)throw new Error('WebGL 2 is unavailable. Please enable hardware acceleration or try a current browser.');
+this.program=gl.createProgram();for(const [type,source] of [[gl.VERTEX_SHADER,VS],[gl.FRAGMENT_SHADER,FS]]){let shader=gl.createShader(type);gl.shaderSource(shader,source);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(shader));gl.attachShader(this.program,shader);gl.deleteShader(shader);}gl.linkProgram(this.program);if(!gl.getProgramParameter(this.program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(this.program));
+this.uniforms=Object.fromEntries(['orientation','scale','unlit','opacity','breath'].map(n=>[n,gl.getUniformLocation(this.program,n)]));
+this.activeLines=this.buffer();this.centers=this.buffer();this.overlaps=this.buffer();this.grid=this.buffer();this.solid=this.buffer();this.lines=this.buffer();this.empty=this.buffer();this.stackMesh=this.buffer();this.ghostSolid=this.buffer();this.ghostLines=this.buffer();this.previewLines=this.buffer();this.combined=false;this.ghost=null;this.preview=0;this.activeOnly=this.buffer();this.floatingMesh=this.buffer();this.decorBuffers={};this.transparentBuffer=this.buffer();
+installCubeDrag(this,onOrbit);
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();document.getElementById('message').textContent='Graphics context lost. Reload the page to restart the renderer.';});
+}
+buffer(){let gl=this.gl;const vao=gl.createVertexArray(),buffer=gl.createBuffer();gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);for(const [i,name] of ['position','normal','color'].entries()){let loc=gl.getAttribLocation(this.program,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,36,i*12);}return {vao,buffer,count:0};}
+upload(target,data){target.data=data;const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,target.buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);target.count=data.length/9;}
+setMesh(data){this.upload(this.stackMesh,data);}
+setState(s,animation=null){
+this.gridKey=null;this.state=s;this.animation=animation;this.gravity=s[65];const grid=[],activeLines=[],lines=[],solid=[],empty=[],ghostSolid=[],ghostLines=[],preview=[],centers=[],overlaps=[];
+if(!this.isStack)surfaceGrid(grid);
+if(this.isStack)wire(lines,[0,0,0],1.5,[.29,.38,.40]);
+else for(let i=0;i<27;i++){
+if(i===13&&!(s[159]&(1<<i)))continue;
+const floating=!!(s[159]&(1<<i));
+const p=xyz(i),active=!!((s[54]|s[159])&(1<<i)),occupied=s[i]!==0,startLine=lines.length,startSolid=solid.length,startEmpty=empty.length,startOverlap=overlaps.length,startCenter=centers.length,startActiveLine=activeLines.length;
+if(active)wire(activeLines,p,.445,[1.,.95,.77]);
+if(active){(this.activeSpheres?sphere:balloon)(!floating&&p.filter(v=>v!==0).length===1?centers:solid,p,.438*(animation?.kind==='spawn'?animation.t:1),floating?[1,1,1]:rgb(colors[s[55]]));if(occupied)overlapMarks(overlaps,p);}
+else box(empty,p,.438,[.13,.18,.21]);
+if(animation?.kind==='turn')for(const [out,start] of [[lines,startLine],[solid,startSolid],[empty,startEmpty],[overlaps,startOverlap],[centers,startCenter],[activeLines,startActiveLine]])rotateCell(out,start,i,animation.move,animation.t);
+}
+this.upload(this.activeLines,new Float32Array(activeLines));this.upload(this.centers,new Float32Array(centers));this.upload(this.overlaps,new Float32Array(overlaps));
+if(!this.isStack&&this.ghost){for(let i=0;i<27;i++)if(this.ghost.mask&(1<<i)){balloon(ghostSolid,xyz(i),.46,rgb(colors[this.ghost.piece]));wire(ghostLines,xyz(i),.47,[.85,1.,.92]);}}
+if(!this.isStack&&this.preview)for(let i=0;i<27;i++)if(this.preview&(1<<i))wire(preview,xyz(i),.49,[1.,1.,1.]);
+const activeGeometry=[],floatingGeometry=[];for(let i=0;i<solid.length;i+=9)(solid[i+6]===1&&solid[i+7]===1&&solid[i+8]===1?floatingGeometry:activeGeometry).push(...solid.slice(i,i+9));this.upload(this.activeOnly,new Float32Array(activeGeometry));this.upload(this.floatingMesh,new Float32Array(floatingGeometry));
+this.upload(this.grid,new Float32Array(grid));this.upload(this.solid,new Float32Array(solid));this.upload(this.empty,new Float32Array(empty));this.upload(this.lines,new Float32Array(lines));
+this.upload(this.ghostSolid,new Float32Array(ghostSolid));this.upload(this.ghostLines,new Float32Array(ghostLines));this.upload(this.previewLines,new Float32Array(preview));
+}
+stackFrame(from,to,event,t){
+const out=[];
+if(event.kind===2){for(let i=0;i<27;i++)if(from[i])balloon(out,xyz(i),.47*((event.mask&(1<<i))?1-t:1),rgb(colors[from[i]]));}
+else for(let i=0;i<27;i++)if(to[i]){
+let p=xyz(i),size=.47;
+if((event.kind===1||event.kind===4)&&(event.mask&(1<<i)))size*=t;
+if(event.kind===3){const q=xyz(event.origins[i]);p=p.map((v,k)=>q[k]+(v-q[k])*t);}
+balloon(out,p,size,rgb(colors[to[i]]));
+}
+this.upload(this.stackMesh,new Float32Array(out));
+}
+draw(){const gl=this.gl,rect=this.canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);if(!rect.width||!rect.height)return;const width=Math.max(1,Math.round(rect.width*dpr)),height=Math.max(1,Math.round(rect.height*dpr));
+if(this.canvas.width!==width||this.canvas.height!==height){this.canvas.width=width;this.canvas.height=height;this.labels.width=width;this.labels.height=height;}
+gl.viewport(0,0,width,height);gl.clearColor(0,0,0,0);gl.stencilMask(255);gl.clearStencil(0);gl.disable(gl.STENCIL_TEST);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT);gl.useProgram(this.program);const margin=document.getElementById('showArrows').checked?5.6:5.05;const unit=this.unit=Math.max(8,Math.min((rect.width-24)/margin,(rect.height-150)/margin));this.onLayout?.(rect.width,rect.height,unit,p=>this.project(p));
+gl.uniform1f(this.uniforms.breath,1);gl.uniformMatrix3fv(this.uniforms.orientation,false,this.orientation);gl.uniform2f(this.uniforms.scale,2*unit/rect.width,2*unit/rect.height);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.uniform1i(this.uniforms.unlit,0);gl.uniform1f(this.uniforms.opacity,1);gl.disable(gl.BLEND);
+const breath=this.breathing&&this.animation?.kind!=='turn'?1+.10*Math.sin((globalThis.performance?.now()||0)*Math.PI*2/3200):1;
+const packets=[],add=(id,target,type,opacity=1,unlit=false,breathe=1)=>{if(target.count&&opacity>0)packets.push({id,target,type,opacity,unlit,breathe});};
+if(this.isStack||this.combined)add('stack',this.stackMesh,gl.TRIANGLES,this.stackOpacity);
+if(!this.isStack){
+if(!this.xray&&!this.combined)add('empty',this.empty,gl.TRIANGLES);
+add('centers',this.centers,gl.TRIANGLES,this.centerOpacity,false,breath);add('active',this.activeOnly,gl.TRIANGLES,this.activeOpacity,false,breath);add('floating',this.floatingMesh,gl.TRIANGLES,this.activeOpacity,false,breath);
+add('recent',this.ghostSolid,gl.TRIANGLES,.18);add('recent',this.ghostLines,gl.LINES,.45,true);
+if(this.activeOutlines)add('outlines',this.activeLines,gl.LINES,1,true,breath);
+add('overlaps',this.overlaps,gl.LINES,.95,true);add('choice',this.previewLines,gl.LINES,1,true);
+}
+const gridKey=this.rearGridOnly?this.orientation.join(','):'all';
+if(this.gridKey!==gridKey){const grid=[];surfaceGrid(grid,this.rearGridOnly?p=>this.project(p):null);this.upload(this.grid,new Float32Array(grid));this.gridKey=gridKey;}
+if(this.isStack?this.stackGrid:this.combined?this.combinedGrid:this.controlGrid)add('grid',this.grid,gl.LINES,.45,true);
+this.sceneDecorations(add,unit);
+this.renderPackets(packets);
+const ctx=this.labels.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);
+}
+renderPackets(packets){
+const gl=this.gl;gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.STENCIL_TEST);
+const draw=p=>{gl.uniform1f(this.uniforms.breath,p.breathe);gl.uniform1i(this.uniforms.unlit,p.unlit?1:0);gl.uniform1f(this.uniforms.opacity,p.opacity);gl.bindVertexArray(p.target.vao);gl.drawArrays(p.type,0,p.target.count);};
+const group=items=>{
+gl.depthMask(true);gl.disable(gl.BLEND);for(const p of items)if(p.opacity>=1)draw(p);
+// Sort every translucent primitive globally within this depth group. This
+// prevents submission order from masquerading as physical occlusion.
+const primitives=[];for(const p of items)if(p.opacity<1){const size=p.type===gl.LINES?18:27,data=p.target.data;
+for(let i=0;i<data.length;i+=size){const vertices=[];let depth=0;for(let j=i;j<i+size;j+=9){const point=[0,1,2].map(a=>{const cell=Math.floor(data[j+a]+.5);return cell+(data[j+a]-cell)*p.breathe;});depth+=this.project(point)[2];vertices.push(...point,...data.slice(j+3,j+9));}primitives.push({p,vertices,depth:depth/(size/9)});}}
+primitives.sort((a,b)=>a.depth-b.depth);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+let run=null,vertices=[];const flush=()=>{if(!run)return;this.upload(this.transparentBuffer,new Float32Array(vertices));draw({...run,target:this.transparentBuffer,breathe:1});};
+for(const primitive of primitives){const p=primitive.p;if(!run||run.type!==p.type||run.opacity!==p.opacity||run.unlit!==p.unlit){flush();vertices=[];run=p;}vertices.push(...primitive.vertices);}flush();gl.depthMask(true);gl.disable(gl.BLEND);
+};
+if($('customLayers').checked){for(const id of layerOrder.slice().reverse()){const items=packets.filter(p=>p.id===id);if(!items.length)continue;gl.clear(gl.DEPTH_BUFFER_BIT);group(items);}}
+else group(packets);
+gl.uniform1f(this.uniforms.breath,1);gl.uniform1f(this.uniforms.opacity,1);
+}
+sceneDecorations(add,unit){
+const gl=this.gl,sets=new Map(),push=(id,data,opacity=1)=>{if(!data.length)return;const slot=sets.get(id)||0;sets.set(id,slot+1);const key=id+':'+slot;let b=this.decorBuffers[key];if(!b)b=this.decorBuffers[key]=this.buffer();this.upload(b,new Float32Array(data));add(id,b,gl.TRIANGLES,opacity,true);};
+const inverse=v=>{const m=this.orientation;return [0,1,2].map(i=>m[i*3]*v[0]+m[i*3+1]*v[1]+m[i*3+2]*v[2]);};
+const offset=(p,x,y)=>{const d=inverse([x/unit,y/unit,0]);return p.map((v,i)=>v+d[i]);};
+const segment=(out,a,b,color,width=2)=>{const pa=this.project(a),pb=this.project(b),dx=pb[0]-pa[0],dy=pb[1]-pa[1],len=Math.hypot(dx,dy);if(len<1e-8)return;const d=inverse([-dy/len*width/2/unit,dx/len*width/2/unit,0]);const q=[a.map((v,i)=>v+d[i]),b.map((v,i)=>v+d[i]),b.map((v,i)=>v-d[i]),a.map((v,i)=>v-d[i])];for(const i of [0,1,2,0,2,3])out.push(...q[i],0,0,1,...color);};
+const glyphs={U:[[-.4,.5,-.4,-.35],[-.4,-.35,0,-.5],[0,-.5,.4,-.35],[.4,-.35,.4,.5]],D:[[-.4,-.5,-.4,.5],[-.4,.5,.2,.5],[.2,.5,.45,.25],[.45,.25,.45,-.25],[.45,-.25,.2,-.5],[.2,-.5,-.4,-.5]],F:[[-.35,-.5,-.35,.5],[-.35,.5,.4,.5],[-.35,0,.25,0]],B:[[-.4,-.5,-.4,.5],[-.4,.5,.2,.5],[.2,.5,.4,.25],[.4,.25,.2,0],[.2,0,-.4,0],[.2,0,.4,-.25],[.4,-.25,.2,-.5],[.2,-.5,-.4,-.5]],R:[[-.4,-.5,-.4,.5],[-.4,.5,.2,.5],[.2,.5,.4,.25],[.4,.25,.2,0],[.2,0,-.4,0],[0,0,.45,-.5]],L:[[-.35,.5,-.35,-.5],[-.35,-.5,.4,-.5]]};
+const labels=[];for(let f=0;f<6;f++){const [axis,side]=faces[f],p=[0,0,0];p[axis]=(side-1)*1.85;if(this.project(p)[2]<.03)continue;for(const [x,y,a,b] of glyphs[faceLabels[f]])segment(labels,offset(p,x*26,y*26),offset(p,a*26,b*26),[1,1,1],3);}push('labels',labels);
+if(this.isStack||!state)return;
+const slices=[],arrows=[],stems=[],buttons=[],hints=[],halo=[],outerHalo=[];
+if(!busy&&!state[66]&&!state[78]&&!this.orbitDragging&&this.hover&&$('hoverRings').checked){const {hit,wide}=this.hover,center=stickerCenter(hit);
+for(const c of sliceCandidates(this,hit,wide)){
+const a=(c.axis+1)%3,b=(c.axis+2)%3,radius=2.2,point=angle=>{const p=[0,0,0];p[c.axis]=c.wide?(c.layer===0?-.5:.5):c.layer-1;p[a]=Math.cos(angle)*radius;p[b]=Math.sin(angle)*radius;return p;};
+for(let i=0;i<96;i++)segment(slices,point(i*Math.PI/48),point((i+1)*Math.PI/48),[.72,.84,.93],2);
+if($('ringLabels').checked){
+glyphs.M=[[-.45,-.5,-.45,.5],[-.45,.5,0,-.1],[0,-.1,.45,.5],[.45,.5,.45,-.5]];glyphs.E=[[-.4,-.5,-.4,.5],[-.4,.5,.4,.5],[-.4,0,.3,0],[-.4,-.5,.4,-.5]];glyphs.S=[[.4,.5,-.4,.5],[-.4,.5,-.4,0],[-.4,0,.4,0],[.4,0,.4,-.5],[.4,-.5,-.4,-.5]];
+const axisA=[0,0,0],axisB=[0,0,0];axisA[a]=1;axisB[b]=1;const front=Math.atan2(this.project(axisB)[2],this.project(axisA)[2]);
+for(const reverse of [false,true]){const angle=front+(reverse?.38:-.38),p=point(angle),label=moveLabels[c.base],size=c.base>=9?14:18;
+for(const [x,y,u,v] of glyphs[label.toUpperCase()])segment(arrows,offset(p,x*size,y*size),offset(p,u*size,v*size),[.95,.98,1],2);
+if(reverse)segment(arrows,offset(p,11,12),offset(p,8,6),[.95,.98,1],2);
+const sign=c.baseSign*(reverse?-1:1),q=point(angle+sign*.15),tip=point(angle+sign*.23);segment(arrows,q,tip,[.85,.94,1],2);const qp=this.project(q),tp=this.project(tip),len=Math.hypot(tp[0]-qp[0],tp[1]-qp[1]),dx=(tp[0]-qp[0])/len,dy=(tp[1]-qp[1])/len;for(const side of [-1,1])segment(arrows,tip,offset(tip,-dx*5+dy*side*3,-dy*5-dx*side*3),[.85,.94,1],2);
+}}
+}}push('slices',slices,.65);push('dragArrows',arrows,.9);
+if($('showArrows').checked)for(const node of attachedNodes){if(!node.layout)continue;const p=node.tip3,a=this.project(node.cubie),b=this.project(p),len=Math.hypot(b[0]-a[0],b[1]-a[1]),dx=(b[0]-a[0])/len,dy=(b[1]-a[1])/len;
+segment(buttons,offset(p,-dx*15,-dy*15),offset(p,dx*15,dy*15),[.85,.93,.96],5);for(const sign of [-1,1])segment(buttons,offset(p,dx*15,dy*15),offset(p,dx*3+dy*sign*11,dy*3-dx*sign*11),[.85,.93,.96],5);if($('arrowGuides').checked)segment(stems,node.cubie,p,[.7,.8,.85],1);}
+push('arrows',buttons);push('arrowGuides',stems,.5);
+if(!busy&&!state[66]&&!state[78]&&!this.orbitDragging&&$('placementGlow').checked){let moves=[];if(this.arrowHover!=null)moves=[this.arrowHover];else if(this.hover)for(const c of sliceCandidates(this,this.hover.hit,this.hover.wide))moves.push(c.base,c.base+15);const key=state[72]+':'+moves.join(',');if(this.hintKey!==key){this.hintKey=key;this.hintPieces=engine.placement_previews(moves);}let mask=0;for(const piece of this.hintPieces||[])mask|=piece.sourceMask;
+const breath=this.breathing?1+.10*Math.sin(performance.now()*Math.PI*2/3200):1;
+for(let i=0;i<27;i++)if(mask&(1<<i)){const p=xyz(i),opacity=p.filter(v=>v!==0).length===1?this.centerOpacity:this.activeOpacity;if(opacity<=0)continue;const h=.438*breath;const shape=this.activeSpheres?sphere:balloon;shape(hints,p,h+.004,[.9,1,.8]);shape(halo,p,h+.018,[.8,1,.65]);shape(outerHalo,p,h+.035,[.8,1,.65]);}}
+push('hints',hints,.3);push('hints',halo,.075);push('hints',outerHalo,.025);
+if(!busy&&!state[66]&&!state[78]&&!this.orbitDragging&&$('hoverOutline').checked){
+let moves=[];if(this.arrowHover!=null)moves=[this.arrowHover];else if(this.hover)for(const c of sliceCandidates(this,this.hover.hit,this.hover.wide))moves.push(c.base);
+const outline=[],mask=state[54]|state[159],breath=this.breathing?1+.10*Math.sin(performance.now()*Math.PI*2/3200):1;
+for(let i=0;i<27;i++)if(mask&(1<<i)){
+const p=xyz(i),cell=CubeStack.xyz(i);if(!moves.some(m=>{const [,axis,layer,side]=CubeStack.moves[m%15];return layer==='wide'?cell[axis]!==2-side:cell[axis]===layer;}))continue;
+const opacity=p.filter(v=>v!==0).length===1&&!(state[159]&(1<<i))?this.centerOpacity:this.activeOpacity;if(opacity<=0)continue;
+const geometry=[];(this.activeSpheres?sphere:balloon)(geometry,p,.438*breath,[1,1,1]);const unique=new Map();
+for(let j=0;j<geometry.length;j+=9){const world=geometry.slice(j,j+3),q=this.project(world),key=q[0].toFixed(7)+','+q[1].toFixed(7);if(!unique.has(key)||unique.get(key).q[2]<q[2])unique.set(key,{q,world});}
+const points=[...unique.values()].sort((a,b)=>a.q[0]-b.q[0]||a.q[1]-b.q[1]),cross=(a,b,c)=>(b.q[0]-a.q[0])*(c.q[1]-a.q[1])-(b.q[1]-a.q[1])*(c.q[0]-a.q[0]);
+const half=ps=>{const h=[];for(const p of ps){while(h.length>1&&cross(h[h.length-2],h[h.length-1],p)<=0)h.pop();h.push(p);}h.pop();return h;};
+const hull=[...half(points),...half(points.slice().reverse())];for(let j=0;j<hull.length;j++)segment(outline,hull[j].world,hull[(j+1)%hull.length].world,[.015,.025,.035],4);
+}push('hoverOutline',outline);
+}
+
+
+}
+resetOrientation(){const cy=Math.cos(this.yaw),sy=Math.sin(this.yaw),cp=Math.cos(this.pitch),sp=Math.sin(this.pitch);this.orientation=[cy,sy*sp,-sy*cp,0,cp,sp,sy,-cy*sp,cy*cp];}
+orbit(dx,dy){const c=Math.cos(dx),s=Math.sin(dx),a=Math.cos(dy),b=Math.sin(dy);for(let i=0;i<9;i+=3){const [x,y,z]=this.orientation.slice(i,i+3),u=c*x+s*z,v=-s*x+c*z;this.orientation.splice(i,3,u,a*y-b*v,b*y+a*v);}}
+project([x,y,z]){const m=this.orientation;return [m[0]*x+m[3]*y+m[6]*z,m[1]*x+m[4]*y+m[7]*z,m[2]*x+m[5]*y+m[8]*z];}
+}
+return {Renderer,colors,faceLabels};})();
+const $=id=>document.getElementById(id);
+const names=['','O','T','L','J','S','Z'];
+const moveLabels=['U','D','F','B','R','L','M','E','S','u','d','f','b','r','l'];
+const groups={face:[0,1,2,3,5,4],slice:[6,7,8],wide:[9,10,11,12,14,13]};
+let engine,state,mode='face',renderers=[],pending=false,meshRevision=-1,busy=false,ghostTimer;
+const defaultLayers=[['arrows','Arrow buttons'],['arrowGuides','Arrow guide lines'],['labels','Face letters'],['dragArrows','Ring move letters & direction marks'],['hoverOutline','Affected cubie silhouettes'],['slices','Hovered slice rings'],['hints','Placement glow'],['choice','Placement choice outline'],['recent','Last placed piece ghost'],['overlaps','Overlap marks'],['outlines','Active cubie outlines'],['grid','Cube grids'],['centers','Active centers'],['floating','White floating fragments'],['active','Active cubies'],['stack','Placed stack'],['empty','Empty cells']];
+let layerOrder=defaultLayers.map(([id])=>id);
+function renderLayerSettings(focusId=null){
+const custom=$('customLayers').checked;const list=$('renderLayers');list.setAttribute('aria-disabled',String(!custom));
+const rows=layerOrder.map((id,index)=>{const row=document.createElement('li'),name=document.createElement('span');name.textContent=defaultLayers.find(p=>p[0]===id)[1];row.append(name);
+for(const [delta,label] of [[-1,'Up'],[1,'Down']]){const b=document.createElement('button');b.textContent=label==='Up'?'↑':'↓';b.setAttribute('aria-label',`Move ${name.textContent} ${label.toLowerCase()}`);b.disabled=!custom||index+delta<0||index+delta>=layerOrder.length;b.onclick=()=>{const next=index+delta;[layerOrder[index],layerOrder[next]]=[layerOrder[next],layerOrder[index]];renderLayerSettings(id);$('layerOrderStatus').textContent=`${name.textContent}: position ${next+1}`;invalidate();};row.append(b);if(focusId===id&&!b.disabled)requestAnimationFrame(()=>b.focus());}return row;});list.replaceChildren(...rows);
+}
+$('customLayers').onchange=()=>{renderLayerSettings();invalidate();};$('resetLayers').onclick=()=>{layerOrder=defaultLayers.map(([id])=>id);$('customLayers').checked=false;renderLayerSettings();invalidate();};renderLayerSettings();
+const animations=$('animations');animations.checked=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+const moveButtons=[],faceCells=[],queueShapes=[];
+function shape(el){const cells=Array.from({length:9},()=>{const i=document.createElement('i');el.append(i);return i;});return (piece)=>{el.style.color=colors[piece];cells.forEach((c,i)=>c.classList.toggle('filled',!!(state[134+piece-1]&(1<<i))));};}
+const target=shape($('target')),heldShape=shape($('heldShape'));
+$('holdPiece').onclick=holdPiece;
+for(let j=0;j<5;j++){const item=document.createElement('div');item.className='queue-item';const s=document.createElement('div');s.className='shape';const label=document.createElement('small');item.append(s,label);$('queue').append(item);queueShapes.push({update:shape(s),label});}
+for(let f=0;f<6;f++){const el=document.createElement('div'),label=document.createElement('span'),grid=document.createElement('div');label.className='face-label';label.textContent=faceLabels[f];grid.className='face-grid';const cells=Array.from({length:9},()=>{const c=document.createElement('i');grid.append(c);return c;});el.append(label,grid);$('net').append(el);faceCells.push(cells);}
+for(let m=0;m<30;m++){const b=document.createElement('button');b.className='move'+(m>=15?' prime':'');b.textContent=moveLabels[m%15]+(m>=15?'′':'');b.dataset.move=m;b.addEventListener('click',()=>play(m));moveButtons.push(b);}
+function selectMode(next){mode=next;document.querySelectorAll('[data-mode]').forEach(b=>{const selected=b.dataset.mode===mode;b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1;});$('moves').setAttribute('aria-labelledby',`tab-${mode}`);$('moves').replaceChildren(...groups[mode].map(m=>{const pair=document.createElement('div');pair.className='move-pair';pair.append(moveButtons[m],moveButtons[m+15]);return pair;}));$('moves').style.gridTemplateColumns=`repeat(${groups[mode].length},1fr)`;}
+document.querySelectorAll('[data-mode]').forEach(b=>{b.onclick=()=>selectMode(b.dataset.mode);b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const modes=Object.keys(groups),i=modes.indexOf(mode),next=e.key==='Home'?0:e.key==='End'?2:(i+(e.key==='ArrowRight'?1:2))%3;selectMode(modes[next]);$(`tab-${mode}`).focus();};});
+function invalidate(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;renderers.forEach(r=>r.draw());if(!busy&&animations.checked&&!document.hidden&&state?.[54]&&!state?.[66])invalidate();});}
+function snapshot(){return engine.snapshot();}
+function update(message){state=snapshot();$('gravityMode').value=String(state[158]);$('fragmentPerk').checked=!!state[161];$('fragmentBadge').hidden=!state[162];$('fragmentBadge').textContent=`White fragments: ${state[160]} piece turn${state[160]===1?'':'s'}`;$('fragmentStatus').textContent=state[162]?`${state[162]} white cubies · ${state[160]} piece turn${state[160]===1?'':'s'} remaining${state[163]?' · move white cubies off the stack to lock':''}`:state[160]?`${state[160]} fragment perk turn${state[160]===1?'':'s'} remaining`:'';const p=state[55];target(p);heldShape(state[164]);$('holdStatus').textContent=state[165]?'After placement':state[164]?'Swap':'Empty';$('holdPiece').setAttribute('aria-label',`Hold / swap: ${names[state[164]]||'empty'}${state[165]?', available after placement':''}`);$('pieceName').textContent=names[p];$('pieceName').style.color=colors[p];$('target').setAttribute('aria-label',`${names[p]} tetromino`);const edges=state[140+(p-1)*2],corners=state[141+(p-1)*2];$('inventory').textContent=`1 center · ${edges} edge${edges===1?'':'s'} · ${corners} corner${corners===1?'':'s'}`;
+queueShapes.forEach((q,i)=>{q.update(state[56+i]);q.label.textContent=names[state[56+i]];});
+$('score').textContent=state[64].toLocaleString();$('pieces').textContent=state[62];$('clears').textContent=state[63];$('capacity').value=state[73];$('capacity').textContent=`${state[73]} of 27 cells occupied`;$('capacity').setAttribute('aria-valuetext',`${state[73]} of 27 cells occupied`);$('capacityLabel').textContent=`${state[73]} / 27 cells`;$('undo').disabled=busy||!state[68];$('new').disabled=busy;$('emptyStack').hidden=!!state[73];
+let wins=0;moveButtons.forEach((b,m)=>{const win=!!(state[67]&(1<<m));wins+=win;b.classList.toggle('winning',win);b.disabled=busy||!!state[66]||!!state[78];const label=`${moveLabels[m%15]}${m>=15?' prime':''}${win?' — places the current piece':''}`;b.setAttribute('aria-label',label);b.title=label;});
+document.querySelectorAll('[data-mode]').forEach(b=>{const n=groups[b.dataset.mode].reduce((n,m)=>n+!!(state[67]&(1<<m))+!!(state[67]&(1<<(m+15))),0);b.querySelector('span').textContent=n?`${n} ✓`:'';});
+$('hint').textContent=state[78]?'Choose a highlighted face, or undo to keep turning.':state[66]?'Top out. Undo a turn or start a new game.':wins?`${wins} winning turn${wins===1?'':'s'} available. Look for ✓ in any tab.`:'Keep turning. A ✓ will mark a move that places this piece.';
+$('message').textContent=state[78]?'This piece fits more than one face. Choose where to place it.':state[66]?'Top out: no face, surface, or internal placement fits.':message||`Build ${names[p]} on any free face.`;
+for(let f=0;f<6;f++)for(let c=0;c<9;c++){const i=state[80+f*9+c],active=!!((state[54]|state[159])&(1<<i)),floating=!!(state[159]&(1<<i)),el=faceCells[f][c];el.style.background=floating?'#ffffff':state[i]?colors[state[i]]:active?colors[p]:'';el.classList.toggle('active',active);el.classList.toggle('overlap',active&&!!state[i]);el.title=`${faceLabels[f]} ${c+1}: ${state[i]?`${names[state[i]]} stack`:'empty'}${active?', active':''}`;}
+syncOverlayControls();syncChoices();renderers.forEach(r=>r.setState(state));if(meshRevision!==state[72]){const mesh=engine.mesh();renderers.forEach(r=>r.setMesh(mesh));meshRevision=state[72];}
+invalidate();
+}
+function syncChoices(){
+$('choice').hidden=!state[78];$('moves').hidden=!!state[78];
+faceButtons.forEach((b,f)=>b.disabled=busy||!(state[78]&(1<<f)));
+if(state[78])selectMode('face');
+}
+const faceButtons=faceLabels.map((label,f)=>{
+const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-label',`Place on ${label}`);
+b.onclick=()=>choose(f);
+const preview=()=>{renderers[0].preview=state[152+f];renderers[0].setState(state);invalidate();};
+const clear=()=>{renderers[0].preview=0;renderers[0].setState(state);invalidate();};
+b.onpointerenter=preview;b.onfocus=preview;b.onpointerleave=clear;b.onblur=clear;$('faceChoices').append(b);return b;
+});
+function setBusy(value){busy=value;syncOverlayControls();moveButtons.forEach(b=>b.disabled=value||!!state[66]||!!state[78]);faceButtons.forEach((b,f)=>b.disabled=value||!(state[78]&(1<<f)));$('undo').disabled=value||!state[68];$('new').disabled=value;$('gravityMode').disabled=value||!!state[78];$('fragmentPerk').disabled=value||!!state[78];}
+function animate(ms,frame){
+if(!animations.checked){frame(1);return Promise.resolve();}
+return new Promise(resolve=>{let start;const tick=now=>{start??=now;const t=Math.min(1,(now-start)/ms),ease=t*t*(3-2*t);frame(ease);renderers.forEach(r=>r.draw());if(t<1)requestAnimationFrame(tick);else resolve();};requestAnimationFrame(tick);});
+}
+function events(){return engine.events();}
+function ghost(mask,piece){
+clearTimeout(ghostTimer);renderers[0].ghost={mask,piece};
+ghostTimer=setTimeout(()=>{renderers[0].ghost=null;if(!busy){renderers[0].setState(state);invalidate();}},2200);
+}
+async function resolveAnimations(before,after,trace){
+let display=before.slice();display[54]=0;display[159]=0;
+for(const e of trace){
+const next=display.slice();next.set(e.board,0);next.set(e.ids,27);next[159]=e.floatMask||0;next[160]=e.fragmentTurns||0;if(e.face)next[65]=e.face;
+if(e.kind===1){const i=31-Math.clz32(e.mask),piece=e.board[i];ghost(e.mask,piece);$('message').textContent=`${names[piece]} placed. 🎈`;}
+else if(e.kind===4)$('message').textContent='White fragments lock into the stack.';
+else if(e.kind===5)$('message').textContent='Broken pieces are now yours to move.';
+else $('message').textContent=e.kind===2?'Face clear — making room.':'Pieces falling…';
+renderers.forEach(r=>r.setState(next));
+await animate(e.kind===3?180:e.kind===2?400:320,t=>renderers.forEach(r=>r.stackFrame(display,next,e,t)));
+if(e.kind!==3)await animate(120,()=>{});
+display=next;
+}
+meshRevision=-1;update(after[66]?undefined:trace.length?`Placed${after[75]?` · ${after[75]} automatic gap fill${after[75]===1?'':'s'}`:''}${after[63]>before[63]?` · ${after[63]-before[63]} faces cleared`:''}.`:undefined);
+if(trace.length){await animate(240,t=>renderers.forEach(r=>r.setState(after,{kind:'spawn',t})));renderers.forEach(r=>r.setState(after));}
+}
+async function play(m,fromT=0){
+if(!engine||busy||state[78])return;const before=state.slice();if(!engine.game_turn(m))return;
+const after=snapshot(),trace=events();setBusy(true);
+try{
+$('message').textContent=`Turning ${moveLabels[m%15]}${m>=15?'′':''}…`;
+await animate(220*(1-fromT),t=>renderers[0].setState(before,{kind:'turn',move:m,t:fromT+(1-fromT)*t}));
+if(trace.length)await resolveAnimations(before,after,trace);else update(`${moveLabels[m%15]}${m>=15?'′':''} · Build ${names[after[55]]}.`);
+}finally{setBusy(false);syncChoices();invalidate();}
+if(state[78])faceButtons.find(b=>!b.disabled)?.focus();
+}
+async function holdPiece(){
+if(!engine||busy||state[66]||state[78]||state[165])return;
+const before=state.slice();if(!engine.game_hold())return;
+const after=snapshot(),trace=events();setBusy(true);
+try{renderers[0].hover=null;if(trace.length)await resolveAnimations(before,after,trace);else{update('Piece held. Build the new target.');await animate(180,t=>renderers[0].setState(after,{kind:'spawn',t}));renderers[0].setState(after);}}
+finally{setBusy(false);invalidate();}
+}
+async function choose(face){
+if(busy||!state[78])return;const before=state.slice();if(!engine.game_choose(face))return;
+renderers[0].preview=0;const after=snapshot(),trace=events();setBusy(true);
+try{await resolveAnimations(before,after,trace);}finally{setBusy(false);syncChoices();invalidate();}
+($('classicControls').checked?$('tab-face'):$('settingsOpen')).focus();
+}
+function undo(){if(busy)return;if(engine?.game_undo()){clearTimeout(ghostTimer);renderers[0].ghost=null;renderers[0].preview=0;update('Previous turn restored.');}}
+async function newGame(){
+if(busy)return;clearTimeout(ghostTimer);renderers[0].ghost=null;renderers[0].preview=0;
+const seed=crypto.getRandomValues(new Uint32Array(1))[0];const gravityMode=+$('gravityMode').value;engine.game_init(seed);engine.game_set_gravity(gravityMode);engine.game_set_fragments($('fragmentPerk').checked);update();setBusy(true);
+try{await animate(280,t=>renderers[0].setState(state,{kind:'spawn',t}));}finally{renderers.forEach(r=>r.setState(state));setBusy(false);invalidate();}
+}
+$('undo').onclick=undo;$('new').onclick=()=>{if(state[68]||state[62])$('newDialog').showModal();else newGame();};$('newDialog').addEventListener('close',()=>{if($('newDialog').returnValue==='new')newGame();});
+$('resetView').onclick=()=>{renderers.forEach(r=>{r.yaw=Math.PI-.55;r.pitch=.4;r.resetOrientation();});invalidate();};$('xray').onchange=()=>{renderers[0].xray=$('xray').checked;invalidate();};
+document.addEventListener('keydown',e=>{if(!engine||busy||$('gamePage').hidden||$('newDialog').open||$('settingsDialog').open||e.target.matches('input,textarea,select,[contenteditable]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return;}if(e.ctrlKey||e.metaKey||e.repeat)return;if(e.key.toLowerCase()==='c'){e.preventDefault();holdPiece();return;}if(state[78]){const f=faceLabels.indexOf(e.key.toUpperCase());if(f>=0){e.preventDefault();choose(f);}return;}const label=e.altKey?e.key.toLowerCase():e.key.toUpperCase();let m=moveLabels.indexOf(label);if(m>=0){e.preventDefault();play(m+(e.shiftKey?15:0));}});
+let viewTransition=0;
+$('viewMode').onclick=()=>{
+if(viewTransition)return;
+const views=document.querySelector('.views'),control=renderers[0],split=$('combined').checked;
+$('combined').checked=!split;
+$('viewMode').textContent=split?'Combine cubes':'Split cubes';
+$('viewMode').setAttribute('aria-pressed',String(split));
+$('viewMode').setAttribute('aria-label',split?'Combine active cube and stack':'Separate active cube and stack');
+$('xray').closest('label').hidden=!split;
+// Both canvases start at the same camera, scale, and horizontal position.
+// The stack is rendered once, on its own canvas throughout the transition.
+control.combined=false;control.setState(control.state,control.animation);
+views.classList.add('view-moving');
+void views.offsetWidth;
+views.classList.toggle('combined',!split);
+const reduced=!animations.checked||matchMedia('(prefers-reduced-motion: reduce)').matches;
+const finish=()=>{control.combined=!split;control.setState(control.state,control.animation);views.classList.remove('view-moving');viewTransition=0;invalidate();};
+if(reduced){views.classList.add('view-instant');void views.offsetWidth;finish();requestAnimationFrame(()=>views.classList.remove('view-instant'));return;}
+const start=performance.now();viewTransition=1;
+const frame=now=>{renderers.forEach(r=>r.draw());if(now-start<420)viewTransition=requestAnimationFrame(frame);else finish();};
+viewTransition=requestAnimationFrame(frame);
+};
+const overlayButtons=[];
+const attachedNodes=[];
+const auraFaces=[[1,2],[1,0],[2,0],[2,2],[0,0],[0,2]];
+// Stickers define moves; paired opposite turns share a cubie-centered edge ray.
+for(let faceAxis=0;faceAxis<3;faceAxis++)for(const side of [-1,1]){
+const u=(faceAxis+1)%3,v=(faceAxis+2)%3;
+for(const row of [-1,0,1])for(const col of [-1,0,1]){
+const center=[0,0,0];center[faceAxis]=side*1.5;center[u]=row;center[v]=col;
+for(const directionAxis of [u,v]){
+if(center[directionAxis]===0)continue; // A neighboring sticker continues this row.
+const direction=Math.sign(center[directionAxis]),axis=3-faceAxis-directionAxis;
+const slice=center[axis]===0,layerSide=center[axis]>0?2:0;
+const tangent=[0,0,0];tangent[(axis+1)%3]=-center[(axis+2)%3];tangent[(axis+2)%3]=center[(axis+1)%3];
+const rotation=Math.sign(tangent[directionAxis]*direction);
+const reverse=rotation<0?layerSide===0:layerSide!==0;
+const face=slice?6+axis:auraFaces.findIndex(([a,s])=>a===axis&&s===layerSide);
+const move=face+(reverse?15:0);
+const stem=document.createElement('span');stem.className='sticker-arrow-stem';
+const button=document.createElement('button');button.className='attached-arrow cube-arrow aura-arrow sticker-arrow';
+button.style.visibility='hidden';button.innerHTML='<span class="arrow-vector">➜</span><small></small>';button.dataset.move=move;
+button.addEventListener('pointerenter',()=>{renderers[0].arrowHover=move;invalidate();});button.addEventListener('pointerleave',()=>{renderers[0].arrowHover=null;invalidate();});button.addEventListener('focus',()=>{renderers[0].arrowHover=move;invalidate();});button.addEventListener('blur',()=>{renderers[0].arrowHover=null;invalidate();});
+button.onclick=e=>{let m=+button.dataset.move;if(!slice&&e.altKey&&m%15<6)m+=9;play(m);};
+$('cubeMoves').append(stem,button);overlayButtons.push(button);
+const cubie=center.slice();cubie[faceAxis]=side;
+const tip3=cubie.slice();tip3[faceAxis]+=side*.9;tip3[directionAxis]+=direction*.9;
+attachedNodes.push({button,stem,center,cubie,tip3,faceAxis,side,directionAxis,direction,axis,slice,move});
+}
+}
+}
+function cubeSilhouette(project){
+const points=[];for(const x of [-1.5,1.5])for(const y of [-1.5,1.5])for(const z of [-1.5,1.5])points.push(project([x,y,z]));
+points.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+const half=ps=>{const h=[];for(const p of ps){while(h.length>1&&cross(h[h.length-2],h[h.length-1],p)<=0)h.pop();h.push(p);}h.pop();return h;};
+return [...half(points),...half(points.slice().reverse())];
+}
+function insideCubeSilhouette(p,hull){return hull.every((a,i)=>{const b=hull[(i+1)%hull.length];return (b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0])>=-1e-8;});}
+function layoutCubeControls(width,height,unit,project){
+const hull=cubeSilhouette(project);
+const wide=false;
+for(const node of attachedNodes){
+const {button,stem,cubie,tip3,faceAxis,side,directionAxis,direction,slice}=node;
+const normal=[0,0,0];normal[faceAxis]=side;const facing=project(normal)[2];
+const exitNormal=[0,0,0];exitNormal[directionAxis]=direction;const exitFacing=project(exitNormal)[2];
+const tip=project(tip3);
+// A paired button is the other side of the same coin, never a second target.
+// Exit through a front-facing face is hidden even if its projection misses the cube.
+const visible=facing>.01&&exitFacing<-.01&&!insideCubeSilhouette(tip,hull);
+node.layout=null;button.style.visibility=visible?'visible':'hidden';stem.style.visibility=visible&&$('arrowGuides').checked?'visible':'hidden';button.style.pointerEvents=visible?'auto':'none';button.tabIndex=visible?0:-1;
+if(!visible)continue;
+const origin=project(cubie),dx=(tip[0]-origin[0])*unit,dy=-(tip[1]-origin[1])*unit;
+const angle=Math.atan2(dy,dx),length=Math.hypot(dx,dy),x=width/2+tip[0]*unit,y=height/2-tip[1]*unit;
+const move=node.move+(wide&&!slice?9:0),opacity=Math.min(1,Math.max(0,Math.min(facing,-exitFacing))/.16);
+node.layout={x,y,move};button.dataset.move=move;button.style.left=`${x}px`;button.style.top=`${y}px`;button.style.opacity=opacity;
+button.querySelector('.arrow-vector').style.transform=`rotate(${angle}rad)`;
+stem.style.left=`${width/2+origin[0]*unit}px`;stem.style.top=`${height/2-origin[1]*unit}px`;stem.style.width=`${Math.max(0,length-9)}px`;stem.style.transform=`rotate(${angle}rad)`;stem.style.opacity=opacity;
+const label=moveLabels[move%15]+(move>=15?'′':'');button.querySelector('small').textContent=label;
+button.title=label+(slice?' — slice':' — Alt-click for wide');button.setAttribute('aria-label',label+(state?.[67]&(1<<move)?' — places the current piece':''));button.classList.toggle('winning',false);button.disabled=busy||!!state?.[66]||!!state?.[78];
+}
+}
+function syncOverlayControls(){if(!state)return;$('holdPiece').disabled=busy||!!state[66]||!!state[78]||!!state[165];for(const b of overlayButtons){const m=+b.dataset.move,win=!!(state[67]&(1<<m));b.disabled=busy||!!state[66]||!!state[78];b.classList.toggle('winning',false);b.setAttribute('aria-label',`${moveLabels[m%15]}${m>=15?' prime':''}${win?' — places the current piece':''}`);}const canUndo=!busy&&!!state[68];$('stageUndo').disabled=!canUndo;$('overUndo').disabled=!canUndo;$('gameOver').hidden=busy||!state[66];$('controlViewport').classList.toggle('topped-out',!!state[66]);$('finalScore').textContent=`${state[64].toLocaleString()} points · ${state[62]} pieces`;$('cubeMoves').hidden=!$('showArrows').checked;$('sliceMoves').hidden=!$('showArrows').checked;}
+$('showArrows').onchange=()=>{syncOverlayControls();invalidate();};
+$('classicControls').onchange=()=>{$('legacyControls').hidden=!$('classicControls').checked;syncOverlayControls();invalidate();};
+$('fragmentPerk').onchange=()=>{if(!engine||busy)return;engine.game_set_fragments($('fragmentPerk').checked);update();};
+$('gravityMode').onchange=()=>{if(!engine||busy)return;engine.game_set_gravity(+$('gravityMode').value);update();};
+$('settingsOpen').onclick=()=>$('settingsDialog').showModal();$('settingsClose').onclick=()=>$('settingsDialog').close();
+const requestNew=$('new').onclick;$('new').onclick=()=>{$('settingsDialog').close();requestNew();};
+$('stageUndo').onclick=undo;$('overUndo').onclick=undo;$('overNew').onclick=newGame;
+function syncDisplaySettings(){
+for(const r of renderers){
+const shapeChanged=r.activeSpheres!==$('activeSpheres').checked;r.activeSpheres=$('activeSpheres').checked;if(shapeChanged&&r.state)r.setState(r.state,r.animation);
+r.rearGridOnly=$('rearGridOnly').checked;r.gridKey=null;
+r.activeOutlines=$('activeOutlines').checked;r.breathing=animations.checked;r.controlGrid=$('controlGrid').checked;r.stackGrid=$('stackGrid').checked;r.combinedGrid=$('combinedGrid').checked;
+r.activeOpacity=1-Number($('activeTransparency').value)/100;
+r.centerOpacity=1-Number($('centerTransparency').value)/100;
+r.stackOpacity=1-Number($('stackTransparency').value)/100;
+}
+for(const name of ['active','center','stack'])$(name+'TransparencyValue').textContent=$(name+'Transparency').value+'%';
+invalidate();
+}
+for(const id of ['activeSpheres','hoverOutline','hoverRings','ringLabels','placementGlow','rearGridOnly','arrowGuides','activeOutlines','controlGrid','stackGrid','combinedGrid','activeTransparency','centerTransparency','stackTransparency'])$(id).addEventListener('input',syncDisplaySettings);
+animations.addEventListener('change',syncDisplaySettings);
+document.addEventListener('visibilitychange',invalidate);
+// Wrap complete revolutions without changing the visible orientation.
+
+// Guides lie in the sticker plane, not along the cubie's rotational depth.
+function stickerCenter(hit){return hit.p.map((v,a)=>a===hit.axis?Math.sign(v)*1.5:Math.max(-1,Math.min(1,Math.round(v))));}
+// The hover preview and drag picker share exactly the same slice candidates.
+function sliceCandidates(r,hit,wide=false){
+const result=[];
+for(let axis=0;axis<3;axis++){
+if(axis===hit.axis)continue;
+const p=stickerCenter(hit),v=[0,0,0],a=(axis+1)%3,b=(axis+2)%3;v[a]=-p[b];v[b]=p[a];v[hit.axis]=0;const magnitude=Math.hypot(...v);const tangent=v.map(n=>n/magnitude),q=r.project(tangent),len=Math.hypot(q[0],q[1]);if(len<1e-6)continue;
+const layer=Math.max(0,Math.min(2,Math.floor(p[axis]+1.5))),face=[[4,5],[1,0],[2,3]][axis];let base=layer===1?6+axis:face[layer===2?1:0];if(wide&&base<6)base+=9;
+result.push({axis,layer,wide:wide&&layer!==1,base,baseSign:layer===2?-1:1,vx:q[0]/len,vy:-q[1]/len,projectedLength:len});
+}return result;
+}
+// Projected drag selection: after 12px, choose the closest slice direction.
+// A gesture starting on the cube never falls back to whole-cube rotation.
+function installCubeDrag(r,onOrbit){
+ const canvas=r.canvas;let drag=null;
+ const hover=e=>{const hit=hitAt(e),rect=canvas.getBoundingClientRect();r.hover=hit&&!r.isStack?{hit,x:e.clientX-rect.left,y:e.clientY-rect.top,wide:e.altKey}:null;invalidate();};
+ canvas.addEventListener('pointerleave',()=>{r.hover=null;invalidate();});
+ const hitAt=e=>{
+  const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left-rect.width/2)/r.unit,y=-(e.clientY-rect.top-rect.height/2)/r.unit,m=r.orientation;
+  const origin=[0,1,2].map(i=>m[i*3]*x+m[i*3+1]*y+m[i*3+2]*8),dir=[m[2],m[5],m[8]].map(v=>-v);
+  let best=null,near=Infinity;
+  for(let axis=0;axis<3;axis++)for(const side of [-1,1]){if(Math.abs(dir[axis])<1e-8)continue;const t=(side*1.5-origin[axis])/dir[axis],p=origin.map((v,i)=>v+t*dir[i]);if(t>=0&&t<near&&p.every(v=>Math.abs(v)<=1.50001)){near=t;best={p,axis};}}
+  return best;
+ };
+ const finish=async cancel=>{
+  if(!drag)return;const d=drag;drag=null;r.orbitDragging=false;
+  if(!d.turn)return;
+  const t=d.t||0;
+  if(!cancel&&t>=.28){setBusy(false);await play(d.move,t);}
+  else{try{await animate(140,u=>r.setState(state,{kind:'turn',move:d.move,t:t*(1-u)}));r.setState(state);}finally{setBusy(false);invalidate();}}
+ };
+ canvas.addEventListener('contextmenu',e=>e.preventDefault());
+ canvas.addEventListener('pointerdown',e=>{
+  if(drag)return;r.hover=null;invalidate();e.preventDefault();canvas.setPointerCapture(e.pointerId);
+  drag={id:e.pointerId,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,hit:e.button!==2?hitAt(e):null,wide:e.altKey};r.orbitDragging=!drag.hit;r.arrowHover=null;
+ });
+ canvas.addEventListener('pointermove',e=>{
+  const d=drag;if(!d){if(e.pointerType!=='touch')hover(e);return;}if(d.id!==e.pointerId)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;
+  if(d.hit&&!d.turn){
+   if(r.isStack||busy||state?.[66]||state?.[78])return;
+   if(Math.hypot(dx,dy)<12)return;
+   let best=null;
+   for(const c of sliceCandidates(r,d.hit,d.wide)){const dot=dx*c.vx+dy*c.vy,alignment=Math.abs(dot)/Math.hypot(dx,dy);if(!best||alignment>best.alignment)best={...c,dot,alignment};}
+   if(!best)return;else{
+    const {base,baseSign}=best;
+    d.move=base+(Math.sign(best.dot)===baseSign?0:15);d.vx=best.vx*Math.sign(best.dot);d.vy=best.vy*Math.sign(best.dot);d.turn=true;setBusy(true);
+   }
+  }
+  if(d.turn){d.t=Math.max(0,Math.min(1,(dx*d.vx+dy*d.vy)/(r.unit*1.7)));r.setState(state,{kind:'turn',move:d.move,t:d.t});invalidate();}
+  else{onOrbit((e.clientX-d.lastX)*.009,(e.clientY-d.lastY)*.009);}
+  d.lastX=e.clientX;d.lastY=e.clientY;
+ });
+ canvas.addEventListener('pointerup',e=>{if(drag?.id===e.pointerId)finish(false);});
+ for(const type of ['pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>{if(drag?.id===e.pointerId)finish(true);});
+}
+
+function wrapOrbitAngle(angle){return Math.atan2(Math.sin(angle),Math.cos(angle));}
+function orbitCamera(dx,dy){
+const free=$('freeOrbit').checked;
+for(const r of renderers){
+if(free){r.orbit(dx,dy);continue;}
+r.yaw=wrapOrbitAngle(r.yaw+dx);
+const pitch=r.pitch+dy;
+r.pitch=Math.max(-1.4,Math.min(1.4,pitch));r.resetOrientation();
+}
+invalidate();
+}
+$('freeOrbit').addEventListener('change',()=>{
+if(!$('freeOrbit').checked)for(const r of renderers){r.pitch=Math.max(-1.4,Math.min(1.4,wrapOrbitAngle(r.pitch)));r.resetOrientation();}
+invalidate();
+});
+selectMode('face');
+async function start(){try{
+engine=createEngine();
+const onOrbit=orbitCamera;
+renderers=[new Renderer($('control'),$('controlLabels'),{onOrbit,onLayout:layoutCubeControls}),new Renderer($('stack'),$('stackLabels'),{stack:true,onOrbit})];
+syncDisplaySettings();renderers[0].combined=$('combined').checked;$('xray').closest('label').hidden=$('combined').checked;
+const stage=document.querySelector('.views');const resizeStage=()=>{const rect=stage.getBoundingClientRect();stage.classList.toggle('vertical',rect.height>rect.width);invalidate();};const stageObserver=new ResizeObserver(resizeStage);stageObserver.observe(stage);resizeStage();
+const observer=new ResizeObserver(invalidate);renderers.forEach(r=>observer.observe(r.canvas));$('new').disabled=false;$('engineStatus').textContent='Ready';newGame();
+}catch(error){$('message').textContent=error.message;$('engineStatus').textContent='Unable to start';console.error(error);}}
+start();
+})();</script>
+</body></html>
