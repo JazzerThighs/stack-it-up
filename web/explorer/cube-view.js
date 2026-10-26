@@ -1,3 +1,4 @@
+import {CAMERA_DISTANCE} from "../render/camera.js";
 import {compositeMesh} from "../render/piece-mesh.js";
 import { Renderer } from "../render/renderer.js";
 import { balloon, xyz, rgb, rotateCell } from "../render/geometry.js";
@@ -208,6 +209,7 @@ export class PackingCube extends Renderer {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(this.program);
+    gl.uniform1f(this.uniforms.cameraDistance,this.perspective ? CAMERA_DISTANCE : 0);
     gl.uniformMatrix3fv(this.uniforms.orientation, false, this.orientation);
     gl.uniform2f(
       this.uniforms.scale,

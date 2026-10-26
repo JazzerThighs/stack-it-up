@@ -1,3 +1,4 @@
+import {CAMERA_DISTANCE, projectPoint, viewPoint} from "./camera.js";
 import {compositeMesh} from "./piece-mesh.js";
 import { S } from "../engine/snapshot.js";
 import { sceneDecorations } from "./decorations.js";
@@ -41,6 +42,7 @@ class Renderer {
     this.yaw = Math.PI - 0.55;
     this.pitch = 0.4;
     this.resetOrientation();
+    this.perspective = true;
     this.xray = true;
     this.gravity = 0;
     this.activeOutlines = false;
@@ -78,7 +80,7 @@ class Renderer {
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
       throw Error(gl.getProgramInfoLog(this.program));
     this.uniforms = Object.fromEntries(
-      ["orientation", "scale", "unlit", "opacity", "breath", "surfacePulse"].map((n) => [
+      ["orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance"].map((n) => [
         n,
         gl.getUniformLocation(this.program, n),
       ]),
@@ -280,12 +282,17 @@ class Renderer {
     gl.disable(gl.STENCIL_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     gl.useProgram(this.program);
-    const margin = document.getElementById("showArrows").checked ? 5.6 : 5.05;
+    const split = !document.getElementById("combined").checked;
+    const margin = document.getElementById("showArrows").checked ? 5.6 : split ? 4.6 : 5.05;
+    // HUD belongs to the whole stage. Reserving 150px in EACH split viewport
+    // shrank portrait cubes and doubled the empty space at their shared edge.
+    const verticalPadding = split ? 24 : 150;
     const unit = (this.unit = Math.max(
       8,
-      Math.min((rect.width - 24) / margin, (rect.height - 150) / margin),
+      Math.min((rect.width - 24) / margin, (rect.height - verticalPadding) / margin),
     ));
     this.onLayout?.(rect.width, rect.height, unit, (p) => this.project(p));
+    gl.uniform1f(this.uniforms.cameraDistance, this.perspective ? CAMERA_DISTANCE : 0);
     gl.uniform1f(this.uniforms.breath, 1);
     gl.uniformMatrix3fv(this.uniforms.orientation, false, this.orientation);
     gl.uniform2f(
@@ -347,10 +354,10 @@ class Renderer {
       add("overlaps", this.overlaps, gl.LINES, 0.95, true);
       add("choice", this.previewLines, gl.LINES, 1, true);
     }
-    const gridKey = this.rearGridOnly ? this.orientation.join(",") : "all";
+    const gridKey = this.rearGridOnly ? this.perspective + ":" + this.orientation.join(",") : "all";
     if (this.gridKey !== gridKey) {
       const grid = [];
-      surfaceGrid(grid, this.rearGridOnly ? (p) => this.project(p) : null);
+      surfaceGrid(grid, this.rearGridOnly ? (p) => { const q=viewPoint(this,p); q[2]-=this.perspective ? 1.5/CAMERA_DISTANCE : 0; return q; } : null);
       this.upload(this.grid, new Float32Array(grid));
       this.gridKey = gridKey;
     }
@@ -405,14 +412,8 @@ class Renderer {
       this.orientation.splice(i, 3, u, a * y - b * v, b * y + a * v);
     }
   }
-  project([x, y, z]) {
-    const m = this.orientation;
-    return [
-      m[0] * x + m[3] * y + m[6] * z,
-      m[1] * x + m[4] * y + m[7] * z,
-      m[2] * x + m[5] * y + m[8] * z,
-    ];
-  }
+  project(p) { return projectPoint(this,p); }
+
 }
 
 export { Renderer, colors, faceLabels };

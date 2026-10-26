@@ -7,7 +7,7 @@ function element(){return {checked:false,value:'0',style:{},dataset:{},children:
 for(const tag of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)){const e=element();e.checked=/\bchecked\b/.test(tag[0]);e.hidden=/\bhidden\b/.test(tag[0]);e.value=tag[0].match(/\bvalue="([^"]*)"/)?.[1]||'0';elements.set(tag[1],e);}
 const $=id=>{assert(elements.has(id),`missing ${id}`);return elements.get(id);};
 Object.assign(globalThis,{document:{hidden:false,getElementById:$,createElement:element,querySelector:element,querySelectorAll:()=>[],addEventListener(){}},devicePixelRatio:1,matchMedia:()=>({matches:true}),ResizeObserver:class{observe(){}},requestAnimationFrame:fn=>(frames.push(fn),frames.length),fetch:async url=>({ok:true,arrayBuffer:async()=>fs.readFileSync(url)})});
-$('sliceClearMode').value='1';
+$('sliceClearMode').value='1';$('rebuildMode').value='2';
 const {context}=await import('../dist/app.js');
 for(let i=0;i<100&&!context.engine;i++)await new Promise(resolve=>setTimeout(resolve,10));
 assert.equal($('engineStatus').textContent,'Ready');
@@ -27,7 +27,8 @@ const savedState=Array.from(context.state);
 $('explorer').explorerReady=Promise.resolve();$('explorerTab').onclick();assert($('gamePage').hidden);assert(!$('explorerPage').hidden);assert(!html.includes('<iframe'));assert($('explorer').explorerReady);
 $('gameTab').onclick();assert(!$('gamePage').hidden);assert($('explorerPage').hidden);assert.deepEqual(Array.from(context.state),savedState);
 console.log('PASS: packing tab lazy load and game state preservation.');
-assert($('bandagedFragments').checked);assert($('earlyLock').checked);assert(!$('randomCubies').checked);assert.equal($('rebuildMode').value,'0');
+assert($('bandagedFragments').checked);assert($('earlyLock').checked);assert(!$('randomCubies').checked);assert.equal($('rebuildMode').value,'2');assert(!$('fragmentPerk').checked);assert(!$('fragmentOptions').open);assert(context.renderers[0].perspective);
+$('fragmentPerk').checked=true;$('fragmentPerk').onchange();assert($('fragmentOptions').open);
 $('bandagedFragments').checked=true;$('bandagedFragments').onchange();
 $('randomCubies').checked=true;$('randomCubies').onchange();
 $('rebuildMode').value='2';$('rebuildMode').onchange();flush();
@@ -42,13 +43,13 @@ $("turnWidth").onclick();flush();assert(context.renderers[0].wideTurns);$("turnW
 
 assert($('lockBands').hidden);$('lockBands').onclick();assert(!context.lockMode);
 const saved=context.engine.exportState(), header=saved.slice(0,22);header[4]=2;header[12]=1;header[13]=1;header[19]=0;
-const bandState=[...header,...Array(54).fill(0),2,1,2,2,0,1,1,1,1,1,0,1,3,0];
+const bandState=[...header,...Array(54).fill(0),2,1,2,2,0,1,1,1,1,1,0,1,3,0,1,0];
 assert(context.engine.importState(bandState));context.update();assert(!$('lockBands').hidden);
 $('lockBands').onclick();assert(context.lockMode);assert.equal($('lockBands').textContent,'Resume turns');
 $('earlyLock').checked=false;$('earlyLock').onchange();assert(!context.lockMode);assert($('lockBands').disabled);
 $('earlyLock').checked=true;$('earlyLock').onchange();assert(!$('lockBands').disabled);
 
-assert.equal(context.engine.game_slice_clear_mode(),1);$('sliceClearMode').value='2';$('sliceClearMode').onchange();assert.equal(context.engine.game_slice_clear_mode(),2);$('sliceClearMode').value='1';$('sliceClearMode').onchange();
+assert.equal(context.engine.game_slice_clear_mode(),1);$('sliceClearMode').value='2';$('sliceClearMode').onchange();assert.equal(context.engine.game_slice_clear_mode(),2);$('sliceClearMode').value='1';$('rebuildMode').value='2';$('sliceClearMode').onchange();
 
 // Session controls use the real Wasm transport and queue mutation.
 $('chooseNext').checked=true;$('chooseNext').onchange();assert(!$('nextPieceControls').hidden);

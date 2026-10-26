@@ -48,9 +48,11 @@ impl State {
     }
     fn settle_toward(&mut self, axis: usize, target: i32, event_plane: u32) {
         let mut groups = self.groups();
+        let mut fallen = vec![false; groups.len()];
         loop {
             let mut moved = false;
-            for g in &mut groups {
+            for (group_index, g) in groups.iter_mut().enumerate() {
+                if self.gravity_one_step && fallen[group_index] { continue; }
                 let low = bits(g.mask).map(|i| xyz(i)[axis]).min().unwrap();
                 let high = bits(g.mask).map(|i| xyz(i)[axis]).max().unwrap();
                 let step = if high < target {
@@ -96,6 +98,7 @@ impl State {
                 }
                 self.record(3, next, event_plane, origins);
                 g.mask = next;
+                fallen[group_index] = true;
                 moved = true;
             }
             if !moved {
@@ -118,6 +121,7 @@ impl State {
             self.gravity = None;
         }
         self.last_clears.clear();
+        let mut settled = false;
         loop {
             let full_faces = |s: &Self| {
                 let occupied = s.occupied();
@@ -136,7 +140,7 @@ impl State {
                     .collect::<Vec<_>>()
             };
             let mut full = full_faces(self);
-            if full.is_empty() {
+            if full.is_empty() && !settled {
                 self.settle(self.gravity);
                 full = full_faces(self);
             }
@@ -152,9 +156,11 @@ impl State {
             }
             self.record(2, removed, 0, std::array::from_fn(|i| i));
             self.last_clears.extend(&full);
-            if self.gravity_mode != 1 {
+            let gravity_plane = full.iter().rev().copied().find(|&p| p < 6 || self.slice_gravity);
+            settled = true;
+            if self.gravity_mode != 1 && gravity_plane.is_some() {
                 if self.gravity_mode != 2 {
-                    let plane = *full.last().unwrap();
+                    let plane = gravity_plane.unwrap();
                     if plane >= 6 {
                         self.gravity = None;
                         self.settle_toward(plane - 6, 1, plane as u32 + 1);

@@ -1,3 +1,4 @@
+import {CAMERA_DISTANCE} from "./camera.js";
 import { S } from "../engine/snapshot.js";
 import {
   colors,
@@ -38,7 +39,8 @@ export function sceneDecorations(add, unit, context) {
     );
   };
   const offset = (p, x, y) => {
-    const d = inverse([x / unit, y / unit, 0]);
+    const factor=this.perspective ? 1-this.project(p)[2]/CAMERA_DISTANCE : 1;
+    const d = inverse([x / unit * factor, y / unit * factor, 0]);
     return p.map((v, i) => v + d[i]);
   };
   const segment = (out, a, b, color, width = 2) => {
@@ -48,9 +50,10 @@ export function sceneDecorations(add, unit, context) {
       dy = pb[1] - pa[1],
       len = Math.hypot(dx, dy);
     if (len < 1e-8) return;
+    const factor=this.perspective ? 1-(pa[2]+pb[2])/2/CAMERA_DISTANCE : 1;
     const d = inverse([
-      ((-dy / len) * width) / 2 / unit,
-      ((dx / len) * width) / 2 / unit,
+      ((-dy / len) * width) / 2 / unit * factor,
+      ((dx / len) * width) / 2 / unit * factor,
       0,
     ]);
     const q = [

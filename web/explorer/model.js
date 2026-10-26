@@ -1,8 +1,7 @@
 import { CubeStack } from "../engine/coordinates.js";
 
-// Catalog chirality names predate the native outward-facing display convention.
-// Keep raw IDs for family/official-color algorithms; normalize presentation only.
-export const displayIdentity = identity => ({J:'L',L:'J',S:'Z',Z:'S'}[identity] ?? identity);
+// Catalog identities are preserved by the proper rotation into renderer space.
+export const displayIdentity = identity => identity;
 export const CANONICAL_COLORS = {J:'b',L:'o',S:'g',Z:'r',O:'y',T:'m'};
 export const canonicalColor = identity => CANONICAL_COLORS[displayIdentity(identity)] || 'd';
 
@@ -24,18 +23,18 @@ const xyz = CubeStack.xyz;
 const index = (p) => p[0] * 9 + p[1] * 3 + p[2];
 const kind = (i) => xyz(i).filter((v) => v !== 1).length;
 
-// Explorer's measured facelet frame: logical x runs U to D, z runs L to R.
-// Map to the game's renderer frame without changing its move conventions.
+// Rotate catalog coordinates into renderer space (determinant +1).
+// The old (z, -x, y) transform reflected the packing, reversing chirality.
+// Retain the measured legacy facelet map separately for safekeeping.
 export function displayIndex(i) {
   const [x, y, z] = xyz(i);
-  return z * 9 + (2 - x) * 3 + y;
+  return (2 - z) * 9 + (2 - x) * 3 + y;
 }
-export function packingCells(packing, colors, manufactured = false) {
+export function packingCells(packing, colors) {
   const owner = Array(27).fill(-1);
   packing.masks.forEach((mask, id) =>
     cellsOf(mask).forEach((i) => {
-      const [x, y, z] = xyz(i);
-      owner[manufactured ? (2 - z) * 9 + (2 - y) * 3 + 2 - x : i] = id;
+      owner[i] = id;
     }),
   );
   const result = Array(27);

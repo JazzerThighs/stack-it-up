@@ -21,7 +21,7 @@
         </div>
         <details class="settings" id="settingsPanel">
           <summary>
-            <span class="settings-open-label">⚙ Open settings</span
+            <span class="settings-open-label">⚙ Settings</span
             ><span class="settings-close-label">✕ Close settings</span>
           </summary>
           <div class="settings-content">
@@ -31,6 +31,8 @@
                 ✕ Close settings
               </button>
             </div>
+          <fieldset class="target-display"><legend>Target cube display</legend><label><input id="targetComposite" type="checkbox" checked /> Tetromino composite</label>
+          <label>Transparency <output id="transparencyValue">0%</output><input id="targetTransparency" type="range" min="0" max="100" value="0" /></label></fieldset>
                       <div class="nav-steps" aria-label="Skip matching packings">
             <button id="back100">−100</button><button id="back10">−10</button
             ><button id="forward10">+10</button
@@ -251,8 +253,7 @@
 
         <section id="solvedPanel" class="cube-card">
           <h2>Target cube</h2>
-          <div class="target-display"><label><input id="targetComposite" type="checkbox" checked /> Tetromino composite</label>
-          <label>Transparency <output id="transparencyValue">0%</output><input id="targetTransparency" type="range" min="0" max="100" value="0" /></label></div>
+
           <div id="solvedCube" class="cube"></div>
 <details class="packing-overlay"><summary>Packing <span id="packingIndex">-</span> · details</summary>      <div class="packing-info">
         <details class="packing-details">

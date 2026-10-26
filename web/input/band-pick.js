@@ -1,3 +1,4 @@
+import {pointerRay} from "../render/camera.js";
 import { S } from '../engine/snapshot.js';
 import { xyz } from '../render/geometry.js';
 
@@ -5,11 +6,7 @@ import { xyz } from '../render/geometry.js';
 // selecting a recessed white group through a gap without selecting through solids.
 export function pickBand(r, e, state) {
   if (!state || r.isStack) return -1;
-  const rect = r.canvas.getBoundingClientRect(), m = r.orientation;
-  const x = (e.clientX - rect.left - rect.width / 2) / r.unit;
-  const y = -(e.clientY - rect.top - rect.height / 2) / r.unit;
-  const origin = [0,1,2].map(i=>m[i*3]*x+m[i*3+1]*y+m[i*3+2]*8);
-  const dir = [m[2],m[5],m[8]].map(v=>-v);
+  const {origin,dir}=pointerRay(r,e);
   let nearest = Infinity, selected = -1;
   for (let i=0;i<27;i++) {
     const floating = !!(state[S.FLOATING] & (1<<i));

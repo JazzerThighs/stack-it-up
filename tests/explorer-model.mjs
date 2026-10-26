@@ -32,14 +32,14 @@ for (let m = 0; m < 30; m++) {
 }
 assert.equal(new Set(ROTATIONS.map((r) => r.join(","))).size, 24);
 assert.deepEqual(parseMoves(["R2", "U'", "F"]), [5, 5, 15, 2]);
-// The measured AnimCube facelet map is retained and agrees with native faces.
+// Native frame preserves catalog handedness; legacy facelets remain archived.
 for (const [indices, axis, side] of [
   ["123456789", 1, 1],
   ["jmpknqlor", 1, -1],
   ["1aj2bk3cl", 2, -1],
   ["9ir8hq7gp", 2, 1],
-  ["147adgjmp", 0, -1],
-  ["3cl6fo9ir", 0, 1],
+  ["147adgjmp", 0, 1],
+  ["3cl6fo9ir", 0, -1],
 ]) {
   for (const char of indices)
     assert.equal(

@@ -5,7 +5,7 @@ impl Game {
         let s = &self.state;
         let mut v = vec![
             0x53554931,
-            1,
+            2,
             s.rng,
             s.active,
             s.pieces,
@@ -41,14 +41,17 @@ impl Game {
         }
         v.push(s.last_clears.len() as u32);
         v.extend(s.last_clears.iter().map(|&x| x as u32));
+        v.extend([s.slice_gravity as u32, s.gravity_one_step as u32]);
         v
     }
     pub fn import_state(&mut self, data: &[u32]) -> bool {
         fn decode(data: &[u32]) -> Option<(State, bool)> {
             let mut it = data.iter().copied();
-            if it.next()? != 0x53554931 || it.next()? != 1 {
+            if it.next()? != 0x53554931 {
                 return None;
             }
+            let version=it.next()?;
+            if version != 1 && version != 2 { return None; }
             let mut s = State::empty(it.next()?);
             s.active = it.next()?;
             s.pieces = it.next()?;
@@ -184,6 +187,7 @@ impl Game {
                 }
                 s.last_clears.push(face as usize);
             }
+            if version == 2 { s.slice_gravity=boolean(&mut it)?; s.gravity_one_step=boolean(&mut it)?; }
             if it.next().is_some() {
                 return None;
             }

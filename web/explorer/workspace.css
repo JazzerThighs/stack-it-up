@@ -56,6 +56,14 @@ button.primary { background:var(--accent);color:#142724; }
  .practice-cubes h2 { top:10px;font-size:12px; }.practice-config { top:35px;left:10px; }
 }
 
-.target-display { position:absolute; top:12px; right:12px; z-index:6; display:flex; flex-direction:column; gap:4px; padding:7px; background:#17282de8; border-radius:8px; font-size:12px; max-width:48%; }
-.target-display label { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
-.target-display input[type=range] { width:90px; }
+/* Match the game's fixed settings anchor, independent of the cube layout. */
+.app { position:relative; }
+.settings > summary { position:absolute; top:116px; right:18px; z-index:20; font-size:22px; padding:8px 14px; min-height:46px; box-sizing:border-box; }
+.practice-toggle { margin-right:0; }
+.settings-content { z-index:50; }
+.target-display { display:flex; flex-direction:column; gap:12px; margin:0 0 16px; padding:14px; min-width:0; }
+.target-display label { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.target-display input[type=range] { flex:1; min-width:120px; }
+@media(max-width:700px) {
+ .settings > summary { top:92px; right:12px; font-size:18px; padding:8px 10px; }
+}

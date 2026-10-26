@@ -1,3 +1,4 @@
+import {pointerRay} from "../render/camera.js";
 import { pickBand } from "./band-pick.js";
 function stickerCenter(hit) {
   return hit.p.map((v, a) =>
@@ -20,7 +21,7 @@ function sliceCandidates(r, hit, wide = false) {
     v[hit.axis] = 0;
     const magnitude = Math.hypot(...v);
     const tangent = v.map((n) => n / magnitude),
-      q = r.project(tangent),
+      q = r.project(p.map((v,i)=>v+tangent[i]*.01)).map((v,i)=>(v-r.project(p)[i])/.01),
       len = Math.hypot(q[0], q[1]);
     if (len < 1e-6) continue;
     const layer = Math.max(0, Math.min(2, Math.floor(p[axis] + 1.5))),
@@ -79,14 +80,7 @@ function installCubeDrag(r, onOrbit, context) {
   });
   const hitAt = (e) => {
     if (r.pickHit) return r.pickHit(e);
-    const rect = canvas.getBoundingClientRect(),
-      x = (e.clientX - rect.left - rect.width / 2) / r.unit,
-      y = -(e.clientY - rect.top - rect.height / 2) / r.unit,
-      m = r.orientation;
-    const origin = [0, 1, 2].map(
-        (i) => m[i * 3] * x + m[i * 3 + 1] * y + m[i * 3 + 2] * 8,
-      ),
-      dir = [m[2], m[5], m[8]].map((v) => -v);
+    const {origin,dir}=pointerRay(r,e);
     let best = null,
       near = Infinity;
     for (let axis = 0; axis < 3; axis++)

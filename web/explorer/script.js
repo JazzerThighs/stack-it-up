@@ -1131,13 +1131,7 @@ export async function initializeExplorer(root = document) {
     if ($("officialColors").checked) {
       const colors = officialColoring(packing);
       if (colors) {
-        // Manufactured frame: U purple, F yellow, R red, B orange, L green, D black.
-        const oriented = Array(27);
-        paintExtraColors(packing, colors.slice()).forEach((color, i) => {
-          const [x, y, z] = coords(i);
-          oriented[(2 - z) * 9 + (2 - y) * 3 + (2 - x)] = color;
-        });
-        return oriented;
+        return paintExtraColors(packing, colors.slice());
       }
     }
     const cellColors = Array(27).fill(null);
@@ -1278,8 +1272,6 @@ export async function initializeExplorer(root = document) {
     getPackings: () => packings,
     getChoices: selectablePackingIndices,
     getFamilies: () => familyByLine,
-    isManufactured: (packing) =>
-      $("officialColors").checked && !!officialColoring(packing),
   });
   const renderPieceModel = views.showPieces;
   const renderCube = views.showCube;

@@ -2473,3 +2473,7 @@ main.explorer-active > .topbar { padding:0 14px; }
 #setupRules .settings-section > summary { display:none; }
 #setupRules .settings-section-body { display:grid; }
 @media(max-width:620px) { .topbar { height:auto; min-height:54px; flex-wrap:wrap; } .topbar .app-tabs { flex-wrap:wrap; } .app-tabs .app-link { padding:6px 9px; } }
+
+/* Stable settings anchor shared with the packing workspace. */
+#settingsOpen { position:absolute; top:100px; right:0; margin-top:0; white-space:nowrap; }
+@media(max-width:700px) { #settingsOpen { top:80px; } }

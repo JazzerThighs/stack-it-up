@@ -139,6 +139,14 @@ flush();
 assert.equal($("solvedFacelets").textContent.length, 54);
 assert($("solvedCube").children.length >= 2);
 assert($("scrambledCube").children.length >= 2);
+// Switching only the color scheme must not rotate, reflect, or recolor the
+// official source packing, including its white edge and black center.
+const officialTarget = structuredClone(observed.get($("solvedCube")).view.cells);
+$("canonicalColors").listeners.change();
+assert.deepEqual(observed.get($("solvedCube")).view.cells, officialTarget,
+  "official source: canonical and official-compatible cells must be identical");
+$("officialColors").listeners.change();
+assert.deepEqual(observed.get($("solvedCube")).view.cells, officialTarget);
 assert(!html.includes('id="piece3d"')); assert.equal($("cubeLayout").dataset.views,2);
 $("practiceMode").checked = true;
 $("practiceMode").onchange();

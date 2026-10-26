@@ -31,6 +31,8 @@ export function adaptEngine(w) {
     game_undo: w.game_undo,
     game_hold: w.game_hold,
     game_set_gravity: w.game_set_gravity,
+    game_set_gravity_rules: w.game_set_gravity_rules,
+    game_gravity_rules: w.game_gravity_rules,
     game_set_slice_clears: w.game_set_slice_clears,
     game_slice_clear_mode: w.game_slice_clear_mode,
     game_set_modes: w.game_set_modes,

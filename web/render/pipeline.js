@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 export function renderPackets(packets, context) {
   const { layerOrder } = context;
+  const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
@@ -41,7 +42,7 @@ export function renderPackets(packets, context) {
     primitives.sort((a, b) => a.depth - b.depth);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.depthMask(false);
+    gl.depthMask(!!custom);
     let run = null,
       vertices = [];
     const flush = () => {
@@ -67,10 +68,12 @@ export function renderPackets(packets, context) {
     gl.depthMask(true);
     gl.disable(gl.BLEND);
   };
-  if (context.customLayers ?? $("customLayers")?.checked) {
+  if (custom) {
     for (const id of layerOrder.slice().reverse()) {
       const items = packets.filter((p) => p.id === id);
       if (!items.length) continue;
+      gl.depthMask(true);
+      gl.clearDepth(1);
       gl.clear(gl.DEPTH_BUFFER_BIT);
       group(items);
     }

@@ -29,6 +29,8 @@ pub struct State {
     pub fragment_enabled: bool,
     pub fragment_turns: u32,
     pub gravity_mode: u32,
+    pub slice_gravity: bool,
+    pub gravity_one_step: bool,
     /// 0 legacy faces only, 1 full slices, 2 surface-only slices.
     pub slice_clear_mode: u32,
     pub held: u8,
@@ -63,6 +65,8 @@ impl State {
             fragment_enabled: true,
             fragment_turns: 0,
             gravity_mode: 0,
+            slice_gravity: true,
+            gravity_one_step: false,
             slice_clear_mode: 1,
             held: 0,
             last_lock: None,

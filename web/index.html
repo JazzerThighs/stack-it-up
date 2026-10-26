@@ -279,6 +279,8 @@
           </fieldset>
           <fieldset>
             <legend>Camera</legend>
+            <label><input id="perspectiveCamera" type="checkbox" checked /> Perspective camera</label>
+            <p class="muted">Depth and distance affect apparent size. Turn off for an orthographic view.</p>
             <label
               ><input id="freeOrbit" type="checkbox" checked /> Free 360°
               rotation</label
@@ -298,13 +300,9 @@
         <div class="settings-section-body">
           <fieldset>
             <legend>Cubie shape</legend>
-            <label
-              ><input id="activeSpheres" type="checkbox" /> Spherical loose white
-              fragments</label
-            >
             <p class="muted">
               Current piece: colored spheres. Rebuildable pieces: colored rounded
-              cubes. Loose white fragments: diamonds (or spheres above).
+              cubes. Loose white fragments: diamonds (configurable under White cubie options).
               Bandaged white pieces retain their connected shape.
             </p>
           </fieldset>
@@ -434,6 +432,10 @@
               <option value="1">Off completely</option>
               <option value="2">Always on · random changes each move</option>
             </select>
+            <label><input id="sliceGravity" type="checkbox" checked /> Slice clears cause gravity</label>
+            <p class="muted">Off: clearing an interior ring or full slice causes no gravity. Face clears still follow the selected gravity mode.</p>
+            <label><input id="gravityOneStep" type="checkbox" /> Fall at most one cell per gravity event</label>
+            <p class="muted">Each separated piece moves at most one cell when gravity runs. Another cascade clear can trigger another step. Off: settle until blocked.</p>
             <p class="muted">
               Clears only: fall toward the most recently cleared face or slice for that
               cascade, then stop. Always on: begins downward; each move has a
@@ -444,9 +446,13 @@
           <fieldset>
             <legend>Floating fragments</legend>
             <label
-              ><input id="fragmentPerk" type="checkbox" checked /> Release
-              broken pieces after clears</label
+              ><input id="fragmentPerk" type="checkbox" /> Free broken pieces</label
             >
+            <details id="fragmentOptions"><summary>White cubie options</summary>            <label
+              ><input id="activeSpheres" type="checkbox" /> Spherical loose white
+              fragments</label
+            >
+
             <p class="muted">
               Each cleared face grants one completed-piece turn. Broken pieces
               turn white and move with your active cubies, but do not count
@@ -474,13 +480,14 @@
               turn white and relock with your next completed piece. Can be
               combined with broken fragments and reconstruction.
             </p>
+            </details></fieldset><fieldset><legend>Whole tetromino reconstruction</legend>
             <label for="rebuildMode"
               >Rebuild whole tetrominoes after clears</label
             >
             <select id="rebuildMode">
               <option value="0">Off</option>
               <option value="1">Free all still-whole pieces</option>
-              <option value="2">
+              <option value="2" selected>
                 Free one random whole piece per cleared plane
               </option>
             </select>
@@ -491,8 +498,8 @@
               valid, and clear of the stack, when your current piece locks.
               Rebuilding pieces are not bandaged. Whole pieces are selected
               first, then broken fragments, then random individual cubies; a
-              cubie is never selected twice. New options default off and can be
-              combined independently. Disabling release modes leaves already
+              cubie is never selected twice. One random whole piece per cleared plane
+              is the default. These rewards can be combined independently. Disabling release modes leaves already
               freed cubies playable until they lock.
             </p>
             <p id="rebuildStatus" class="muted" role="status"></p>

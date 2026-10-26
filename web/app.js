@@ -148,10 +148,14 @@ function update(message) {
   $("earlyLock").checked = !!engine.game_early_lock();
   $("sliceClearMode").value = String(engine.game_slice_clear_mode());
   $("gravityMode").value = String(state[S.GRAVITY_MODE]);
+  const gravityRules=engine.game_gravity_rules();
+  $("sliceGravity").checked=!!(gravityRules & 1);
+  $("gravityOneStep").checked=!!(gravityRules & 2);
   $("fragmentPerk").checked = !!state[S.FRAGMENTS_ENABLED];
   $("bandagedFragments").checked = !!state[S.BANDAGED];
   $("randomCubies").checked = !!state[S.RANDOM_CUBIES];
   $("rebuildMode").value = String(state[S.REBUILD_MODE]);
+  syncFragmentOptions();
   $("rebuildStatus").textContent = state[S.REBUILD_MASK]
     ? state[S.REBUILD_PENDING]
       ? `Rebuildable rounded cubies must all form complete tetrominos. Same-colored cubies can mix; the current piece uses spheres.`
@@ -422,11 +426,12 @@ async function newGame() {
   engine.game_set_early_lock($("earlyLock").checked);
   setLockMode(false);
   engine.game_set_gravity(gravityMode);
+  engine.game_set_gravity_rules($("sliceGravity").checked,$("gravityOneStep").checked);
   engine.game_set_slice_clears(+$("sliceClearMode").value);
   engine.game_set_fragments($("fragmentPerk").checked);
   engine.game_set_modes(
     $("bandagedFragments").checked,
-    $("randomCubies").checked,
+    $("fragmentPerk").checked && $("randomCubies").checked,
     +$("rebuildMode").value,
   );
   update();
@@ -652,12 +657,19 @@ $("classicControls").onchange = () => {
   syncOverlayControls();
   invalidate();
 };
+function syncFragmentOptions() {
+  $("fragmentOptions").open=$("fragmentPerk").checked;
+}
+$("fragmentOptions").addEventListener("toggle",()=>{
+  if (!$("fragmentPerk").checked && $("fragmentOptions").open) $("fragmentOptions").open=false;
+});
 $("fragmentPerk").onchange = () => {
+  syncFragmentOptions();
   if (!engine || busy || session?.starting) return;
   engine.game_set_fragments($("fragmentPerk").checked);
   engine.game_set_modes(
     $("bandagedFragments").checked,
-    $("randomCubies").checked,
+    $("fragmentPerk").checked && $("randomCubies").checked,
     +$("rebuildMode").value,
   );
   update();
@@ -667,7 +679,7 @@ for (const id of ["bandagedFragments", "randomCubies", "rebuildMode"])
     if (!engine || busy || session?.starting || state[S.PENDING_FACES]) return;
     engine.game_set_modes(
       $("bandagedFragments").checked,
-      $("randomCubies").checked,
+      $("fragmentPerk").checked && $("randomCubies").checked,
       +$("rebuildMode").value,
     );
     update();
@@ -675,6 +687,11 @@ for (const id of ["bandagedFragments", "randomCubies", "rebuildMode"])
 $("sliceClearMode").onchange = () => {
   if (!engine || busy || session?.starting) return;
   engine.game_set_slice_clears(+$("sliceClearMode").value);
+  update();
+};
+for (const id of ["sliceGravity","gravityOneStep"]) $(id).onchange=()=>{
+  if (!engine || busy || session?.starting) return;
+  engine.game_set_gravity_rules($("sliceGravity").checked,$("gravityOneStep").checked);
   update();
 };
 $("gravityMode").onchange = () => {

@@ -15,7 +15,6 @@ export function createExplorerViews({
   getPackings,
   getChoices,
   getFamilies,
-  isManufactured,
 }) {
   const $ = id => root.getElementById(id);
   const cubes = new Map();
@@ -51,7 +50,7 @@ export function createExplorerViews({
     }
     const cube = get(id, { readOnly: id === "solvedCube" });
     if (id === "solvedCube") cube.opacity=1-Number($("targetTransparency").value)/100;
-    const cells = packingCells(packing, colors, isManufactured(packing));
+    const cells = packingCells(packing, colors);
     cube.setCells(
       parseMoves(moves).reduce((state, move) => turn(state, move), cells),
     );

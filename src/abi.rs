@@ -332,3 +332,12 @@ pub extern "C" fn game_set_next(piece: u32) -> u32 {
 pub extern "C" fn game_early_lock() -> u32 {
     APP.with_borrow(|a| a.game.state.early_lock as u32)
 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn game_set_gravity_rules(slice_gravity:u32, one_step:u32) {
+    APP.with_borrow_mut(|a| {a.game.state.slice_gravity=slice_gravity!=0; a.game.state.gravity_one_step=one_step!=0; a.game.revision+=1;});
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn game_gravity_rules() -> u32 {
+    APP.with_borrow(|a| u32::from(a.game.state.slice_gravity) | (u32::from(a.game.state.gravity_one_step)<<1))
+}
