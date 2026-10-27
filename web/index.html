@@ -65,8 +65,9 @@
                   <div id="queue" class="queue"></div>
                 </div>
               </div>
-              <div class="stage-tools">
-                <button id="shareState">Share / load state</button><span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
+              <div id="forecastReplayBar" class="forecast-replay" hidden><span id="forecastReplayStatus" role="status"></span><button id="forecastStep">Next action</button><button id="forecastRestore">Restore starting puzzle</button><button id="forecastExit">Exit replay</button></div>
+<div class="stage-tools">
+                <span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
                 <button id="turnWidth" aria-pressed="false" title="Face turns: regular or two layers. Hold Shift while dragging for wide turns.">Regular turns</button>
                 <button id="resetView" title="Reset camera">↺ View</button
                 ><button
@@ -244,7 +245,7 @@
         <h2>Settings</h2>
         <button id="settingsClose" aria-label="Close settings">✕</button>
       </div>
-      <div class="settings-actions">
+      <div class="settings-actions"><button id="shareState">Share / load state</button>
         <button id="new" class="quiet" disabled>New game</button>
       </div>
       <input id="combined" type="checkbox" checked hidden />
@@ -265,7 +266,12 @@
             >
           </fieldset>
           <fieldset>
-            <legend>Hover feedback</legend>
+            <legend>Hints and queue analysis</legend>
+<label><input id="queueForecast" type="checkbox" /> Check for queue dead ends (experimental)</label>
+<p class="muted">Search legal turns, face choices, early white-piece locks, and automatic placements through the shown queue, in order. Hold and queue edits restart the search. A crossed circle marks the first unreachable piece only after exhaustive proof. Large searches may remain inconclusive.</p>
+<p id="forecastStatus" role="status" aria-live="polite"></p>
+<button id="forecastReplay" disabled>Inspect / replay found path</button>
+<details id="forecastWitness" hidden><summary>Found move sequence</summary><p id="forecastSequence" class="forecast-sequence"></p></details>
             <label
               ><input id="hoverRings" type="checkbox" checked /> Slice
               rings</label
@@ -432,9 +438,9 @@
               <option value="1">Off completely</option>
               <option value="2">Always on · random changes each move</option>
             </select>
-            <label><input id="sliceGravity" type="checkbox" checked /> Slice clears cause gravity</label>
+            <label><input id="sliceGravity" type="checkbox" /> Slice clears cause gravity</label>
             <p class="muted">Off: clearing an interior ring or full slice causes no gravity. Face clears still follow the selected gravity mode.</p>
-            <label><input id="gravityOneStep" type="checkbox" /> Fall at most one cell per gravity event</label>
+            <label><input id="gravityOneStep" type="checkbox" checked /> Fall at most one cell per gravity event</label>
             <p class="muted">Each separated piece moves at most one cell when gravity runs. Another cascade clear can trigger another step. Off: settle until blocked.</p>
             <p class="muted">
               Clears only: fall toward the most recently cleared face or slice for that

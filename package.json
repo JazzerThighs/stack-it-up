@@ -5,6 +5,6 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "start": "node tools/serve.mjs",
-    "test": "cargo test --offline && node tools/build.mjs && node tests/current-parity.cjs && node tests/frontend-smoke.mjs && node tests/explorer-model.mjs && node tests/explorer-smoke.mjs && node tests/wide-drag.mjs && node tests/band-lock-input.mjs && node tests/explorer-colors.mjs && node tests/placement-animation.mjs && node tests/piece-mesh.mjs && node tests/camera-depth.mjs"
+    "test": "cargo test --offline && node tools/build.mjs && node tests/current-parity.cjs && node tests/frontend-smoke.mjs && node tests/explorer-model.mjs && node tests/explorer-smoke.mjs && node tests/wide-drag.mjs && node tests/band-lock-input.mjs && node tests/explorer-colors.mjs && node tests/placement-animation.mjs && node tests/piece-mesh.mjs && node tests/camera-depth.mjs && node tests/forecast.mjs"
   }
 }
