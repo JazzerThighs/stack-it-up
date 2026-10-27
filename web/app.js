@@ -1,3 +1,5 @@
+import { createReplay } from './ui/forecast-replay.js';
+import { createForecast } from './ui/forecast.js';
 import { initializeSession } from "./ui/session.js";
 import { mountExplorer } from "./explorer/mount.js";
 import { S } from "./engine/snapshot.js";
@@ -62,8 +64,21 @@ for (let j = 0; j < 5; j++) {
   const label = document.createElement("small");
   item.append(s, label);
   $("queue").append(item);
-  queueShapes.push({ update: shape(s), label });
+  queueShapes.push({ update: shape(s), label, item });
 }
+const forecastReplay = createReplay({engine:()=>engine, refresh:()=>update(), isBusy:()=>busy || session?.starting,
+  closeSettings:()=>$("settingsDialog").close(),
+  act:async step=>{
+    const before=state.slice();
+    if(!engine[step.method](step.arg))return false;
+    setBusy(true);
+    try { await resolveAnimations(before,snapshot(),events()); }
+    finally { setBusy(false); }
+    update();return true;
+  }});
+const queueForecast = createForecast({enabled:$("queueForecast"), status:$("forecastStatus"),
+  onWitness:forecastReplay.setWitness, targets:[$("target"), ...queueShapes.map(q=>q.item)]});
+$("queueForecast").onchange = () => { if (engine) queueForecast.update(engine); };
 for (let f = 0; f < 6; f++) {
   const el = document.createElement("div"),
     label = document.createElement("span"),
@@ -190,6 +205,7 @@ function update(message) {
     q.update(state[56 + i]);
     q.label.textContent = names[state[56 + i]];
   });
+  if (!forecastReplay.suppress()) queueForecast.update(engine);
   $("score").textContent = state[S.SCORE].toLocaleString();
   $("pieces").textContent = state[S.PIECES];
   $("clears").textContent = state[S.CLEARS];

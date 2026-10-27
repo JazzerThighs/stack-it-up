@@ -282,11 +282,9 @@ class Renderer {
     gl.disable(gl.STENCIL_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     gl.useProgram(this.program);
-    const split = !document.getElementById("combined").checked;
-    const margin = document.getElementById("showArrows").checked ? 5.6 : split ? 4.6 : 5.05;
-    // HUD belongs to the whole stage. Reserving 150px in EACH split viewport
-    // shrank portrait cubes and doubled the empty space at their shared edge.
-    const verticalPadding = split ? 24 : 150;
+    // Canvas bounds exclude the HUD and toolbar in both viewing modes.
+    const margin = document.getElementById("showArrows").checked ? 6.4 : 5.8;
+    const verticalPadding = 24;
     const unit = (this.unit = Math.max(
       8,
       Math.min((rect.width - 24) / margin, (rect.height - verticalPadding) / margin),

@@ -23,7 +23,8 @@ export function adaptEngine(w) {
     },
     importState(data) {
       if (!Array.isArray(data) || data.length > 512 || !data.every(v => Number.isInteger(v) && v >= 0 && v <= 0xffffffff)) return false;
-      new Uint32Array(w.memory.buffer, w.game_transfer_ptr(), data.length).set(data);
+      const ptr = w.game_transfer_ptr();
+      new Uint32Array(w.memory.buffer, ptr, data.length).set(data);
       return !!w.game_import(data.length);
     },
     game_turn: w.game_turn,

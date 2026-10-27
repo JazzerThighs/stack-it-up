@@ -67,3 +67,20 @@ button.primary { background:var(--accent);color:#142724; }
 @media(max-width:700px) {
  .settings > summary { top:92px; right:12px; font-size:18px; padding:8px 10px; }
 }
+
+/* The summary is anchored to the app, never the narrow navigation toolbar. */
+.toolbar, .settings, .settings[open] { position:static; }
+.settings > summary { top:8px; right:12px; font-size:16px; }
+.practice-toggle { margin-right:140px; }
+.cube-card h2 { max-width:calc(100% - 32px); }
+.packing-overlay { font-size:12px; }
+@media(max-width:760px) {
+ .practice-toggle { grid-row:2; grid-column:1/-1; margin:0; justify-self:start; }
+ .app { grid-template-rows:auto auto auto minmax(0,1fr); }
+ .view-tabs { grid-row:3; }
+ .cube-layout,.cube-layout[data-views] { grid-row:4; }
+ #practicePanel { grid-row:3/5; }
+ .settings > summary { top:5px; right:5px; font-size:16px; }
+}
+
+.settings > summary { background:#1b262b; color:#ecf5f2; border:1px solid #34474d; border-radius:14px; box-shadow:none; font-weight:400; }

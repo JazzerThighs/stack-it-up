@@ -108,6 +108,7 @@ export function sceneDecorations(add, unit, context) {
     ],
   };
   const labels = [];
+  const faceLabelSize = Math.min(26, Math.max(12, unit * 0.65));
   for (let f = 0; f < 6; f++) {
     const [axis, side] = faces[f],
       p = [0, 0, 0];
@@ -116,8 +117,8 @@ export function sceneDecorations(add, unit, context) {
     for (const [x, y, a, b] of glyphs[faceLabels[f]])
       segment(
         labels,
-        offset(p, x * 26, y * 26),
-        offset(p, a * 26, b * 26),
+        offset(p, x * faceLabelSize, y * faceLabelSize),
+        offset(p, a * faceLabelSize, b * faceLabelSize),
         [1, 1, 1],
         3,
       );
