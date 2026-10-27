@@ -2480,7 +2480,6 @@ main.explorer-active > .topbar { padding:0 14px; }
 
 /* Reserve real canvas space for controls instead of drawing beneath them. */
 .views { --hud-space:150px; --tools-space:76px; }
-<<<<<<< HEAD
 .views .viewport, .views.combined .viewport { top:var(--hud-space); bottom:auto; height:calc(100% - var(--hud-space) - var(--tools-space)); }
 .views.vertical:not(.combined) .viewport { height:calc((100% - var(--hud-space) - var(--tools-space)) / 2); }
 .views.vertical:not(.combined) #controlViewport { top:var(--hud-space); }
@@ -2493,34 +2492,10 @@ main.explorer-active > .topbar { padding:0 14px; }
  .views > .stage-tools { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
  .stage-tools button { min-width:0; white-space:normal; padding:6px 3px; font-size:12px; min-height:42px; }
  #nextPieceControls { grid-column:1/-1; }
-=======
-.views .viewport, .views.combined .viewport {
-  top:var(--hud-space); bottom:auto;
-  height:calc(100% - var(--hud-space) - var(--tools-space));
-}
-.views.vertical:not(.combined) .viewport {
-  height:calc((100% - var(--hud-space) - var(--tools-space)) / 2);
-}
-.views.vertical:not(.combined) #controlViewport { top:var(--hud-space); }
-.views.vertical:not(.combined) .stack-viewport { top:calc(var(--hud-space) + (100% - var(--hud-space) - var(--tools-space)) / 2); }
-@media(max-width:700px) {
- .views { --hud-space:140px; --tools-space:106px; }
- .views > .piece-hud { max-width:calc(100% - 125px); }
- .upcoming { min-width:0; }
- .queue { display:flex; flex-wrap:wrap; gap:5px; }
- .views > .stage-tools { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
- .stage-tools button { min-width:0; white-space:normal; font-size:14px; min-height:42px; }
- #nextPieceControls { grid-column:1/-1; }
-}
-
-@media(max-width:700px) {
- .views { --hud-space:118px; --tools-space:60px; }
->>>>>>> 1e0c86e1e90a21faae1df9152a15004e02180ed2
  .views > .score-hud { top:5px; right:5px; padding-top:50px; }
  #settingsOpen { top:0; font-size:16px; min-height:44px; }
  .score-hud > .hud-caption { font-size:11px; display:inline; margin-right:6px; }
  .score-hud strong { display:inline; font-size:26px; }
-<<<<<<< HEAD
  .empty-stack { font-size:12px; }
 }
 .queue-dead-end { position:relative; }
@@ -2531,9 +2506,3 @@ main.explorer-active > .topbar { padding:0 14px; }
 .forecast-replay[hidden] { display:none; }
 .forecast-replay span { flex-basis:100%; font-size:14px; }
 .forecast-replay button { font-size:13px; padding:6px; }
-=======
- .views > .stage-tools { grid-template-columns:repeat(4,minmax(0,1fr)); }
- .stage-tools button { padding:6px 3px; font-size:12px; }
- .empty-stack { font-size:12px; }
-}
->>>>>>> 1e0c86e1e90a21faae1df9152a15004e02180ed2

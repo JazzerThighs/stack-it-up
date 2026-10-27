@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Reject unresolved merge conflicts
+        run: node tools/check-conflicts.mjs
       - name: Install Rust toolchain
         run: rustup toolchain install 1.91.1 --profile minimal --target wasm32-unknown-unknown
       - name: Select Rust toolchain
