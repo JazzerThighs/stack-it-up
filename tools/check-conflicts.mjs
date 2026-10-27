@@ -5,8 +5,7 @@ let failed=false;
 for(const file of files){
  const data=readFileSync(file);
  if(data.includes(0))continue;
- const lines=data.toString('utf8').split(/\r?\n/);
- lines.forEach((line,i)=>{
+ data.toString('utf8').split(/\r?\n/).forEach((line,i)=>{
   if(/^(<{7} |={7}$|>{7} )/.test(line)){
    console.error(`${file}:${i+1}: unresolved merge conflict`);failed=true;
   }
