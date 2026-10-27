@@ -26,7 +26,7 @@ export function createExplorerViews({
   const get = (id, options = {}) => {
     if (!cubes.has(id)) {
       const view = new PackingCube($(id), options);
-      view.fitScale = 4.4;
+      view.fitScale = 6.0;
       view.meshGenerator = meshGenerator;
       if (id === "solvedCube" || id === "practiceRight") view.opacity=1-Number($("targetTransparency").value)/100;
       view.connected = (id === "solvedCube" || id === "practiceRight") && $("targetComposite").checked;

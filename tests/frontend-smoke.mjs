@@ -27,7 +27,7 @@ const savedState=Array.from(context.state);
 $('explorer').explorerReady=Promise.resolve();$('explorerTab').onclick();assert($('gamePage').hidden);assert(!$('explorerPage').hidden);assert(!html.includes('<iframe'));assert($('explorer').explorerReady);
 $('gameTab').onclick();assert(!$('gamePage').hidden);assert($('explorerPage').hidden);assert.deepEqual(Array.from(context.state),savedState);
 console.log('PASS: packing tab lazy load and game state preservation.');
-assert($('bandagedFragments').checked);assert($('earlyLock').checked);assert(!$('randomCubies').checked);assert.equal($('rebuildMode').value,'2');assert(!$('fragmentPerk').checked);assert(!$('fragmentOptions').open);assert(context.renderers[0].perspective);
+assert(!$('sliceGravity').checked);assert($('gravityOneStep').checked);assert.equal(context.engine.game_gravity_rules(),2);assert($('bandagedFragments').checked);assert($('earlyLock').checked);assert(!$('randomCubies').checked);assert.equal($('rebuildMode').value,'2');assert(!$('fragmentPerk').checked);assert(!$('fragmentOptions').open);assert(context.renderers[0].perspective);
 $('fragmentPerk').checked=true;$('fragmentPerk').onchange();assert($('fragmentOptions').open);
 $('bandagedFragments').checked=true;$('bandagedFragments').onchange();
 $('randomCubies').checked=true;$('randomCubies').onchange();

@@ -204,7 +204,7 @@ export class PackingCube extends Renderer {
       this.canvas.width = w;
       this.canvas.height = h;
     }
-    this.unit = Math.max(8, Math.min(rect.width, rect.height) / (this.fitScale || 5.4));
+    this.unit = Math.max(8, Math.min(rect.width - 32, rect.height - 120) / (this.fitScale || 6.0));
     gl.viewport(0, 0, w, h);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
