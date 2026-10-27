@@ -84,3 +84,75 @@ button.primary { background:var(--accent);color:#142724; }
 }
 
 .settings > summary { background:#1b262b; color:#ecf5f2; border:1px solid #34474d; border-radius:14px; box-shadow:none; font-weight:400; }
+
+/* Settings: one scroll surface, clear sections, generous touch targets. */
+.settings .settings-content {
+ box-sizing:border-box; display:flex; flex-direction:column; gap:12px;
+ inset:70px 16px auto auto; width:min(680px,calc(100vw - 32px));
+ max-height:calc(100dvh - 88px); padding:0 20px 20px;
+ background:#142126; border:1px solid #3b5056; border-radius:20px;
+ box-shadow:0 24px 80px #000a; overscroll-behavior:contain; scrollbar-gutter:stable;
+ color:#edf6f2; font-size:15px; line-height:1.5;
+}
+.settings .settings-heading {
+ position:sticky; top:0; margin:0 -4px; padding:20px 4px 16px; border-radius:0;
+ background:#142126; border-bottom:1px solid #2c4148; z-index:3; align-items:flex-start;
+}
+.settings-eyebrow { display:block; font-size:10px; font-weight:700; letter-spacing:.16em; color:#9ce5cc; margin-bottom:4px; }
+.settings .settings-heading strong { display:block; font-size:26px; line-height:1.2; letter-spacing:-.02em; }
+.settings .settings-heading p { margin:6px 0 0; font-size:13px; color:#a7bbbc; }
+.settings .settings-heading button { background:#22373e; color:#edf6f2; border:1px solid #40575f; border-radius:10px; min-width:64px; font-size:14px; padding:8px 12px; }
+.explorer-setting-section { border:1px solid #30474e; border-radius:12px; background:#192a30; overflow:clip; flex-shrink:0; }
+.explorer-setting-section > summary { display:flex; align-items:center; gap:12px; padding:15px 16px; cursor:pointer; list-style:none; font-size:16px; font-weight:650; }
+.explorer-setting-section > summary::-webkit-details-marker { display:none; }
+.explorer-setting-section > summary::after { content:'+'; margin-left:auto; font-size:24px; font-weight:400; color:#9ce5cc; }
+.explorer-setting-section[open] > summary::after { content:'\2212'; }
+.explorer-setting-section > summary small { display:block; font-size:12px; line-height:1.5; color:#a7bbbc; font-weight:400; margin-top:3px; }
+.explorer-setting-section > summary:hover { background:#20363d; }
+.explorer-section-body { padding:4px 16px 16px; display:grid; gap:18px; }
+.settings .settings-content fieldset { padding:0; margin:0; border:0; min-width:0; }
+.settings .settings-content legend { color:#c4d6d5; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; padding:0 0 10px; width:100%; }
+.settings .family-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.settings .settings-content label { box-sizing:border-box; margin:0; font-size:14px; line-height:1.4; color:#dfebe8; border-radius:9px; }
+.settings .family-controls > label, .settings .extra-filters > label { display:flex; flex-direction:column; gap:7px; background:none; border:0; padding:0; }
+.settings .settings-content select, .settings .source-jump input { box-sizing:border-box; width:100%; min-width:0; min-height:44px; border:1px solid #40565e; border-radius:8px; background:#101c21; color:#edf6f2; font-size:14px; padding:9px; }
+.settings .filter-flags { grid-column:1/-1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.settings .filter-flags label, .settings .color-controls label, .settings .window-controls label, .settings .target-display label {
+ display:flex; flex-direction:row; align-items:center; gap:10px; min-height:44px; padding:10px; border:1px solid #30474e; background:#142329;
+}
+.settings label:has(input:checked) { border-color:#578c7b; background:#203c35; color:#dcfff0; }
+.settings input[type=checkbox], .settings input[type=radio] { accent-color:#9ce5cc; width:18px; height:18px; flex:0 0 18px; margin:0; }
+.settings .extra-filters { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding-top:6px; }
+.settings #exploreFamily { justify-self:start; min-height:40px; font-size:13px; }
+.settings #familySummary { grid-column:1/-1; font-size:12px; color:#abc6bd; line-height:1.6; margin:0; padding:10px 12px; background:#112026; border-radius:8px; overflow-wrap:anywhere; }
+.settings #familySummary:empty { display:none; }
+.settings .control-groups { display:grid; grid-template-columns:1fr; gap:18px; }
+.settings .color-controls, .settings .window-controls { display:flex; flex-wrap:wrap; gap:8px; border:0; padding:0; }
+.settings .color-controls label, .settings .window-controls label { flex:1 1 120px; }
+.settings .target-display { display:grid; gap:8px; }
+.settings .target-display input[type=range] { accent-color:#9ce5cc; width:100%; flex:1 1 140px; min-height:32px; }
+.settings .target-display output { margin-left:auto; font-variant-numeric:tabular-nums; color:#9ce5cc; }
+.settings .settings-help { margin:0; color:#a7bbbc; font-size:13px; }
+.settings .settings-content .nav-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:0; }
+.settings .source-jump { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin:0; }
+.settings .source-jump label, .settings #jumpStatus { grid-column:1/-1; }
+.settings .status-row { display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin:0; padding:4px 2px 0; border:0; background:none; color:#9db4b5; font-size:12px; }
+.settings .settings-content button:hover { background:#304b52; color:#fff; }
+.settings .settings-content :focus-visible { outline:2px solid #9ce5cc; outline-offset:3px; }
+@media(max-width:560px) {
+ .settings .settings-content { inset:62px 8px auto; width:auto; max-height:calc(100dvh - 74px); padding:0 12px 14px; border-radius:15px; }
+ .settings .settings-heading { padding-top:16px; }
+ .settings .settings-heading strong { font-size:23px; }
+ .explorer-setting-section > summary { padding:13px 12px; }
+ .explorer-section-body { padding:2px 12px 12px; }
+ .settings .extra-filters { grid-template-columns:1fr; }
+ .settings .extra-filters > label { display:grid; grid-template-columns:100px minmax(0,1fr); align-items:center; }
+}
+@media(max-width:380px) {
+ .settings .family-controls, .settings .filter-flags { grid-template-columns:1fr; }
+}
+
+/* Grid items establish stacking contexts even with position:static. Keep the
+   settings toolbar above the entire cube workspace at every breakpoint. */
+.app > .toolbar { z-index:10; }
+.app > .cube-layout, .app > #practicePanel { isolation:isolate; z-index:0; }

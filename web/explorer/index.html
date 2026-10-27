@@ -24,34 +24,15 @@
             <span class="settings-open-label">⚙ Settings</span
             ><span class="settings-close-label">✕ Close settings</span>
           </summary>
-          <div class="settings-content">
+          <div class="settings-content" aria-label="Packing explorer settings">
             <div class="settings-heading">
-              <strong>Filters &amp; display</strong
-              ><button type="button" id="closeSettings">
-                ✕ Close settings
-              </button>
+              <div><span class="settings-eyebrow">PACKING EXPLORER</span><strong>Settings</strong><p>Find a packing. Make it yours.</p></div>
+              <button type="button" id="closeSettings" aria-label="Close explorer settings">Close</button>
             </div>
-          <fieldset class="target-display"><legend>Target cube display</legend><label><input id="targetComposite" type="checkbox" checked /> Tetromino composite</label>
-          <label>Transparency <output id="transparencyValue">0%</output><input id="targetTransparency" type="range" min="0" max="100" value="0" /></label></fieldset>
-                      <div class="nav-steps" aria-label="Skip matching packings">
-            <button id="back100">−100</button><button id="back10">−10</button
-            ><button id="forward10">+10</button
-            ><button id="forward100">+100</button>
-          </div>
-          <form id="sourceJump" class="source-jump">
-            <label for="sourceLine">Source line</label
-            ><input
-              id="sourceLine"
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              required
-            /><button type="submit">Go</button
-            ><span id="jumpStatus" role="status"></span>
-          </form>
-<fieldset class="family-controls">
-              <legend>Filters</legend>
+            <details class="explorer-setting-section" open>
+              <summary><span>Filter packings<small>Choose the shapes and families to explore</small></span></summary>
+              <div class="explorer-section-body"><fieldset class="family-controls">
+              <legend>Collection</legend>
               <label
                 >Edge family
                 <select id="familySelect">
@@ -128,7 +109,11 @@
               <button id="exploreFamily" type="button">Whole family</button>
               <p id="familySummary" role="status"></p>
             </fieldset>
-            <div class="control-groups">
+            </div>
+            </details>
+            <details class="explorer-setting-section">
+              <summary><span>Appearance &amp; views<small>Colors, visible cubes, and transparency</small></span></summary>
+              <div class="explorer-section-body"><div class="control-groups">
               <fieldset class="color-controls">
                 <legend>Colors</legend>
                 <label
@@ -150,7 +135,7 @@
                 >
               </fieldset>
               <fieldset class="window-controls">
-                <legend>Windows</legend>
+                <legend>Visible cubes</legend>
                 <label
                   ><input type="checkbox" id="showSolved" checked />
                   Target cube</label
@@ -161,10 +146,35 @@
                 >
               </fieldset>
             </div>
+            <fieldset class="target-display"><legend>Target cube display</legend><label><input id="targetComposite" type="checkbox" checked /> Tetromino composite</label>
+          <label>Transparency <output id="transparencyValue">0%</output><input id="targetTransparency" type="range" min="0" max="100" value="0" /></label></fieldset></div>
+            </details>
+            <details class="explorer-setting-section">
+              <summary><span>Jump to a packing<small>Source line and shortcuts through matching results</small></span></summary>
+              <div class="explorer-section-body"><p class="settings-help">Skip forward or back within your current filters.</p><div class="nav-steps" aria-label="Skip matching packings">
+            <button id="back100">−100</button><button id="back10">−10</button
+            ><button id="forward10">+10</button
+            ><button id="forward100">+100</button>
+          </div>
+          <form id="sourceJump" class="source-jump">
+            <label for="sourceLine">Source line</label
+            ><input
+              id="sourceLine"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              required
+            /><button type="submit">Go</button
+            ><span id="jumpStatus" role="status"></span>
+          </form>
+</div>
+            </details>
             <div class="status-row">
               <span id="status" role="status">Loading…</span
               ><span id="colorStatus" role="status"></span>
             </div>
+
           </div>
         </details>
       </section>
