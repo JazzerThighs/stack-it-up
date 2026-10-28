@@ -66,3 +66,16 @@ context.engine.placement_previews=()=>[{sourceMask:1,mask:1,piece:1}];renderer.a
 assert.equal(renderer.decorBuffers['hints:0'].count,144);context.engine.placement_previews=previews;
 const ended=context.engine.exportState();ended[18]=1;assert(context.engine.importState(ended));context.update();assert(!$('gameOver').hidden);assert(renderer.orbitOnly);
 console.log('PASS: setup confirmation, conditional band locking, state sharing/load validation, next-piece selection, top-out inspection, and lightweight markers.');
+
+// Appearance changes must preserve the puzzle, active shapes, and transparency.
+const appearanceState = Array.from(context.engine.exportState());
+for (const style of ['plastic', 'matte', 'voxel', 'cel', 'jelly']) {
+  $('pieceAppearance').value = style;
+  $('pieceAppearance').listeners.input(); flush();
+  for (const renderer of context.renderers) {
+    assert.equal(renderer.appearance, style);
+    assert(renderer.stackMesh.data.every(Number.isFinite));
+  }
+  assert.deepEqual(Array.from(context.engine.exportState()), appearanceState);
+}
+console.log('PASS: all five appearance presets switch without changing puzzle state.');

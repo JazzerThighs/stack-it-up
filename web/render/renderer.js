@@ -47,6 +47,7 @@ class Renderer {
     this.gravity = 0;
     this.activeOutlines = false;
     this.breathing = true;
+    this.appearance = "jelly";
     this.controlGrid = true;
     this.stackGrid = true;
     this.combinedGrid = true;
@@ -80,7 +81,7 @@ class Renderer {
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
       throw Error(gl.getProgramInfoLog(this.program));
     this.uniforms = Object.fromEntries(
-      ["orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance"].map((n) => [
+      ["orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance"].map((n) => [
         n,
         gl.getUniformLocation(this.program, n),
       ]),
@@ -135,7 +136,9 @@ class Renderer {
     target.count = data.length / 9;
   }
   setMesh(data) {
-    this.upload(this.stackMesh, data);
+    this.sourceMesh = data;
+    this.upload(this.stackMesh, this.appearance === "voxel" && this.state
+      ? compositeMesh(this.state.slice(0,27),this.state.slice(27,54),colors,()=>[],this.appearance) : data);
   }
   setState(s, animation = null) {
     this.gridKey = null;
@@ -247,7 +250,7 @@ class Renderer {
     const source = event.kind === 2 ? from : to;
     if (this.stackEvent !== event) {
       this.stackEvent = event;
-      this.transitionMesh = compositeMesh(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask));
+      this.transitionMesh = compositeMesh(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance);
     }
     const out = this.transitionMesh.slice();
     for (let n=0;n<out.length;n+=9) {
@@ -304,7 +307,7 @@ class Renderer {
     gl.uniform1f(this.uniforms.opacity, 1);
     gl.disable(gl.BLEND);
     const breath =
-      this.breathing && this.animation?.kind !== "turn"
+      this.breathing && this.appearance === "jelly" && this.animation?.kind !== "turn"
         ? 0.90 +
           0.14 *
             Math.sin(
@@ -344,7 +347,7 @@ class Renderer {
         false,
         breath,
       );
-      add("floating", this.bandMesh, gl.TRIANGLES, this.activeOpacity, false, 1, this.breathing && this.animation?.kind !== "turn" ? (breath - 1.04) * 0.10 : 0);
+      add("floating", this.bandMesh, gl.TRIANGLES, this.activeOpacity, false, 1, this.breathing && this.appearance === "jelly" && this.animation?.kind !== "turn" ? (breath - 1.04) * 0.10 : 0);
       add("recent", this.ghostSolid, gl.TRIANGLES, 0.18);
       add("recent", this.ghostLines, gl.LINES, 0.45, true);
       if (this.activeOutlines)

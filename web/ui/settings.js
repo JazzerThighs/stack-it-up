@@ -73,6 +73,7 @@ export function initializeSettings(value) {
   };
   renderLayerSettings();
   for (const id of [
+    "pieceAppearance",
     "perspectiveCamera",
     "activeSpheres",
     "hoverOutline",
@@ -94,6 +95,12 @@ export function initializeSettings(value) {
 }
 export function syncDisplaySettings() {
   for (const r of context.renderers) {
+    const appearance = $("pieceAppearance").value;
+    if (r.appearance !== appearance) {
+      r.appearance = appearance;
+      r.stackEvent = null;
+      if (r.sourceMesh) r.setMesh(r.sourceMesh);
+    }
     r.perspective = $("perspectiveCamera").checked;
     const shapeChanged = r.activeSpheres !== $("activeSpheres").checked;
     r.activeSpheres = $("activeSpheres").checked;

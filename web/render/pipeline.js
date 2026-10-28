@@ -1,8 +1,10 @@
+import { appearanceIndex } from "./appearance.js";
 const $ = (id) => document.getElementById(id);
 export function renderPackets(packets, context) {
   const { layerOrder } = context;
   const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
+  gl.uniform1i(this.uniforms.appearance, appearanceIndex(this.appearance));
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
   gl.disable(gl.STENCIL_TEST);

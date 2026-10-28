@@ -1,7 +1,12 @@
 // Shared native seamless surfaces for game transitions and packing composites.
-import {rgb} from './geometry.js';
+import {rgb, box, xyz} from './geometry.js';
 const cache = new Map();
-export function compositeMesh(board, ids, palette, generate) {
+export function compositeMesh(board, ids, palette, generate, appearance = "jelly") {
+  if (appearance === "voxel") {
+    const out = [];
+    for (let i=0;i<27;i++) if (board[i]) box(out,xyz(i),.485,rgb(palette[board[i]]));
+    return new Float32Array(out);
+  }
   const groups = new Map(), out = [];
   for (let i=0;i<27;i++) if (board[i]) {
     const key=ids[i] + ':' + board[i];

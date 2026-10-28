@@ -27,6 +27,7 @@ export function createExplorerViews({
     if (!cubes.has(id)) {
       const view = new PackingCube($(id), options);
       view.fitScale = 6.0;
+      view.appearance = $("pieceAppearance").value;
       view.meshGenerator = meshGenerator;
       if (id === "solvedCube" || id === "practiceRight") view.opacity=1-Number($("targetTransparency").value)/100;
       view.connected = (id === "solvedCube" || id === "practiceRight") && $("targetComposite").checked;
@@ -68,6 +69,12 @@ export function createExplorerViews({
     if (id === "scrambledCube") playback++;
 
   }
+  $("pieceAppearance").addEventListener("change", () => {
+    for (const cube of cubes.values()) {
+      cube.appearance = $("pieceAppearance").value;
+      cube.setState(cube.cells);
+    }
+  });
   $("targetComposite").addEventListener("change", refreshPieces);
   $("targetTransparency").addEventListener("input", refreshPieces);
   $("playSolution").onclick = async () => {

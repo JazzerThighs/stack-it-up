@@ -11,3 +11,12 @@ assert.equal(mesh.length,raw.length);for(let n=0;n<mesh.length;n+=9)assert.deepE
 board[26]=2;ids[26]=6;
 const withExtra=compositeMesh(board,ids,colors,m=>engine.bandMesh(m));assert(withExtra.length>mesh.length);assert(withExtra.every(Number.isFinite));
 console.log('PASS: composite geometry and normals exactly match native game surfaces; extra cubies remain visible.');
+
+const voxel=compositeMesh(board,ids,colors,()=>{throw Error('Voxel must not generate smooth geometry');},'voxel');
+assert.equal(voxel.length,5*36*9);
+assert(voxel.every(Number.isFinite));
+for(let n=0;n<voxel.length;n+=9) {
+  assert.equal(Math.hypot(...voxel.slice(n+3,n+6)),1);
+  for(let k=0;k<3;k++) assert(Math.abs(voxel[n+k]-Math.round(voxel[n+k]))<.5);
+}
+console.log('PASS: voxel preset uses bounded squared cells with unit face normals.');

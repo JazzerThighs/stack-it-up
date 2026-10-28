@@ -1,7 +1,7 @@
 import {CAMERA_DISTANCE} from "../render/camera.js";
 import {compositeMesh} from "../render/piece-mesh.js";
 import { Renderer } from "../render/renderer.js";
-import { balloon, xyz, rgb, rotateCell } from "../render/geometry.js";
+import { balloon, box, xyz, rgb, rotateCell } from "../render/geometry.js";
 import { renderPackets } from "../render/pipeline.js";
 import { PALETTE, NOTATION, turn } from "./model.js";
 
@@ -117,13 +117,13 @@ export class PackingCube extends Renderer {
   setState(cells, animation = null) {
     const out = [];
     if (this.connected && this.meshGenerator && !animation) {
-      const mesh=compositeMesh(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator);
+      const mesh=compositeMesh(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.appearance);
       this.upload(this.solid,mesh); this.invalidate(); this.onFrame?.(cells,animation); return;
     }
     cells.forEach((cell, i) => {
       if (!cell) return;
       const start = out.length;
-      balloon(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d));
+      (this.appearance === "voxel" ? box : balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d));
       if (animation?.kind === "turn") rotateCell(out, start, i, animation.move, animation.t);
     });
     this.upload(this.solid, new Float32Array(out));
