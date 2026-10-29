@@ -1,3 +1,6 @@
+import {initializePaletteControls} from './palette-controls.js';
+import {subscribePalette} from '../render/palette.js';
+import {initializeVisualControls} from "./visual-controls.js";
 const $ = (id) => document.getElementById(id);
 let context;
 const defaultLayers = [
@@ -61,6 +64,13 @@ export function renderLayerSettings(focusId = null) {
 }
 export function initializeSettings(value) {
   context = value;
+  initializePaletteControls();
+  initializeVisualControls(document,()=>context.invalidate());
+  subscribePalette(() => {
+    for (const r of context.renderers) r.stackEvent = null;
+    context.invalidateMesh();
+    if (context.state) context.update();
+  });
   $("customLayers").onchange = () => {
     renderLayerSettings();
     context.invalidate();
@@ -95,7 +105,8 @@ export function initializeSettings(value) {
 }
 export function syncDisplaySettings() {
   for (const r of context.renderers) {
-    const appearance = $("pieceAppearance").value;
+    const appearance = $("pieceAppearance").value || "jelly";
+    r.canvas.dataset.appearance = appearance;
     if (r.appearance !== appearance) {
       r.appearance = appearance;
       r.stackEvent = null;

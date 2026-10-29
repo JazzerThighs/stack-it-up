@@ -1,12 +1,4 @@
-const colors = [
-  "#000000",
-  "#ffd35c",
-  "#bd8cff",
-  "#ffab5c",
-  "#649aff",
-  "#62d9ad",
-  "#ff718d",
-];
+import {colors} from "./palette.js";
 const faceLabels = ["U", "D", "F", "B", "R", "L"];
 const faces = [
   [1, 2],

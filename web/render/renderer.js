@@ -81,7 +81,7 @@ class Renderer {
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
       throw Error(gl.getProgramInfoLog(this.program));
     this.uniforms = Object.fromEntries(
-      ["orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance"].map((n) => [
+      ["orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
         n,
         gl.getUniformLocation(this.program, n),
       ]),
@@ -137,14 +137,15 @@ class Renderer {
   }
   setMesh(data) {
     this.sourceMesh = data;
-    this.upload(this.stackMesh, this.appearance === "voxel" && this.state
-      ? compositeMesh(this.state.slice(0,27),this.state.slice(27,54),colors,()=>[],this.appearance) : data);
+    this.upload(this.stackMesh, this.state
+      ? compositeMesh(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance) : data);
   }
   setState(s, animation = null) {
     this.gridKey = null;
     this.state = s;
     this.animation = animation;
     this.gravity = s[S.GRAVITY];
+    const activeGeometry = [], floatingGeometry = [];
     const grid = [],
       activeLines = [],
       lines = [],
@@ -196,6 +197,8 @@ class Renderer {
             [activeLines, startActiveLine],
           ])
             rotateCell(out, start, i, animation.move, animation.t);
+        const destination = floating && !s[S.REBUILD_COLORS+i] ? floatingGeometry : activeGeometry;
+        for (let j=startSolid;j<solid.length;j++) destination.push(solid[j]);
       }
     const bands = [];
     if (!this.isStack && s[S.BANDAGED]) {
@@ -229,13 +232,7 @@ class Renderer {
     if (!this.isStack && this.preview)
       for (let i = 0; i < 27; i++)
         if (this.preview & (1 << i)) wire(preview, xyz(i), 0.49, [1, 1, 1]);
-    const activeGeometry = [],
-      floatingGeometry = [];
-    for (let i = 0; i < solid.length; i += 9)
-      (solid[i + 6] === 1 && solid[i + 7] === 1 && solid[i + 8] === 1
-        ? floatingGeometry
-        : activeGeometry
-      ).push(...solid.slice(i, i + 9));
+
     this.upload(this.activeOnly, new Float32Array(activeGeometry));
     this.upload(this.floatingMesh, new Float32Array(floatingGeometry));
     this.upload(this.grid, new Float32Array(grid));
@@ -307,7 +304,7 @@ class Renderer {
     gl.uniform1f(this.uniforms.opacity, 1);
     gl.disable(gl.BLEND);
     const breath =
-      this.breathing && this.appearance === "jelly" && this.animation?.kind !== "turn"
+      this.breathing && this.animation?.kind !== "turn"
         ? 0.90 +
           0.14 *
             Math.sin(
@@ -347,7 +344,7 @@ class Renderer {
         false,
         breath,
       );
-      add("floating", this.bandMesh, gl.TRIANGLES, this.activeOpacity, false, 1, this.breathing && this.appearance === "jelly" && this.animation?.kind !== "turn" ? (breath - 1.04) * 0.10 : 0);
+      add("floating", this.bandMesh, gl.TRIANGLES, this.activeOpacity, false, 1, this.breathing && this.animation?.kind !== "turn" ? (breath - 1.04) * 0.10 : 0);
       add("recent", this.ghostSolid, gl.TRIANGLES, 0.18);
       add("recent", this.ghostLines, gl.LINES, 0.45, true);
       if (this.activeOutlines)

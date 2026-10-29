@@ -17,7 +17,7 @@ r.perspective=false;assert.equal(projectPoint(r,[1,0,1])[0],projectPoint(r,[1,0,
 let depth=true,clears=0;const draws=[],uploads=[];
 const gl={DEPTH_TEST:1,LEQUAL:2,STENCIL_TEST:3,BLEND:4,LINES:5,TRIANGLES:6,SRC_ALPHA:7,ONE_MINUS_SRC_ALPHA:8,DEPTH_BUFFER_BIT:9,
  enable(){},disable(){},depthFunc(){},depthMask(v){depth=v;},clearDepth(v){assert.equal(v,1);},clear(){assert(depth);clears++;},
- uniform1f(){},uniform1i(){},bindVertexArray(){},blendFunc(){},drawArrays(){draws.push(depth);}};
+ useProgram(){},uniform3fv(){},uniform1f(){},uniform1i(){},bindVertexArray(){},blendFunc(){},drawArrays(){draws.push(depth);}};
 const triangle=z=>[0,0,z,0,0,1,1,1,1,.1,0,z,0,0,1,1,1,1,0,.1,z,0,0,1,1,1,1];
 const renderer={gl,uniforms:{},project:p=>p,transparentBuffer:{vao:{}},upload(target,data){target.data=data;target.count=data.length/9;uploads.push(data);}};
 const packet=(id,z)=>({id,target:{vao:{},count:3,data:new Float32Array(triangle(z))},type:gl.TRIANGLES,opacity:.5,breathe:1,unlit:false});

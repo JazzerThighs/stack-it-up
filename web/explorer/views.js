@@ -1,3 +1,6 @@
+import {initializePaletteControls} from '../ui/palette-controls.js';
+import {subscribePalette} from '../render/palette.js';
+import {initializeVisualControls} from "../ui/visual-controls.js";
 import { PackingCube } from "./cube-view.js";
 import {
   packingCells,
@@ -18,6 +21,11 @@ export function createExplorerViews({
 }) {
   const $ = id => root.getElementById(id);
   const cubes = new Map();
+  initializeVisualControls(root,()=>{for(const cube of cubes.values()) cube.invalidate();});
+  initializePaletteControls(root);
+  subscribePalette(() => {
+    for (const cube of cubes.values()) cube.setState(cube.cells, cube.currentAnimation);
+  });
   let selected,
     targetCells,
     playback = 0,
@@ -27,7 +35,8 @@ export function createExplorerViews({
     if (!cubes.has(id)) {
       const view = new PackingCube($(id), options);
       view.fitScale = 6.0;
-      view.appearance = $("pieceAppearance").value;
+      view.appearance = $("pieceAppearance").value || "jelly";
+      view.perspective = $("explorerCamera").value !== "orthographic";
       view.meshGenerator = meshGenerator;
       if (id === "solvedCube" || id === "practiceRight") view.opacity=1-Number($("targetTransparency").value)/100;
       view.connected = (id === "solvedCube" || id === "practiceRight") && $("targetComposite").checked;
@@ -72,7 +81,13 @@ export function createExplorerViews({
   $("pieceAppearance").addEventListener("change", () => {
     for (const cube of cubes.values()) {
       cube.appearance = $("pieceAppearance").value;
-      cube.setState(cube.cells);
+      cube.setState(cube.cells,cube.currentAnimation);
+    }
+  });
+  $("explorerCamera").addEventListener("change", () => {
+    for (const cube of cubes.values()) {
+      cube.perspective = $("explorerCamera").value !== "orthographic";
+      cube.invalidate();
     }
   });
   $("targetComposite").addEventListener("change", refreshPieces);

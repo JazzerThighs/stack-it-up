@@ -115,6 +115,7 @@ export class PackingCube extends Renderer {
     this.changed();
   }
   setState(cells, animation = null) {
+    this.currentAnimation = animation;
     const out = [];
     if (this.connected && this.meshGenerator && !animation) {
       const mesh=compositeMesh(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.appearance);
@@ -241,6 +242,7 @@ export class PackingCube extends Renderer {
         this.gl.deleteBuffer(value.buffer);
         this.gl.deleteVertexArray(value.vao);
       }
+    this.asciiPass?.destroy();
     this.gl.deleteProgram(this.program);
     this.host.replaceChildren();
   }

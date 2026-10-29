@@ -308,7 +308,7 @@ export function sceneDecorations(add, unit, context) {
     const outline = [],
       mask = state[S.ACTIVE] | state[S.FLOATING],
       breath = this.breathing
-        ? 1 + 0.1 * Math.sin((performance.now() * Math.PI * 2) / 3200)
+        ? 0.90 + 0.14 * Math.sin((performance.now() * Math.PI * 2) / 3200)
         : 1;
     for (let i = 0; i < 27; i++)
       if (mask & (1 << i)) {
@@ -370,7 +370,7 @@ export function sceneDecorations(add, unit, context) {
             hull[j].world,
             hull[(j + 1) % hull.length].world,
             [0.015, 0.025, 0.035],
-            4,
+            6,
           );
       }
     push("hoverOutline", outline);

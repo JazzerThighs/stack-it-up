@@ -830,4 +830,4 @@ for (const id of ["gameTab", "explorerTab"]) {
   });
 }
 
-if (globalThis.location?.hash === "#packing") selectApplication(true);
+selectApplication(globalThis.location?.hash !== "#game");

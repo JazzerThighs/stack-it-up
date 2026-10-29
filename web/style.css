@@ -2506,3 +2506,20 @@ main.explorer-active > .topbar { padding:0 14px; }
 .forecast-replay[hidden] { display:none; }
 .forecast-replay span { flex-basis:100%; font-size:14px; }
 .forecast-replay button { font-size:13px; padding:6px; }
+
+.piece-color-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:12px 0; }
+.piece-color-grid label { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; border:1px solid #43565d; border-radius:10px; font-weight:700; }
+.piece-color-grid input[type="color"] { width:48px; height:40px; min-height:40px; padding:2px; border:0; cursor:pointer; }
+.viewer-display label { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:10px 0; }
+.viewer-display select { min-width:150px; min-height:44px; }
+@media(max-width:380px) { .piece-color-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* The whole playfield stays black around ASCII canvases and floating HUDs. */
+.game-panel:has(canvas[data-appearance="ascii"]) { background:#000; }
+
+.visual-tuning { border:1px solid #43565d; border-radius:12px; padding:12px; margin:12px 0; }
+.visual-tuning > summary { cursor:pointer; font-weight:700; min-height:32px; }
+.visual-tuning > label { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:12px; }
+.visual-tuning output { font-variant-numeric:tabular-nums; color:#9ce5cc; white-space:nowrap; }
+.visual-tuning > input[type="range"] { display:block; width:100%; min-height:36px; accent-color:#9ce5cc; margin:0 0 10px; }
+.visual-tuning > button { min-height:44px; margin-top:8px; }

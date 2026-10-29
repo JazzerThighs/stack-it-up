@@ -2,23 +2,33 @@
 //! WebGL transforms and shades the retained vertex buffer during orbiting.
 use crate::engine::{COLORS, State, bits, xyz};
 type V = [f32; 3];
+// Smooth the occupied volume as a whole. Adjacent cell integrals telescope,
+// avoiding raised seams where overlapping rounded boxes used to meet.
+const SOFTNESS: f32 = 0.28;
+const ISO: f32 = 0.65;
 #[derive(Clone)]
-struct RoundBox {
+struct CellVolume {
     center: V,
-    half: V,
 }
-fn field(p: V, boxes: &[RoundBox]) -> f32 {
-    let mut d: f32 = 10.;
-    for b in boxes {
-        let q: V = std::array::from_fn(|k| (p[k] - b.center[k]).abs() - b.half[k] + 0.16);
-        let outside = q.iter().map(|x| x.max(0.).powi(2)).sum::<f32>().sqrt();
-        let distance = outside + q[0].max(q[1]).max(q[2]).min(0.) - 0.16;
-        let h = (0.06 - (d - distance).abs()).max(0.) / 0.06;
-        d = d.min(distance) - h * h * 0.015;
-    }
-    d
+fn integral(x: f32) -> f32 {
+    if x <= -SOFTNESS { return 0.; }
+    if x >= SOFTNESS { return 1.; }
+    let t = x / SOFTNESS;
+    let t2 = t * t;
+    0.5 + (15. / 16.) * t * (1. + t2 * (-2. / 3. + t2 / 5.))
 }
-fn normal(p: V, boxes: &[RoundBox]) -> V {
+fn field(p: V, boxes: &[CellVolume]) -> f32 {
+    let filled = boxes.iter().map(|b| {
+        (0..3).map(|k| {
+            let x = p[k] - b.center[k];
+            integral(x + 0.5) - integral(x - 0.5)
+        }).product::<f32>()
+    }).sum::<f32>();
+    // Disjoint pieces cannot overlap: their normalized occupancies sum to at
+    // most one, and each surface requires more than half of that occupancy.
+    ISO - filled
+}
+fn normal(p: V, boxes: &[CellVolume]) -> V {
     let g: V = std::array::from_fn(|k| {
         let mut a = p;
         let mut b = p;
@@ -29,43 +39,12 @@ fn normal(p: V, boxes: &[RoundBox]) -> V {
     let l = g.iter().map(|v| v * v).sum::<f32>().sqrt().max(1e-9);
     g.map(|v| v / l)
 }
-fn boxes(mask: u32) -> Vec<RoundBox> {
-    let cells = bits(mask).map(xyz).collect::<Vec<_>>();
-    let mut candidates = Vec::new();
-    for &lo in &cells {
-        for &hi in &cells {
-            if (0..3).any(|k| lo[k] > hi[k]) {
-                continue;
-            }
-            let mut filled = true;
-            for x in lo[0]..=hi[0] {
-                for y in lo[1]..=hi[1] {
-                    for z in lo[2]..=hi[2] {
-                        if mask & (1 << crate::engine::idx([x, y, z])) == 0 {
-                            filled = false;
-                        }
-                    }
-                }
-            }
-            if filled {
-                candidates.push((lo, hi));
-            }
-        }
-    }
-    candidates
-        .iter()
-        .filter(|&&(lo, hi)| {
-            !candidates
-                .iter()
-                .any(|&(a, b)| (a, b) != (lo, hi) && (0..3).all(|k| lo[k] >= a[k] && hi[k] <= b[k]))
-        })
-        .map(|&(lo, hi)| RoundBox {
-            center: std::array::from_fn(|k| (lo[k] + hi[k]) as f32 / 2. - 1.),
-            half: std::array::from_fn(|k| (hi[k] - lo[k] + 1) as f32 / 2. - 0.055),
-        })
-        .collect()
+fn boxes(mask: u32) -> Vec<CellVolume> {
+    bits(mask).map(xyz).map(|cell| CellVolume {
+        center: cell.map(|v| v as f32 - 1.),
+    }).collect()
 }
-fn triangle(mut points: [V; 3], boxes: &[RoundBox], color: V, out: &mut Vec<f32>) {
+fn triangle(mut points: [V; 3], boxes: &[CellVolume], color: V, out: &mut Vec<f32>) {
     let center: V = std::array::from_fn(|k| (points[0][k] + points[1][k] + points[2][k]) / 3.);
     let n = normal(center, boxes);
     let u: V = std::array::from_fn(|k| points[1][k] - points[0][k]);
@@ -142,7 +121,25 @@ pub fn build(state: &State) -> Vec<f32> {
                         continue;
                     }
                     let edge = |a: usize, b: usize| {
-                        let t = d[a] / (d[a] - d[b]);
+                        // Refine on the shared edge so normals are sampled on
+                        // the actual curved surface, not a linear approximation.
+                        let (mut lo, mut hi) = (0., 1.);
+                        let (mut dl, mut dh) = (d[a], d[b]);
+                        for _ in 0..4 {
+                            let t = (lo + hi) * 0.5;
+                            let p = std::array::from_fn(|k| {
+                                vertices[a][k] + (vertices[b][k] - vertices[a][k]) * t
+                            });
+                            let distance = field(p, &boxes);
+                            if (distance < 0.) == (d[a] < 0.) {
+                                lo = t;
+                                dl = distance;
+                            } else {
+                                hi = t;
+                                dh = distance;
+                            }
+                        }
+                        let t = lo + (hi - lo) * dl / (dl - dh);
                         std::array::from_fn(|k| {
                             vertices[a][k] + (vertices[b][k] - vertices[a][k]) * t
                         })
@@ -219,6 +216,44 @@ mod tests {
         assert!(field([-1., -0.5, -1.], &b) > 0.);
     }
     #[test]
+    fn flat_runs_do_not_bulge_at_cell_joins() {
+        let b = boxes((1 << 0) | (1 << 1) | (1 << 2));
+        for z in [-1., -0.75, -0.5, -0.25, 0., 0.25, 0.5, 0.75, 1.] {
+            let p = [-1.44, -1., z];
+            assert!((field(p, &b) - field([-1.44, -1., 0.], &b)).abs() < 1e-6);
+            let n = normal(p, &b);
+            assert!(n[0] < -0.999 && n[1].abs() < 0.001 && n[2].abs() < 0.001);
+        }
+    }
+    #[test]
+    fn concave_joins_are_smooth_and_order_independent() {
+        let b = boxes((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5));
+        let mut reversed = b.clone();
+        reversed.reverse();
+        for y in 0..60 {
+            for z in 0..60 {
+                let p = [-1., -0.8 + y as f32 * 0.01, 0.2 + z as f32 * 0.01];
+                assert!((field(p, &b) - field(p, &reversed)).abs() < 1e-6);
+                let n = normal(p, &b);
+                let m = normal([p[0], p[1] + 0.0001, p[2]], &b);
+                if field(p, &b).abs() < 0.02 {
+                    assert!((0..3).map(|k| (n[k]-m[k]).powi(2)).sum::<f32>() < 0.001);
+                }
+            }
+        }
+    }
+    #[test]
+    fn separate_pieces_do_not_inflate_into_each_other() {
+        let a = boxes((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5));
+        let b = boxes(((1 << 27) - 1) ^ ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5)));
+        for y in 0..30 {
+            for z in 0..30 {
+                let p = [-1., -1.5 + y as f32 * 0.1, -1.5 + z as f32 * 0.1];
+                assert!(field(p, &a) >= 0. || field(p, &b) >= 0.);
+            }
+        }
+    }
+    #[test]
     fn mesh_has_finite_unit_normals() {
         let mut s = State::empty(1);
         for i in [0, 1, 2, 5] {
@@ -229,7 +264,9 @@ mod tests {
         assert!(!m.is_empty());
         assert_eq!(m.len() % 27, 0);
         assert!(m.iter().all(|x| x.is_finite()));
+        let surface = boxes((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5));
         for v in m.chunks_exact(9) {
+            assert!(field([v[0],v[1],v[2]], &surface).abs() < 0.002);
             let n = v[3..6].iter().map(|x| x * x).sum::<f32>();
             assert!((n - 1.).abs() < 0.002);
         }

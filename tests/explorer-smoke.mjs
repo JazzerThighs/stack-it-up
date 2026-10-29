@@ -15,6 +15,7 @@ const gl = new Proxy(
     createProgram: () => ({}),
     createShader: () => ({}),
     getShaderParameter: () => true,
+    checkFramebufferStatus: () => gl.FRAMEBUFFER_COMPLETE,
     getProgramParameter: () => true,
     getAttribLocation: () => 0,
     getUniformLocation: () => ({}),
@@ -232,3 +233,32 @@ flush();applicationPage.hidden=true;assert(!source.isVisible());
 const pendingFrames=frames.length;source.invalidate();source.draw();assert.equal(frames.length,pendingFrames);
 applicationPage.hidden=false;assert(source.isVisible());source.invalidate();assert(frames.length>pendingFrames);flush();
 console.log('PASS: hidden explorer stops scheduling GPU frames and resumes when shown.');
+
+const explorerState=[structuredClone(source.cells),structuredClone(target.cells)];
+for(const camera of ['orthographic','perspective']) {
+  $('explorerCamera').value=camera;$('explorerCamera').listeners.change();flush();
+  assert.equal(source.perspective,camera==='perspective');assert.equal(target.perspective,source.perspective);
+}
+for(const style of ['jelly','dither','matte','voxel','cel','ascii','dither']) {
+  $('pieceAppearance').value=style;$('pieceAppearance').listeners.change();flush();
+  assert.equal(target.appearance,style);assert.equal(source.appearance,style);
+  assert.equal(target.canvas.dataset.appearance,style);assert.equal(source.canvas.dataset.appearance,style);
+  assert.deepEqual([source.cells,target.cells],explorerState);
+}
+$('pieceColorO').value='#123456';$('pieceColorO').listeners.input();flush();
+const palette=await import('../dist/render/palette.js');
+assert.equal(palette.colors[1],'#123456');assert.equal(palette.packingPalette.y,'#123456');
+assert(target.solid.data.some((value,i)=>i%9===6 && Math.abs(value-0x12/255)<1e-6));
+assert.deepEqual([source.cells,target.cells],explorerState);
+$('resetPieceColors').onclick();assert.deepEqual(palette.colors,palette.defaultColors);
+console.log('PASS: explorer cameras, six styles and custom colors preserve packings and practice state.');
+
+const retainedSurface=target.solid.data;
+$('asciiSize').value='1.5';$('asciiSize').listeners.input();
+$('faceLight').onclick();flush();
+const visual=await import('../dist/render/visual-settings.js');
+assert.equal(visual.visualSettings.asciiSize,1.5);assert.deepEqual(visual.lightDirection(),[0,0,1]);
+assert.equal(target.solid.data,retainedSurface);
+assert.deepEqual([source.cells,target.cells],explorerState);
+$('resetascii').onclick();$('resetlight').onclick();
+console.log('PASS: explorer filter controls preserve geometry and practice state.');

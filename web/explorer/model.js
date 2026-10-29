@@ -5,18 +5,7 @@ export const displayIdentity = identity => identity;
 export const CANONICAL_COLORS = {J:'b',L:'o',S:'g',Z:'r',O:'y',T:'m'};
 export const canonicalColor = identity => CANONICAL_COLORS[displayIdentity(identity)] || 'd';
 
-export const PALETTE = {
-  b: "#649aff",
-  y: "#ffd35c",
-  m: "#bd8cff",
-  o: "#ffab5c",
-  g: "#62d9ad",
-  r: "#ff718d",
-  w: "#f0f3f7",
-  k: "#202833",
-  l: "#68717d",
-  d: "#68717d",
-};
+export {packingPalette as PALETTE} from "../render/palette.js";
 export const cellsOf = (mask) =>
   Array.from({ length: 27 }, (_, i) => i).filter((i) => mask & (1 << i));
 const xyz = CubeStack.xyz;

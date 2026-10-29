@@ -1,10 +1,25 @@
-import { appearanceIndex } from "./appearance.js";
+import {appearanceIndex} from "./appearance.js";
+import {AsciiPass} from "./ascii-pass.js";
+import {visualSettings,lightDirection} from "./visual-settings.js";
 const $ = (id) => document.getElementById(id);
 export function renderPackets(packets, context) {
   const { layerOrder } = context;
   const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
-  gl.uniform1i(this.uniforms.appearance, appearanceIndex(this.appearance));
+  const pixelRatio=Math.min(globalThis.devicePixelRatio || 1,2);
+  const ascii=this.appearance === 'ascii';
+  if(this.canvas?.dataset && this.canvas.dataset.appearance !== this.appearance)
+    this.canvas.dataset.appearance=this.appearance || 'jelly';
+  if(ascii) {
+    this.asciiPass ??= new AsciiPass(gl);
+    this.asciiPass.begin(this.canvas.width,this.canvas.height);
+  }
+  gl.useProgram(this.program);
+  gl.uniform1i(this.uniforms.appearance,appearanceIndex(this.appearance));
+  gl.uniform1f(this.uniforms.pixelRatio,pixelRatio);
+  gl.uniform3fv(this.uniforms.lightDirection,lightDirection());
+  for(const key of ['lightIntensity','lightAmbient','ditherLevels','ditherSize','ditherContrast','ditherMidpoint'])
+    gl.uniform1f(this.uniforms[key],visualSettings[key]);
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
   gl.disable(gl.STENCIL_TEST);
@@ -82,4 +97,5 @@ export function renderPackets(packets, context) {
   } else group(packets);
   gl.uniform1f(this.uniforms.breath, 1);
   gl.uniform1f(this.uniforms.opacity, 1);
+  if(ascii) this.asciiPass.finish(pixelRatio);
 }
