@@ -1,4 +1,5 @@
 import {appearanceIndex} from "./appearance.js";
+import {DitherPass} from "./dither-pass.js";
 import {AsciiPass} from "./ascii-pass.js";
 import {visualSettings,lightDirection} from "./visual-settings.js";
 const $ = (id) => document.getElementById(id);
@@ -10,10 +11,10 @@ export function renderPackets(packets, context) {
   const ascii=this.appearance === 'ascii';
   if(this.canvas?.dataset && this.canvas.dataset.appearance !== this.appearance)
     this.canvas.dataset.appearance=this.appearance || 'jelly';
-  if(ascii) {
-    this.asciiPass ??= new AsciiPass(gl);
-    this.asciiPass.begin(this.canvas.width,this.canvas.height);
-  }
+  let screenPass=null;
+  if(ascii) screenPass=this.asciiPass ??= new AsciiPass(gl);
+  else if(this.appearance==='dither') screenPass=this.ditherPass ??= new DitherPass(gl);
+  if(screenPass) screenPass.begin(this.canvas.width,this.canvas.height);
   gl.useProgram(this.program);
   gl.uniform1i(this.uniforms.appearance,appearanceIndex(this.appearance));
   gl.uniform1f(this.uniforms.pixelRatio,pixelRatio);
@@ -97,5 +98,5 @@ export function renderPackets(packets, context) {
   } else group(packets);
   gl.uniform1f(this.uniforms.breath, 1);
   gl.uniform1f(this.uniforms.opacity, 1);
-  if(ascii) this.asciiPass.finish(pixelRatio);
+  if(screenPass) screenPass.finish(pixelRatio);
 }

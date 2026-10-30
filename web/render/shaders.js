@@ -22,7 +22,7 @@ void main(){vec3 norm=normalize(n);float light=clamp(max(0.,dot(norm,lightDirect
 if(appearance==1) {
   float coverage=clamp((illumination-ditherMidpoint)*ditherContrast+.5,0.,1.);
   coverage=floor(coverage*(ditherLevels-1.)+.5)/(ditherLevels-1.);
-  shaded=rgb*step(bayer(gl_FragCoord.xy/(ditherSize*pixelRatio)),coverage);
+  shaded=rgb*step(bayer(gl_FragCoord.xy),coverage);
 }
 if(appearance==2) shaded=rgb*(lightAmbient+(1.-lightAmbient)*(.25+.75*light));
 if(appearance==3) shaded=rgb*illumination;

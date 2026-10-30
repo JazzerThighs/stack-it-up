@@ -173,3 +173,5 @@ button.primary { background:var(--accent);color:#142724; }
 .visual-tuning output { font-variant-numeric:tabular-nums; color:#9ce5cc; white-space:nowrap; }
 .visual-tuning > input[type="range"] { display:block; width:100%; min-height:36px; accent-color:#9ce5cc; margin:0 0 10px; }
 .visual-tuning > button { min-height:44px; margin-top:8px; }
+
+.cube-card:has(canvas[data-appearance="dither"]) { background:#000; }

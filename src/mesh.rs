@@ -9,6 +9,8 @@ const ISO: f32 = 0.65;
 #[derive(Clone)]
 struct CellVolume {
     center: V,
+    shape_center: V,
+    shape_half: V,
 }
 fn integral(x: f32) -> f32 {
     if x <= -SOFTNESS { return 0.; }
@@ -26,7 +28,12 @@ fn field(p: V, boxes: &[CellVolume]) -> f32 {
     }).sum::<f32>();
     // Disjoint pieces cannot overlap: their normalized occupancies sum to at
     // most one, and each surface requires more than half of that occupancy.
-    ISO - filled
+    // A piece-wide pressure profile bows broad faces without reintroducing
+    // per-cell seams. The threshold is always >= 0.55, retaining separation.
+    let dome = boxes.first().map_or(0., |b| {
+        (0..3).map(|k| ((p[k]-b.shape_center[k])/b.shape_half[k]).powi(2)).sum::<f32>()
+    });
+    ISO + 0.10 * (dome - 1.) - filled
 }
 fn normal(p: V, boxes: &[CellVolume]) -> V {
     let g: V = std::array::from_fn(|k| {
@@ -40,8 +47,14 @@ fn normal(p: V, boxes: &[CellVolume]) -> V {
     g.map(|v| v / l)
 }
 fn boxes(mask: u32) -> Vec<CellVolume> {
-    bits(mask).map(xyz).map(|cell| CellVolume {
-        center: cell.map(|v| v as f32 - 1.),
+    let cells = bits(mask).map(xyz).collect::<Vec<_>>();
+    if cells.is_empty() { return Vec::new(); }
+    let lo: V = std::array::from_fn(|k| cells.iter().map(|c| c[k]).min().unwrap() as f32 - 1.5);
+    let hi: V = std::array::from_fn(|k| cells.iter().map(|c| c[k]).max().unwrap() as f32 - 0.5);
+    let shape_center = std::array::from_fn(|k| (lo[k]+hi[k])*0.5);
+    let shape_half = std::array::from_fn(|k| (hi[k]-lo[k])*0.5);
+    cells.into_iter().map(|cell| CellVolume {
+        center: cell.map(|v| v as f32 - 1.), shape_center, shape_half,
     }).collect()
 }
 fn triangle(mut points: [V; 3], boxes: &[CellVolume], color: V, out: &mut Vec<f32>) {
@@ -216,13 +229,22 @@ mod tests {
         assert!(field([-1., -0.5, -1.], &b) > 0.);
     }
     #[test]
-    fn flat_runs_do_not_bulge_at_cell_joins() {
+    fn broad_faces_bow_smoothly_across_cell_joins() {
         let b = boxes((1 << 0) | (1 << 1) | (1 << 2));
-        for z in [-1., -0.75, -0.5, -0.25, 0., 0.25, 0.5, 0.75, 1.] {
-            let p = [-1.44, -1., z];
-            assert!((field(p, &b) - field([-1.44, -1., 0.], &b)).abs() < 1e-6);
-            let n = normal(p, &b);
-            assert!(n[0] < -0.999 && n[1].abs() < 0.001 && n[2].abs() < 0.001);
+        let surface_x = |z| {
+            let (mut lo,mut hi)=(-1.5,-1.);
+            for _ in 0..24 {
+                let x=(lo+hi)*0.5;
+                if field([x,-1.,z],&b)>0. {lo=x;} else {hi=x;}
+            }
+            (lo+hi)*0.5
+        };
+        assert!(surface_x(0.) < surface_x(0.75)-0.005);
+        for z in [-0.75,-0.5,-0.25,0.,0.25,0.5,0.75] {
+            assert!((surface_x(z)-surface_x(-z)).abs()<1e-5);
+            let a=normal([surface_x(z),-1.,z],&b);
+            let c=normal([surface_x(z+0.001),-1.,z+0.001],&b);
+            assert!((0..3).map(|k|(a[k]-c[k]).powi(2)).sum::<f32>()<0.001);
         }
     }
     #[test]

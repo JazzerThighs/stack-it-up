@@ -243,6 +243,7 @@ export class PackingCube extends Renderer {
         this.gl.deleteVertexArray(value.vao);
       }
     this.asciiPass?.destroy();
+    this.ditherPass?.destroy();
     this.gl.deleteProgram(this.program);
     this.host.replaceChildren();
   }

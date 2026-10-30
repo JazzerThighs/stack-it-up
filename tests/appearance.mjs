@@ -43,3 +43,16 @@ assert.equal(visualSettings.ditherLevels,5);assert.equal(visualSettings.asciiSiz
 const restored=await import('../web/render/visual-settings.js?restore');assert.equal(restored.visualSettings.asciiSize,1.5);
 resetVisualSettings();assert.equal(visualSettings.asciiSize,1);
 console.log('PASS: lighting coordinates, saved filter controls, numeric validation and independent resets.');
+
+const {DitherPass,pixelLayout}=await import('../web/render/dither-pass.js');
+assert.deepEqual(pixelLayout(641,479,2,2),{block:4,width:161,height:120});
+const viewports=[];gl.viewport=(...args)=>viewports.push(args);
+Object.defineProperty(globalThis,'devicePixelRatio',{configurable:true,value:2});
+const dither=new DitherPass(gl);const beforeAllocations=allocations;
+dither.begin(641,479);assert.deepEqual(viewports.at(-1),[0,0,161,120]);
+dither.finish(2);assert.deepEqual(viewports.at(-1),[0,0,641,479]);
+dither.begin(641,479);dither.finish(2);assert.equal(allocations,beforeAllocations+1);
+setVisualSetting('ditherSize',3);dither.begin(641,479);dither.finish(2);
+assert.deepEqual(dither.layout,{block:6,width:107,height:80});assert.equal(allocations,beforeAllocations+2);
+dither.destroy();resetVisualSettings();
+console.log('PASS: whole-scene dither renders at low resolution, restores output viewport, reuses buffers and resizes with pixel tuning.');
