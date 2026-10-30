@@ -4,7 +4,7 @@ import {identityShapeNames} from '../render/identity-solids.js';
 
 export function createFamilyExplorer({$,get,getPackings,getFamilies,getSelected}) {
   let lookup,familyId,source,view;
-  try { $('familySolidIdentities').checked=globalThis.localStorage?.getItem('stack-it-up.family-solids')==='true'; } catch {}
+  try { const saved=globalThis.localStorage?.getItem('stack-it-up.family-solids');if(saved!==null && saved!==undefined)$('familySolidIdentities').checked=saved==='true'; } catch {}
   $('familySolidIdentities').onchange=()=>{
     const enabled=$('familySolidIdentities').checked;
     try {globalThis.localStorage?.setItem('stack-it-up.family-solids',String(enabled));} catch {}

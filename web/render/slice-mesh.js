@@ -3,6 +3,10 @@
 const EPS=1e-5;
 const key=v=>v.node ?? v.slice(0,3).map(x=>Math.round(x/EPS)).join(',');
 export function clipMesh(mesh,axis,plane,side) {
+  let low=Infinity,high=-Infinity;
+  for(let i=axis;i<mesh.length;i+=9){low=Math.min(low,mesh[i]);high=Math.max(high,mesh[i]);}
+  if(side>0 ? low>=plane : high<=plane)return mesh;
+  if(side>0 ? high<=plane : low>=plane)return new Float32Array(0);
   const out=[], segments=[];
   for(let i=0;i<mesh.length;i+=27) {
     const tri=[Array.from(mesh.slice(i,i+9)),Array.from(mesh.slice(i+9,i+18)),Array.from(mesh.slice(i+18,i+27))];

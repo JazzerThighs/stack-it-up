@@ -48,6 +48,7 @@ export function adaptEngine(w) {
       const result = words(w.state_ptr(), w.state_len());
       if (result.length !== SNAPSHOT_WORDS || result[S.ABI_VERSION] !== 4)
         throw Error("Incompatible game engine: rebuild the complete app.");
+      result.rebuildIds=Uint32Array.from({length:27},(_,i)=>w.rebuild_id_at?.(i)||0);
       return result;
     },
     mesh() {

@@ -1,4 +1,7 @@
-import {explorationMeshes, sliceForTurn, animateSlices} from "./exploration-mesh.js";
+import {mergeFragments,joinMeshes,exposedFragment,neighborCell} from '../render/cell-fragments.js';
+import {turnTransform} from '../render/transforms.js';
+import {CubeStack} from '../engine/coordinates.js';
+import {explorationMeshes} from "./exploration-mesh.js";
 import {CAMERA_DISTANCE} from "../render/camera.js";
 import {compositeMesh} from "../render/piece-mesh.js";
 import { Renderer } from "../render/renderer.js";
@@ -119,24 +122,25 @@ export class PackingCube extends Renderer {
     this.currentAnimation = animation;
     const out = [];
     if (this.familyExploration && this.meshGenerator) {
-      const signature = JSON.stringify([cells,this.appearance,this.explorationSolids,PALETTE]);
-      if (signature !== this.explorationSignature) {
-        this.explorationSignature = signature;
-        this.explorationGeometry = explorationMeshes(cells,this.meshGenerator,this.appearance,this.explorationSolids);
-        this.explorationTurn = null;
+      const signature=JSON.stringify([cells,this.appearance,this.explorationSolids,this.explorationGray,PALETTE]);
+      if(signature!==this.explorationSignature) {
+        this.explorationSignature=signature;
+        this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.appearance,this.explorationSolids,this.explorationGray);
+        const fragments=mergeFragments(this.explorationGeometry);
+        this.explorationLayers ??= Array.from({length:45},()=>this.buffer());
+        // Five motion partitions per axis: three single slices and two wide turns.
+        for(let axis=0;axis<3;axis++)for(let mode=0;mode<5;mode++) {
+          const moving=i=>mode<3 ? i===mode : i!== (mode===3?2:0);
+          const visible=fragments.map((mesh,cell)=>exposedFragment(mesh,cell,(a,side)=>{
+            const neighbor=neighborCell(cell,a,side);
+            return neighbor<0 || moving(CubeStack.xyz(cell)[axis])!==moving(CubeStack.xyz(neighbor)[axis]);
+          }));
+          for(let layer=0;layer<3;layer++)
+            this.upload(this.explorationLayers[(axis*5+mode)*3+layer],joinMeshes(visible.filter((_,i)=>CubeStack.xyz(i)[axis]===layer)));
+        }
+        this.upload(this.solid,joinMeshes(this.explorationGeometry));
       }
-      let mesh;
-      if (animation?.kind === "turn") {
-        if (this.explorationTurn?.move !== animation.move) this.explorationTurn = {
-          move:animation.move, parts:sliceForTurn(this.explorationGeometry,animation.move),
-        };
-        mesh=animateSlices(this.explorationTurn.parts,animation.move,animation.t);
-      } else {
-        const values=[];
-        for(const part of this.explorationGeometry) for(const value of part) values.push(value);
-        mesh=new Float32Array(values);
-      }
-      this.upload(this.solid,mesh); this.invalidate(); this.onFrame?.(cells,animation); return;
+      this.invalidate();this.onFrame?.(cells,animation);return;
     }
     if (this.connected && this.meshGenerator && !animation) {
       const mesh=compositeMesh(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.appearance);
@@ -239,18 +243,16 @@ export class PackingCube extends Renderer {
       (2 * this.unit) / rect.height,
     );
     gl.disable(gl.CULL_FACE);
+    let packets=[{id:'packing',target:this.solid,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1}];
+    if(this.familyExploration && this.currentAnimation?.kind==='turn' && this.currentAnimation.t>0) {
+      const {move,t}=this.currentAnimation,[,axis,layer,side]=CubeStack.moves[move%15];
+      const rotation=turnTransform(move,t);
+      packets=[0,1,2].map(i=>({id:'packing',target:this.explorationLayers[(axis*5+(layer==='wide'?(side===0?3:4):layer))*3+i],type:gl.TRIANGLES,
+        opacity:this.opacity,unlit:false,breathe:1,rotation:(layer==='wide'?i!==2-side:i===layer)?rotation:undefined}));
+    }
     renderPackets.call(
       this,
-      [
-        {
-          id: "packing",
-          target: this.solid,
-          type: gl.TRIANGLES,
-          opacity: this.opacity,
-          unlit: false,
-          breathe: 1,
-        },
-      ],
+      packets, /* retained cell fragments, moved entirely by GPU uniforms */
       { customLayers: false, layerOrder: [] },
     );
   }
@@ -263,6 +265,7 @@ export class PackingCube extends Renderer {
         this.gl.deleteBuffer(value.buffer);
         this.gl.deleteVertexArray(value.vao);
       }
+    for(const buffer of this.explorationLayers || []) {this.gl.deleteBuffer(buffer.buffer);this.gl.deleteVertexArray(buffer.vao);}
     this.asciiPass?.destroy();
     this.ditherPass?.destroy();
     this.gl.deleteProgram(this.program);

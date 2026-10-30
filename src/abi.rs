@@ -341,3 +341,14 @@ pub extern "C" fn game_set_gravity_rules(slice_gravity:u32, one_step:u32) {
 pub extern "C" fn game_gravity_rules() -> u32 {
     APP.with_borrow(|a| u32::from(a.game.state.slice_gravity) | (u32::from(a.game.state.gravity_one_step)<<1))
 }
+
+/// Presentation-only physical identity for freed whole-piece cubies. Kept
+/// separate from the stable ABI-v4 snapshot and from interchangeable color pools.
+#[unsafe(no_mangle)]
+pub extern "C" fn rebuild_id_at(cell: u32) -> u32 {
+    APP.with_borrow(|a| {
+        let s = &a.game.state;
+        s.floating.iter().find(|f| f.cell == cell as usize && s.rebuild_ids.contains(&f.id))
+            .map_or(0, |f| f.id)
+    })
+}

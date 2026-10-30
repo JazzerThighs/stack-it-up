@@ -2,12 +2,14 @@ import {CubeStack} from "../engine/coordinates.js";
 import { S } from "../engine/snapshot.js";
 const $ = (id) => document.getElementById(id);
 const names = ["", "O", "T", "L", "J", "S", "Z"];
+const copyState=s=>{const copy=s.slice();if(s.rebuildIds)copy.rebuildIds=s.rebuildIds.slice();return copy;};
 // Carry the visible active cells to the end of the player's completed turn.
 export function landedState(before, move) {
-  const state=before.slice();
+  const state=copyState(before);
   if (move == null) return state;
   const [,axis,layer,side]=CubeStack.moves[move%15], sign=(move>=15)===(side===0) ? -1 : 1;
   state[S.ACTIVE]=0; state[S.FLOATING]=0;
+  state.rebuildIds?.fill(0);
   state.fill(0,S.REBUILD_COLORS,S.REBUILD_COLORS+27);
   state.fill(0,S.BAND_IDS,S.BAND_IDS+27);
   for (let i=0;i<27;i++) {
@@ -17,6 +19,7 @@ export function landedState(before, move) {
     }
     const j=p[0]*9+p[1]*3+p[2];
     for (const field of [S.ACTIVE,S.FLOATING]) if (before[field] & (1<<i)) state[field]|=1<<j;
+    if(state.rebuildIds)state.rebuildIds[j]=before.rebuildIds[i];
     state[S.REBUILD_COLORS+j]=before[S.REBUILD_COLORS+i];
     state[S.BAND_IDS+j]=before[S.BAND_IDS+i];
   }
@@ -57,11 +60,14 @@ export function createAnimations(context) {
   async function resolveAnimations(before, after, trace, move = null) {
     let display = landedState(before, move);
     for (const e of trace) {
-      const next = display.slice();
+      const next = copyState(display);
       next.set(e.board, 0);
       next.set(e.ids, 27);
 
-      if (e.kind === 5) next.set(after.slice(S.BANDAGED), S.BANDAGED);
+      if (e.kind === 5) {
+        next.set(after.slice(S.BANDAGED), S.BANDAGED);
+        next.rebuildIds=after.rebuildIds?.slice();
+      }
       next[S.FLOATING] = e.floatMask || 0;
       next[S.FRAGMENT_TURNS] = e.fragmentTurns || 0;
       if (e.face) next[S.GRAVITY] = e.face;
@@ -79,7 +85,7 @@ export function createAnimations(context) {
         $("message").textContent =
           e.kind === 2 ? "Face clear — making room." : "Pieces falling…";
       const placing = e.kind === 1 || e.kind === 4;
-      const during = next.slice();
+      const during = copyState(next);
       if (placing) {
         during[S.ACTIVE]=display[S.ACTIVE];
         during[S.FLOATING]=display[S.FLOATING];
@@ -88,7 +94,10 @@ export function createAnimations(context) {
       } else {
         during[S.ACTIVE]=0;
       }
-      context.renderers.forEach((r) => r.setState(during));
+      context.renderers.forEach((r) => {
+        r.prepareStackEvent?.(display,next,e);
+        r.setState(during);
+      });
       await animate(e.kind === 3 ? 180 : e.kind === 2 ? 400 : 320, (t) =>
         context.renderers.forEach((r) => r.stackFrame(display, next, e, t)),
       );

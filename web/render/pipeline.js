@@ -1,3 +1,5 @@
+import {categorySeed} from './transparency.js';
+import {IDENTITY,transformPoint} from './transforms.js';
 import {appearanceIndex} from "./appearance.js";
 import {DitherPass} from "./dither-pass.js";
 import {AsciiPass} from "./ascii-pass.js";
@@ -24,7 +26,13 @@ export function renderPackets(packets, context) {
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
   gl.disable(gl.STENCIL_TEST);
+  const stippled=p=>this.appearance==='dither' || !!visualSettings.ditherTransparency || p.id==='recent';
   const draw = (p) => {
+    gl.uniformMatrix3fv(this.uniforms.modelRotation,false,p.rotation || IDENTITY);
+    gl.uniform1f(this.uniforms.modelScale,p.modelScale ?? 1);
+    gl.uniform3fv(this.uniforms.modelOffset,p.offset || [0,0,0]);
+    gl.uniform1i(this.uniforms.ditherSeed,categorySeed(p.id));
+    gl.uniform1i(this.uniforms.screenDoor,stippled(p)?1:0);
     gl.uniform1f(this.uniforms.breath, p.breathe);
     gl.uniform1f(this.uniforms.surfacePulse, p.pulse || 0);
     gl.uniform1i(this.uniforms.unlit, p.unlit ? 1 : 0);
@@ -35,24 +43,24 @@ export function renderPackets(packets, context) {
   const group = (items) => {
     gl.depthMask(true);
     gl.disable(gl.BLEND);
-    for (const p of items) if (p.opacity >= 1) draw(p);
+    for (const p of items) if (p.opacity > 0 && (p.opacity >= 1 || stippled(p))) draw(p);
     // Sort every translucent primitive globally within this depth group. This
     // prevents submission order from masquerading as physical occlusion.
     const primitives = [];
     for (const p of items)
-      if (p.opacity < 1) {
+      if (p.opacity > 0 && p.opacity < 1 && !stippled(p)) {
         const size = p.type === gl.LINES ? 18 : 27,
           data = p.target.data;
         for (let i = 0; i < data.length; i += size) {
           const vertices = [];
           let depth = 0;
           for (let j = i; j < i + size; j += 9) {
-            const point = [0, 1, 2].map((a) => {
+            const point = transformPoint([0, 1, 2].map((a) => {
               const cell = Math.floor(data[j + a] + 0.5);
               return cell + (data[j + a] - cell) * p.breathe + data[j + 3 + a] * (p.pulse || 0);
-            });
+            }),p);
             depth += this.project(point)[2];
-            vertices.push(...point, ...data.slice(j + 3, j + 9));
+            vertices.push(...point, ...transformPoint(Array.from(data.slice(j+3,j+6)),{rotation:p.rotation}),...data.slice(j+6,j+9));
           }
           primitives.push({ p, vertices, depth: depth / (size / 9) });
         }
@@ -66,7 +74,7 @@ export function renderPackets(packets, context) {
     const flush = () => {
       if (!run) return;
       this.upload(this.transparentBuffer, new Float32Array(vertices));
-      draw({ ...run, target: this.transparentBuffer, breathe: 1, pulse: 0 });
+      draw({ ...run, target: this.transparentBuffer, breathe: 1, pulse: 0, rotation:IDENTITY,modelScale:1,offset:[0,0,0] });
     };
     for (const primitive of primitives) {
       const p = primitive.p;

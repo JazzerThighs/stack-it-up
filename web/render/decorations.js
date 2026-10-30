@@ -1,3 +1,4 @@
+import {activeCubie} from './active-cubie.js';
 import {CAMERA_DISTANCE} from "./camera.js";
 import { S } from "../engine/snapshot.js";
 import {
@@ -330,11 +331,11 @@ export function sceneDecorations(add, unit, context) {
             : this.activeOpacity;
         if (opacity <= 0) continue;
         const geometry = [];
-        (cubieShape(!(state[S.FLOATING] & (1 << i)), !!state[S.REBUILD_COLORS + i], this.activeSpheres))(
+        activeCubie(
           geometry,
           p,
           0.438 * breath,
-          [1, 1, 1],
+          [1, 1, 1],i,state,this,
         );
         const unique = new Map();
         for (let j = 0; j < geometry.length; j += 9) {

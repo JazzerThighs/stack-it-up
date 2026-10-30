@@ -1,4 +1,4 @@
-# Wasm ABI v3
+# Wasm ABI v4
 
 C ABI exports with linear-memory buffers; no wasm-bindgen or JS rules engine.
 Call pointer exports before their length exports, then copy before another call can
@@ -8,7 +8,7 @@ Commands: `game_init(seed)`, `game_turn(0..29)`, `game_choose(0..5)`, `game_hold
 `game_undo()`, `game_set_gravity(0..2)`, `game_set_fragments(0|1)`.
 Turn, choose, hold and undo return 1 when accepted, otherwise 0.
 
-`state_ptr()` / `state_len()` expose 166 u32 words:
+`state_ptr()` / `state_len()` expose 226 u32 words:
 
 | Slots | Meaning |
 | --- | --- |
@@ -17,7 +17,7 @@ Turn, choose, hold and undo return 1 when accepted, otherwise 0.
 | 54–55 | Active mask, current piece |
 | 56–61 | Next six pieces |
 | 62–68 | Pieces, clears, score, gravity face+1, top-out, winning moves, undo count |
-| 69–79 | Last face/piece, cleared faces, revision, occupancy, ABI=3, auto fills/tiers, clear count, pending faces, last mask |
+| 69–79 | Last face/piece, cleared faces, revision, occupancy, ABI=4, auto fills/tiers, clear count, pending faces, last mask |
 | 80–133 | Six outside-view face maps |
 | 134–139 | Letter display masks |
 | 140–151 | Edge/corner inventories |
@@ -60,3 +60,12 @@ and reconstruction recognition. No JavaScript gameplay fallback was added.
 Snapshot layout remains ABI v4. New frontend builds also require `game_set_early_lock(enabled)`, `game_lock_band(cell)` (returns success), `band_mesh_ptr(mask)` and `band_mesh_len()`. The mesh is a connected white rounded surface, copied before another mesh call. Early locking preserves the current piece and defers clear resolution until normal placement. The option is enabled by default; the browser enables bandaging by default on game startup.
 
 Slice clears: `game_set_slice_clears(1)` requires every cell (default); `2` requires surface cells only. `0` is retained for old-rule regression fixtures. `game_slice_clear_mode()` reports the current mode, including after Undo. Snapshot slot 71 and last-clear event ids now include internal X/Y/Z planes at bits/ids 6, 7, 8. Each distinct plane counts once; cell deletion uses their union.
+
+Additional ABI-v4 snapshot ranges: 166 bandaging; 167 random singles; 168 rebuild
+mode; 169 rebuilding mask; 170 pending rebuild count; 171 allowed moves; 172-198
+rebuild colors by cell; 199-225 white band IDs by cell.
+
+`rebuild_id_at(cell)` returns the physical placement ID for a freed whole-piece
+cubie, or zero. This presentation-only accessor does not alter the snapshot size
+or saved-state transport. The JS adapter attaches its 27 values as `rebuildIds`
+on each snapshot; animation copies and turns explicitly preserve that metadata.

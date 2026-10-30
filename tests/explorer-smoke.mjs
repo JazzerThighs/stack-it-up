@@ -285,7 +285,7 @@ familyView.undo();flush();
 assert.deepEqual(familyView.cells,familyStart);
 assert.equal($("familyExploreProgress").textContent,initialStatus);
 familyView.setState(familyView.cells,{kind:'turn',move:6,t:.5});
-assert(familyView.explorationTurn.parts.rotating.length>0);
+assert(familyView.explorationLayers.some(buffer=>buffer.count>0));
 familyView.setState(familyView.cells);
 $("familyExploreMode").checked=false;$("familyExploreMode").onchange();
 assert(!$("cubeLayout").hidden && $("familyExplorePanel").hidden);
@@ -300,6 +300,7 @@ const {detectPieces}=await import(new URL("explorer/family-exploration.js",asset
 const splitMove=Array.from({length:30},(_,i)=>i).find(m=>detectPieces(turn(familyView.cells,m)).some(p=>!p.letter));
 assert.notEqual(splitMove,undefined);
 await familyView.play(splitMove);flush();
+$("familySolidIdentities").checked=false;$("familySolidIdentities").onchange();
 const beforeShapes=structuredClone(familyView.cells),roundMesh=familyView.solid.data.slice();
 $("familySolidIdentities").checked=true;$("familySolidIdentities").onchange();flush();
 assert(familyView.explorationSolids);
@@ -315,3 +316,32 @@ assert.equal(new Set(familyView.cells.filter(c=>c.piece>=0).map(c=>c.color)).siz
 $("familySolidIdentities").checked=false;$("familySolidIdentities").onchange();
 assert(!familyView.explorationSolids);
 console.log('PASS: family startup and solid-identity setting, live geometry changes and reload retention.');
+
+const retained=familyView.explorationLayers.map(b=>b.data);
+let turnUploads=0;const originalUpload=familyView.upload;
+familyView.upload=function(...args){turnUploads++;return originalUpload.apply(this,args);};
+for(let move=0;move<30;move++)for(const t of [0,.25,.75,1]) {
+  familyView.setState(familyView.cells,{kind:'turn',move,t});familyView.draw();
+}
+familyView.upload=originalUpload;
+assert.equal(turnUploads,0,'all drag frames use GPU transforms without geometry uploads');
+familyView.explorationLayers.forEach((b,i)=>assert.equal(b.data,retained[i]));
+familyView.setState(familyView.cells);
+console.log('PASS: 120 family turn frames reuse static GPU geometry with zero uploads.');
+
+$('targetTransparency').value='65';$('targetTransparency').listeners.input();
+for(const id of ['familyExploreCube','solvedCube','scrambledCube','practiceLeft','practiceRight'])assert(Math.abs(observed.get($(id)).view.opacity-.35)<1e-6,`${id} receives opacity`);
+$('targetTransparency').value='0';$('targetTransparency').listeners.input();assert.equal(familyView.opacity,1);
+$('familySolidIdentities').checked=true;$('familySolidIdentities').onchange();
+const greyMove=Array.from({length:30},(_,i)=>i).find(m=>detectPieces(turn(familyView.cells,m)).some(p=>!p.letter));
+await familyView.play(greyMove);
+const grayState=structuredClone(familyView.cells);
+$('solidGray').checked=true;$('solidGray').listeners.change();const grayMesh=familyView.solid.data.slice();
+$('solidGray').checked=false;$('solidGray').listeners.change();
+assert(!familyView.explorationGray);assert.notDeepEqual(familyView.solid.data,grayMesh);
+assert.deepEqual(familyView.cells,grayState);
+$('solidGray').checked=true;$('solidGray').listeners.change();
+assert(familyView.explorationGray);assert.deepEqual(familyView.solid.data,grayMesh);
+const transparencyMenu=html.slice(html.indexOf('<summary>Transparency</summary>')).split('</details>')[0];
+assert(transparencyMenu.includes('id="ditherTransparency"') && transparencyMenu.includes('id="targetTransparency"'));
+console.log('PASS: explorer-wide transparency, gray/color identity toggle and unified transparency menu.');

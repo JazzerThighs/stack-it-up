@@ -1,3 +1,4 @@
+import {visualSettings} from '../render/visual-settings.js';
 import {createFamilyExplorer} from "./family-controller.js";
 import {initializePaletteControls} from '../ui/palette-controls.js';
 import {subscribePalette} from '../render/palette.js';
@@ -22,7 +23,12 @@ export function createExplorerViews({
 }) {
   const $ = id => root.getElementById(id);
   const cubes = new Map();
-  initializeVisualControls(root,()=>{for(const cube of cubes.values()) cube.invalidate();});
+  initializeVisualControls(root,()=>{
+    for(const cube of cubes.values()) {
+      if(cube.explorationGray!==!!visualSettings.solidGray){cube.explorationGray=!!visualSettings.solidGray;cube.setState(cube.cells,cube.currentAnimation);}
+      cube.invalidate();
+    }
+  });
   initializePaletteControls(root);
   subscribePalette(() => {
     for (const cube of cubes.values()) cube.setState(cube.cells, cube.currentAnimation);
@@ -39,20 +45,27 @@ export function createExplorerViews({
       view.appearance = $("pieceAppearance").value || "jelly";
       view.perspective = $("explorerCamera").value !== "orthographic";
       view.meshGenerator = meshGenerator;
-      if (id === "solvedCube" || id === "practiceRight") view.opacity=1-Number($("targetTransparency").value)/100;
+      view.explorationGray=!!visualSettings.solidGray;
+      view.opacity=1-Number($("targetTransparency").value)/100;
       view.connected = (id === "solvedCube" || id === "practiceRight") && $("targetComposite").checked;
       cubes.set(id, view);
     }
     return cubes.get(id);
   };
-  function refreshPieces() {
-    for (const id of ["solvedCube", "practiceRight"]) {
-      const cube=cubes.get(id); if (!cube) continue;
-      cube.connected=$("targetComposite").checked;
+  function refreshTransparency() {
+    for(const cube of cubes.values()) {
       cube.opacity=1-Number($("targetTransparency").value)/100;
-      cube.setState(cube.cells);
+      cube.invalidate();
     }
     $("transparencyValue").textContent=$("targetTransparency").value+"%";
+  }
+  function refreshPieces() {
+    for(const id of ["solvedCube","practiceRight"]) {
+      const cube=cubes.get(id);if(!cube)continue;
+      cube.connected=$("targetComposite").checked;
+      cube.setState(cube.cells,cube.currentAnimation);
+    }
+    refreshTransparency();
   }
   function showCube(id, packing, colors, moves = []) {
     if (id === "scrambledCube") {
@@ -60,7 +73,7 @@ export function createExplorerViews({
       $("playSolution").disabled = false;
     }
     const cube = get(id, { readOnly: id === "solvedCube" });
-    if (id === "solvedCube") cube.opacity=1-Number($("targetTransparency").value)/100;
+    cube.opacity=1-Number($("targetTransparency").value)/100;
     const cells = packingCells(packing, colors);
     cube.setCells(
       parseMoves(moves).reduce((state, move) => turn(state, move), cells),
@@ -92,7 +105,7 @@ export function createExplorerViews({
     }
   });
   $("targetComposite").addEventListener("change", refreshPieces);
-  $("targetTransparency").addEventListener("input", refreshPieces);
+  $("targetTransparency").addEventListener("input", refreshTransparency);
   $("playSolution").onclick = async () => {
     const cube = cubes.get("scrambledCube");
     if (!cube || cube.busy) return;

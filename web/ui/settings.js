@@ -1,3 +1,4 @@
+import {visualSettings} from '../render/visual-settings.js';
 import {initializePaletteControls} from './palette-controls.js';
 import {subscribePalette} from '../render/palette.js';
 import {initializeVisualControls} from "./visual-controls.js";
@@ -65,7 +66,17 @@ export function renderLayerSettings(focusId = null) {
 export function initializeSettings(value) {
   context = value;
   initializePaletteControls();
-  initializeVisualControls(document,()=>context.invalidate());
+  initializeVisualControls(document,()=>{
+    for(const r of context.renderers) {
+      if(r.solidGray!==!!visualSettings.solidGray){r.solidGray=!!visualSettings.solidGray;if(r.state)r.setState(r.state,r.animation);}
+    }
+    context.invalidate();
+  });
+  try {const saved=globalThis.localStorage?.getItem('stack-it-up.rebuild-solids');if(saved!==null && saved!==undefined) $('rebuildSolidIdentities').checked=saved==='true';} catch {}
+  $('rebuildSolidIdentities').addEventListener('input',()=>{
+    try {globalThis.localStorage?.setItem('stack-it-up.rebuild-solids',String($('rebuildSolidIdentities').checked));} catch {}
+    syncDisplaySettings();
+  });
   subscribePalette(() => {
     for (const r of context.renderers) r.stackEvent = null;
     context.invalidateMesh();
@@ -113,7 +124,8 @@ export function syncDisplaySettings() {
       if (r.sourceMesh) r.setMesh(r.sourceMesh);
     }
     r.perspective = $("perspectiveCamera").checked;
-    const shapeChanged = r.activeSpheres !== $("activeSpheres").checked;
+    const shapeChanged = r.activeSpheres !== $("activeSpheres").checked || r.rebuildSolidIdentities!==$("rebuildSolidIdentities").checked;
+    r.rebuildSolidIdentities=$("rebuildSolidIdentities").checked;
     r.activeSpheres = $("activeSpheres").checked;
     if (shapeChanged && r.state) r.setState(r.state, r.animation);
     r.rearGridOnly = $("rearGridOnly").checked;

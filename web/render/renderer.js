@@ -1,5 +1,7 @@
+import {activeCubie,rebuildSlots} from './active-cubie.js';
+import {mergeFragments,exposedFragment,neighborCell} from './cell-fragments.js';
 import {CAMERA_DISTANCE, projectPoint, viewPoint} from "./camera.js";
-import {compositeMesh} from "./piece-mesh.js";
+import {compositeMesh,compositeParts} from "./piece-mesh.js";
 import { S } from "../engine/snapshot.js";
 import { sceneDecorations } from "./decorations.js";
 import { renderPackets } from "./pipeline.js";
@@ -81,7 +83,7 @@ class Renderer {
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
       throw Error(gl.getProgramInfoLog(this.program));
     this.uniforms = Object.fromEntries(
-      ["orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
+      ["ditherSeed", "modelRotation", "modelScale", "modelOffset", "screenDoor", "orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
         n,
         gl.getUniformLocation(this.program, n),
       ]),
@@ -136,6 +138,8 @@ class Renderer {
     target.count = data.length / 9;
   }
   setMesh(data) {
+    this.stackPackets=null;
+    this.stackEvent=null;
     this.sourceMesh = data;
     this.upload(this.stackMesh, this.state
       ? compositeMesh(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance) : data);
@@ -143,6 +147,7 @@ class Renderer {
   setState(s, animation = null) {
     this.gridKey = null;
     this.state = s;
+    this.rebuildSlots=rebuildSlots(s);
     this.animation = animation;
     this.gravity = s[S.GRAVITY];
     const activeGeometry = [], floatingGeometry = [];
@@ -173,7 +178,7 @@ class Renderer {
           startActiveLine = activeLines.length;
         if (active) wire(activeLines, p, 0.445, [1, 0.95, 0.77]);
         if (active) {
-          if (!s[S.BAND_IDS + i]) (cubieShape(!(s[S.FLOATING] & (1 << i)), !!s[S.REBUILD_COLORS + i], this.activeSpheres))(
+          if (!s[S.BAND_IDS + i]) activeCubie(
             !floating && p.filter((v) => v !== 0).length === 1
               ? centers
               : solid,
@@ -184,6 +189,7 @@ class Renderer {
                 ? rgb(colors[s[S.REBUILD_COLORS + i]])
                 : [1, 1, 1]
               : rgb(colors[s[S.PIECE]]),
+            i,s,this,
           );
           if (occupied) overlapMarks(overlaps, p);
         } else box(empty, p, 0.438, [0.13, 0.18, 0.21]);
@@ -243,23 +249,41 @@ class Renderer {
     this.upload(this.ghostLines, new Float32Array(ghostLines));
     this.upload(this.previewLines, new Float32Array(preview));
   }
-  stackFrame(from, to, event, t) {
-    const source = event.kind === 2 ? from : to;
-    if (this.stackEvent !== event) {
-      this.stackEvent = event;
-      this.transitionMesh = compositeMesh(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance);
-    }
-    const out = this.transitionMesh.slice();
-    for (let n=0;n<out.length;n+=9) {
-      const cell = [0,1,2].map(k=>Math.max(-1,Math.min(1,Math.floor(out[n+k]+.5))));
-      const i=(cell[0]+1)*9+(cell[1]+1)*3+cell[2]+1;
-      const scale = event.mask & (1<<i) ? event.kind===2 ? 1-t : (event.kind===1 || event.kind===4) ? t : 1 : 1;
-      for (let k=0;k<3;k++) {
-        out[n+k]=cell[k]+(out[n+k]-cell[k])*scale;
-        if (event.kind===3) out[n+k]+=(xyz(event.origins[i])[k]-cell[k])*(1-t);
+  prepareStackEvent(from,to,event) {
+    if(this.stackEvent===event)return;
+    this.stackEvent=event;
+    const source=event.kind===2?from:to;
+    const fragments=mergeFragments(compositeParts(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance));
+    this.stackCellBuffers ??= Array.from({length:81},()=>this.buffer());
+    for(let phase=0;phase<3;phase++) {
+      const t=phase/2,transforms=Array.from({length:27},(_,i)=>this.stackTransform(event,i,t));
+      for(let i=0;i<27;i++) {
+        const mesh=exposedFragment(fragments[i],i,(axis,side)=>{
+          const neighbor=neighborCell(i,axis,side);
+          return neighbor<0 || !fragments[neighbor].length || transforms[neighbor].scale<=0 ||
+            transforms[i].scale!==transforms[neighbor].scale ||
+            transforms[i].offset.some((v,a)=>Math.abs(v-transforms[neighbor].offset[a])>1e-6);
+        });
+        this.upload(this.stackCellBuffers[phase*27+i],mesh);
       }
     }
-    this.upload(this.stackMesh,out);
+  }
+  stackTransform(event,i,t) {
+    const cell=xyz(i),affected=!!(event.mask&(1<<i));
+    const scale=affected ? event.kind===2?1-t:(event.kind===1||event.kind===4)?t:1 : 1;
+    const offset=cell.map((v,k)=>v*(1-scale)+(event.kind===3?(xyz(event.origins[i])[k]-v)*(1-t):0));
+    return {scale,offset};
+  }
+  stackFrame(from,to,event,t) {
+    this.prepareStackEvent(from,to,event);
+    this.stackPackets=[];
+    for(let i=0;i<27;i++) {
+      const phase=t<=0?0:t>=1?2:1;
+      const target=this.stackCellBuffers[phase*27+i];if(!target.count)continue;
+      const {scale,offset}=this.stackTransform(event,i,t);
+      if(scale<=0)continue;
+      this.stackPackets.push({id:'stack',target,type:this.gl.TRIANGLES,modelScale:scale,offset,breathe:1,unlit:false});
+    }
   }
 
   draw() {
@@ -316,8 +340,10 @@ class Renderer {
         if (target.count && opacity > 0)
           packets.push({ id, target, type, opacity, unlit, breathe, pulse });
       };
-    if (this.isStack || this.combined)
-      add("stack", this.stackMesh, gl.TRIANGLES, this.stackOpacity);
+    if (this.isStack || this.combined) {
+      if(this.stackPackets) for(const p of this.stackPackets) packets.push({...p,opacity:this.stackOpacity});
+      else add("stack", this.stackMesh, gl.TRIANGLES, this.stackOpacity);
+    }
     if (!this.isStack) {
       if (!this.xray && !this.combined) add("empty", this.empty, gl.TRIANGLES);
       add(

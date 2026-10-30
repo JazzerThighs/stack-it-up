@@ -181,7 +181,7 @@ filters apply through the existing Appearance settings.
 
 In Settings > Appearance & views > Family exploration, **Distinguish piece IDs
 with solid shapes** assigns a tetrahedron, cube, octahedron, dodecahedron,
-icosahedron or sphere to each ID. The option is off initially and saved locally.
+icosahedron or sphere to each ID. The option is saved locally.
 Completed shapes replace those solids; when broken again, their original ID
 solids return. The choice works with every material and filter. Internal J/L
 and S/Z placements use a compatible ID color when possible because they have
@@ -196,3 +196,32 @@ Wasm, data and lazy modules in the same release. This avoids mixing cached files
 from an older deployment with newer controls. Build details are available in
 `build-info.json`. After deploying this change for the first time, hard-refresh
 an already-open Pages tab (Ctrl+Shift+R) to refresh its old entry page.
+
+
+## Retained fragments and transparency
+
+Family exploration prepares closed cell fragments when a state changes, caches
+them with a memory budget, and uploads static layer buffers. Drag frames rotate
+those buffers with GPU uniforms; they do not cut meshes or upload vertices. Game
+placement, plane-clear and fall animations use the same closed cell fragments
+and uniform transforms.
+
+**Transparency performance > Dither-style transparency** is shared by both apps,
+saved locally, and enabled by default. It uses a fixed pixel-coverage pattern
+with depth testing instead of triangle sorting and alpha blending. Turning it
+off restores smooth transparency for other styles. Dithered rendering and recent
+placement ghosts always use pixel coverage. At 0% transparency all pixels remain;
+at 100% the geometry contributes no pixels.
+
+
+Transparency style and percentages now share a **Transparency** menu in each app.
+The explorer percentage applies to every cube, including Family exploration.
+Dither coverage uses distinct, stable patterns per cubie and render category, so
+rear cubies can appear through front holes instead of all surfaces sharing holes.
+
+Solid ID shapes are also available for freed whole tetrominos in the game. They
+use physical placement IDs, not colors, so same-colored freed pieces can be told
+apart without changing their interchangeable reconstruction rules. **Gray shades
+for solid ID shapes** is enabled by default and shared between the apps; disable
+it to use the original piece colors. Completed family tetrominos keep canonical
+colors. Loose white fragments and the current target retain their existing shapes.

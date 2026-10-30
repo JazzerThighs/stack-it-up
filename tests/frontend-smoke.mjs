@@ -111,3 +111,23 @@ assert.equal(context.renderers[0].stackMesh.data,retainedMesh);
 assert.deepEqual(Array.from(context.engine.exportState()),settingsState);
 $('resetdither').onclick();$('resetlight').onclick();
 console.log('PASS: game lighting/filter sliders update live without rebuilding meshes or altering puzzle state.');
+
+// Clear animation uses closed cell fragments and GPU scales, with no per-frame mesh uploads.
+const clearFrom=context.state.slice(),clearTo=clearFrom.slice();
+clearFrom.fill(0,0,54);clearTo.fill(0,0,54);
+for(const i of [0,1,3,4]){clearFrom[i]=1;clearFrom[27+i]=1;}
+const clearEvent={kind:2,mask:(1<<0)|(1<<1),origins:Array.from({length:27},(_,i)=>i)};
+renderer.prepareStackEvent(clearFrom,clearTo,clearEvent);
+const fragmentData=renderer.stackCellBuffers.map(b=>b.data);
+let clearUploads=0;const oldUpload=renderer.upload;
+renderer.upload=function(...args){clearUploads++;return oldUpload.apply(this,args);};
+for(const t of [0,.2,.5,.9,1])renderer.stackFrame(clearFrom,clearTo,clearEvent,t);
+renderer.upload=oldUpload;
+assert.equal(clearUploads,0);
+assert.equal(renderer.stackPackets.length,2,'only uncleared cells remain at the final frame');
+renderer.stackCellBuffers.forEach((b,i)=>assert.equal(b.data,fragmentData[i]));
+$('ditherTransparency').checked=false;$('ditherTransparency').listeners.change();
+assert.equal(visualPrefs.visualSettings.ditherTransparency,0);
+$('ditherTransparency').checked=true;$('ditherTransparency').listeners.change();
+assert.equal(visualPrefs.visualSettings.ditherTransparency,1);
+console.log('PASS: cached clear fragments, zero animation uploads and dither transparency control.');

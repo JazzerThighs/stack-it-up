@@ -48,3 +48,5 @@ export function identitySolid(out,p,h,color,id) {
   const mesh=meshes[shape];
   for(let i=0;i<mesh.length;i+=6)out.push(...p.map((x,a)=>x+mesh[i+a]*h),...mesh.slice(i+3,i+6),...color);
 }
+
+export function identityGray(id) {const value=[.34,.46,.58,.70,.82,.94][((id%6)+6)%6];return [value,value,value];}
