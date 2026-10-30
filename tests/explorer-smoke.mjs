@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
+const buildInfo=JSON.parse(fs.readFileSync(new URL('../dist/build-info.json',import.meta.url),'utf8'));
+const assetRoot=new URL(`../dist/${buildInfo.assets}/`,import.meta.url);
 const html = fs.readFileSync(
-  new URL("../dist/explorer/index.html", import.meta.url),
+  new URL("explorer/index.html", assetRoot),
   "utf8",
 );
 const enums = new Map(),
@@ -112,7 +114,7 @@ Object.assign(globalThis, {
     arrayBuffer:async()=>fs.readFileSync(url),
     text: async () =>
       fs.readFileSync(
-        new URL(url, new URL("../dist/explorer/", import.meta.url)),
+        new URL(url, new URL("explorer/", assetRoot)),
         "utf8",
       ),
   }),
@@ -121,14 +123,14 @@ Object.assign(globalThis, {
 $("targetTransparency").value = "0";
 for (const id of ["extraEdges", "extraCorners", "extraCenters"])
   $(id).value = "any";
-const {PackingCube}=await import('../dist/explorer/cube-view.js');
+const {PackingCube}=await import(new URL("explorer/cube-view.js",assetRoot));
 const observed=new Map(), originalSetState=PackingCube.prototype.setState;
 PackingCube.prototype.setState=function(cells,animation){observed.set(this.host,{view:this,animation});return originalSetState.call(this,cells,animation);};
 const getExplorerElement = document.getElementById;
 // The application document has no explorer IDs when mounted in a shadow root.
 const applicationPage = {hidden:false};
 document.getElementById = id => id === "explorerPage" ? applicationPage : id === "cubeLayout" ? null : getExplorerElement(id);
-const { ready, initializeExplorer } = await import("../dist/explorer/script.js");
+const { ready, initializeExplorer } = await import(new URL("explorer/script.js",assetRoot));
 assert.equal(ready,null);
 await initializeExplorer({getElementById:getExplorerElement});
 assert.match($("status").textContent, /^Loaded /);
@@ -165,7 +167,7 @@ $("practiceLoad").onsubmit({ preventDefault() {} });
 flush();
 assert.equal($("practiceProgress").textContent, "Target matched!");
 
-const { practicePair, turn } = await import("../dist/explorer/model.js");
+const { practicePair, turn } = await import(new URL("explorer/model.js",assetRoot));
 const host = element(),
   cube = new PackingCube(host);
 const cells = Array.from({ length: 27 }, (_, i) => ({
@@ -183,7 +185,7 @@ await cube.play(0);
 cube.reset();
 assert.deepEqual(cube.cells, cells);
 
-const { sliceCandidates } = await import("../dist/input/drag.js");
+const { sliceCandidates } = await import(new URL("input/drag.js",assetRoot));
 const p = cube.project([0, 0, -1.5]),
   c = sliceCandidates(cube, { p: [0, 0, -1.5], axis: 2 })[0];
 const x = 600 + p[0] * cube.unit,
@@ -249,7 +251,7 @@ for(const style of ['jelly','dither','matte','voxel','cel','ascii','dither']) {
   assert.deepEqual([source.cells,target.cells],explorerState);
 }
 $('pieceColorO').value='#123456';$('pieceColorO').listeners.input();flush();
-const palette=await import('../dist/render/palette.js');
+const palette=await import(new URL("render/palette.js",assetRoot));
 assert.equal(palette.colors[1],'#123456');assert.equal(palette.packingPalette.y,'#123456');
 assert(target.solid.data.some((value,i)=>i%9===6 && Math.abs(value-0x12/255)<1e-6));
 assert.deepEqual([source.cells,target.cells],explorerState);
@@ -259,7 +261,7 @@ console.log('PASS: explorer cameras, six styles and custom colors preserve packi
 const retainedSurface=target.solid.data;
 $('asciiSize').value='1.5';$('asciiSize').listeners.input();
 $('faceLight').onclick();flush();
-const visual=await import('../dist/render/visual-settings.js');
+const visual=await import(new URL("render/visual-settings.js",assetRoot));
 assert.equal(visual.visualSettings.asciiSize,1.5);assert.deepEqual(visual.lightDirection(),[0,0,1]);
 assert.equal(target.solid.data,retainedSurface);
 assert.deepEqual([source.cells,target.cells],explorerState);
@@ -294,7 +296,7 @@ assert.match($("familyExploreTitle").textContent,/Family 19/);
 assert.equal(familyView.history.length,0);
 console.log('PASS: single-cube family exploration, sliced drag mesh, turn/undo, family selection and mode retention.');
 
-const {detectPieces}=await import('../dist/explorer/family-exploration.js');
+const {detectPieces}=await import(new URL("explorer/family-exploration.js",assetRoot));
 const splitMove=Array.from({length:30},(_,i)=>i).find(m=>detectPieces(turn(familyView.cells,m)).some(p=>!p.letter));
 assert.notEqual(splitMove,undefined);
 await familyView.play(splitMove);flush();

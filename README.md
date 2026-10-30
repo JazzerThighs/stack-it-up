@@ -186,3 +186,13 @@ Completed shapes replace those solids; when broken again, their original ID
 solids return. The choice works with every material and filter. Internal J/L
 and S/Z placements use a compatible ID color when possible because they have
 no unique outward-facing handedness.
+
+
+## Deployment asset versions
+
+The build gives each release a content-hashed assets directory. Both entry pages
+load their JavaScript and styles there, and relative imports keep explorer HTML,
+Wasm, data and lazy modules in the same release. This avoids mixing cached files
+from an older deployment with newer controls. Build details are available in
+`build-info.json`. After deploying this change for the first time, hard-refresh
+an already-open Pages tab (Ctrl+Shift+R) to refresh its old entry page.

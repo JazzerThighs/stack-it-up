@@ -1,3 +1,4 @@
+import {versionBuild} from './version-build.mjs';
 import {spawnSync} from 'node:child_process';
 import {mkdir,copyFile,cp,rm} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -11,4 +12,5 @@ await rm(output,{recursive:true,force:true});
 await mkdir(output,{recursive:true});
 await cp(path.join(root,'web'),path.join(root,'dist'),{recursive:true});
 await copyFile(path.join(root,'target/wasm32-unknown-unknown/release/cube_stack.wasm'),path.join(root,'dist/cube_stack.wasm'));
-console.log('Built dist/. Run: node tools/serve.mjs');
+const version=await versionBuild(output);
+console.log(`Built dist/ (${version}). Run: node tools/serve.mjs`);
