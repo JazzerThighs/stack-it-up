@@ -1,3 +1,4 @@
+import {createFamilyExplorer} from "./family-controller.js";
 import {initializePaletteControls} from '../ui/palette-controls.js';
 import {subscribePalette} from '../render/palette.js';
 import {initializeVisualControls} from "../ui/visual-controls.js";
@@ -186,16 +187,28 @@ export function createExplorerViews({
   $("practiceSwap").onclick = () => {
     if (sourcePacking && targetPacking) loadPair(targetPacking, sourcePacking);
   };
-  $("practiceMode").onchange = () => {
-    const active = $("practiceMode").checked;
-    $("practicePanel").hidden = !active;
-    $("cubeLayout").hidden = active;
-    $("viewTabs").style.display = active ? "none" : "";
-    if (active && !sourcePacking) {
-      $("practiceA").value = selected?.lineNumber || "";
+  const familyExplorer=createFamilyExplorer({$,get,getPackings,getFamilies,getSelected:()=>selected});
+  function updateMode() {
+    const family=$("familyExploreMode").checked, practice=$("practiceMode").checked;
+    $("familyExplorePanel").hidden=!family;
+    $("practicePanel").hidden=!practice;
+    $("cubeLayout").hidden=family || practice;
+    $("packingNavigation").hidden=family;
+    $("viewTabs").style.display=family || practice ? "none" : "";
+    if(family) familyExplorer.enter();
+    if(practice && !sourcePacking) {
+      $("practiceA").value=selected?.lineNumber || "";
       $("practiceRandom").onclick();
     }
-    for (const cube of cubes.values()) cube.invalidate();
+    for(const cube of cubes.values()) cube.invalidate();
+  }
+  $("familyExploreMode").onchange=()=>{
+    if($("familyExploreMode").checked) $("practiceMode").checked=false;
+    updateMode();
   };
-  return { showCube, showPieces, hide };
+  $("practiceMode").onchange=()=>{
+    if($("practiceMode").checked) $("familyExploreMode").checked=false;
+    updateMode();
+  };
+  return { showCube, showPieces, hide, startMode:updateMode };
 }

@@ -155,3 +155,34 @@ With clear-triggered gravity, an internal slice pulls separate fragments inward 
 The Packing tab mounts directly in the application page, without an iframe. Switching tabs preserves game and explorer state. Cubes fill the workspace; filters, packing details and practice setup open as overlays. Small screens use view tabs.
 
 The **Target cube** is an orbitable reference. **Whole tetrominoes** follows either the scrambled cube (default) or target, including drag/turn frames, undo and reset. This third view always uses connected geometry, with adjustable transparency. Facelet generation and AnimCubeJS references are preserved.
+
+
+## Family exploration
+
+The app opens in **Family exploration**, with one interactive cube. It starts
+with a random packing in the selected family (the current packing's family by
+default). Open the status/details control to choose another family or start a
+new random packing in the same family. Browser filters do not restrict this
+mode's family membership.
+
+Six distinct physical-piece ID colors are assigned on each load to maximize
+canonical matches, then minimize color distance for repeated letters. After each
+move, any physical group forming a planar O, T, J, L, S or Z becomes a joined
+shape in its detected canonical color, independent of its original letter. Other
+groups remain separate cubies in their fixed ID colors. Turns cut joined meshes at the moving layer, including closed cut faces;
+face, slice and wide turns remain legal. Undo and Reset restore detection too.
+
+When all six groups form tetrominos, the details show matching catalog source
+lines, family, bag and bitmasks. Matching ignores whole-cube rotation, piece order
+and colors. A complete configuration absent from the selected family's catalog
+is identified as such. Catalog bitmasks remain in their original coordinate frame.
+Switching explorer modes retains the puzzle. Camera, palette, lighting and visual
+filters apply through the existing Appearance settings.
+
+In Settings > Appearance & views > Family exploration, **Distinguish piece IDs
+with solid shapes** assigns a tetrahedron, cube, octahedron, dodecahedron,
+icosahedron or sphere to each ID. The option is off initially and saved locally.
+Completed shapes replace those solids; when broken again, their original ID
+solids return. The choice works with every material and filter. Internal J/L
+and S/Z placements use a compatible ID color when possible because they have
+no unique outward-facing handedness.

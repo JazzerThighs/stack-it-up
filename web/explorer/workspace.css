@@ -175,3 +175,17 @@ button.primary { background:var(--accent);color:#142724; }
 .visual-tuning > button { min-height:44px; margin-top:8px; }
 
 .cube-card:has(canvas[data-appearance="dither"]) { background:#000; }
+
+/* A single, full-size family cube; details stay compact until requested. */
+.practice-toggle { gap:8px; flex-wrap:wrap; }
+#familyExplorePanel { grid-row:2; grid-column:1/-1; isolation:isolate; z-index:0; }
+.family-explore-info { position:absolute; top:48px; left:12px; right:12px; z-index:5; font-size:13px; }
+.family-explore-info > summary { cursor:pointer; width:fit-content; max-width:100%; box-sizing:border-box; padding:9px 12px; background:#182b32ed; border:1px solid var(--border); border-radius:10px; }
+.family-explore-info .packing-info { max-height:min(50dvh,420px); border-radius:10px; margin-top:6px; }
+#familyExploreMatches code { display:block; overflow-wrap:anywhere; margin:8px 0 16px; }
+#familyExploreMatches p { margin-top:8px; }
+#familyExplorePanel[hidden], #packingNavigation[hidden] { display:none!important; }
+@media(max-width:760px) {
+ #familyExplorePanel { grid-row:3/5; }
+ .practice-toggle label { min-height:36px; }
+}

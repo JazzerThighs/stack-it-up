@@ -1,3 +1,4 @@
+import {explorationMeshes, sliceForTurn, animateSlices} from "./exploration-mesh.js";
 import {CAMERA_DISTANCE} from "../render/camera.js";
 import {compositeMesh} from "../render/piece-mesh.js";
 import { Renderer } from "../render/renderer.js";
@@ -117,6 +118,26 @@ export class PackingCube extends Renderer {
   setState(cells, animation = null) {
     this.currentAnimation = animation;
     const out = [];
+    if (this.familyExploration && this.meshGenerator) {
+      const signature = JSON.stringify([cells,this.appearance,this.explorationSolids,PALETTE]);
+      if (signature !== this.explorationSignature) {
+        this.explorationSignature = signature;
+        this.explorationGeometry = explorationMeshes(cells,this.meshGenerator,this.appearance,this.explorationSolids);
+        this.explorationTurn = null;
+      }
+      let mesh;
+      if (animation?.kind === "turn") {
+        if (this.explorationTurn?.move !== animation.move) this.explorationTurn = {
+          move:animation.move, parts:sliceForTurn(this.explorationGeometry,animation.move),
+        };
+        mesh=animateSlices(this.explorationTurn.parts,animation.move,animation.t);
+      } else {
+        const values=[];
+        for(const part of this.explorationGeometry) for(const value of part) values.push(value);
+        mesh=new Float32Array(values);
+      }
+      this.upload(this.solid,mesh); this.invalidate(); this.onFrame?.(cells,animation); return;
+    }
     if (this.connected && this.meshGenerator && !animation) {
       const mesh=compositeMesh(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.appearance);
       this.upload(this.solid,mesh); this.invalidate(); this.onFrame?.(cells,animation); return;

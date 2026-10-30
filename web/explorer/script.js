@@ -1815,6 +1815,7 @@ export async function initializeExplorer(root = document) {
 
       generateNewScramble();
       showSelected();
+      views.startMode();
 
       $("status").textContent =
         `Loaded ${packings.length.toLocaleString()} packings.`;
