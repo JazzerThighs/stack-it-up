@@ -247,217 +247,169 @@
       <div class="settings-actions"><button id="shareState">Share / load state</button>
         <button id="new" class="quiet" disabled>New game</button>
       </div>
-      <input id="combined" type="checkbox" checked hidden />
-      <details class="settings-section" name="settings-section" open>
-        <summary>Controls<small>Input and camera</small></summary>
-        <div class="settings-section-body">
-          <fieldset>
-            <legend>Input</legend>
-            <label
-              ><input id="classicControls" type="checkbox" /> Show classic
-              button grid</label
-            ><label
-              ><input id="showArrows" type="checkbox" /> Show arrow
-              buttons</label
-            ><label
-              ><input id="arrowGuides" type="checkbox" /> Sticker-to-arrow guide
-              lines</label
-            >
-          </fieldset>
-          <fieldset>
-            <legend>Hints and queue analysis</legend>
-<label><input id="queueForecast" type="checkbox" /> Check for queue dead ends (experimental)</label>
-<p class="muted">Search legal turns, face choices, early white-piece locks, and automatic placements through the shown queue, in order. Hold and queue edits restart the search. A crossed circle marks the first unreachable piece only after exhaustive proof. Large searches may remain inconclusive.</p>
-<p id="forecastStatus" role="status" aria-live="polite"></p>
-<button id="forecastReplay" disabled>Inspect / replay found path</button>
-<details id="forecastWitness" hidden><summary>Found move sequence</summary><p id="forecastSequence" class="forecast-sequence"></p></details>
-            <label
-              ><input id="hoverRings" type="checkbox" checked /> Slice
-              rings</label
-            ><label
-              ><input id="ringLabels" type="checkbox" /> Move letters on
-              rings</label
-            ><label
-              ><input id="hoverOutline" type="checkbox" /> Cel-style outlines on
-              affected cubies</label
-            >
-          </fieldset>
-          <fieldset>
-            <legend>Camera</legend>
-            <label><input id="perspectiveCamera" type="checkbox" checked /> Perspective camera</label>
-            <p class="muted">Depth and distance affect apparent size. Turn off for an orthographic view.</p>
-            <label
-              ><input id="freeOrbit" type="checkbox" checked /> Free 360°
-              rotation</label
-            >
-          </fieldset>
-          <p class="muted">
-            Drag a sticker to turn a slice. Drag outside the cube or right-drag
-            to orbit. Alt-drag turns a wide layer. Press C to hold once per
-            placement.
-          </p>
-        </div>
-      </details>
-      <details class="settings-section" name="settings-section">
-        <summary>
-          Appearance<small>Cubies, transparency and previews</small>
-        </summary>
-        <div class="settings-section-body">
-          <fieldset>
-            <legend>Piece appearance</legend><label for="pieceAppearance">Style</label>
-            <select id="pieceAppearance"><option value="jelly">Jelly</option><option value="dither">Dithered</option><option value="matte">Matte</option><option value="voxel">Voxel</option><option value="cel">Cel shaded</option><option value="ascii">ASCII</option></select>
-            <p class="muted">All styles support active-piece breathing when Animations is enabled.</p>
-            <p class="muted">
-              Current piece: colored spheres. Rebuildable pieces: colored rounded
-              cubes. Loose white fragments: diamonds (configurable under White cubie options).
-              Bandaged white pieces retain their connected shape.
-            </p>
-          </fieldset>
-          <fieldset>
-            <legend>Animation & visibility</legend>
-            <label
-              ><input id="animations" type="checkbox" checked />
-              Animations</label
-            ><label
-              ><input id="xray" type="checkbox" checked /> See through empty
-              cells</label
-            ><label
-              ><input id="activeOutlines" type="checkbox" /> Active cubie
-              outlines</label
-            >
-          </fieldset>
-<details class="visual-tuning"><summary>Lighting</summary><p class="muted">Camera-relative direction. Horizontal: left / right; vertical: below / above. Shared by both apps and all styles.</p><label for="lightAzimuth">Horizontal angle<output id="lightAzimuthValue">-20°</output></label><input id="lightAzimuth" type="range" min="-180" max="180" step="1" value="-20" /><label for="lightElevation">Vertical angle<output id="lightElevationValue">25°</output></label><input id="lightElevation" type="range" min="-85" max="85" step="1" value="25" /><label for="lightIntensity">Light strength<output id="lightIntensityValue">1×</output></label><input id="lightIntensity" type="range" min="0" max="3" step="0.05" value="1" /><label for="lightAmbient">Fill light<output id="lightAmbientValue">0.35</output></label><input id="lightAmbient" type="range" min="0" max="1" step="0.05" value="0.35" /><button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button></details><details class="visual-tuning"><summary>Dither tuning</summary><p class="muted">Pixel size sets the resolution of the whole 3D view, including silhouettes. Fewer shading levels give bolder bands; balance shifts dark versus colored pixels.</p><label for="ditherLevels">Shading levels<output id="ditherLevelsValue">5</output></label><input id="ditherLevels" type="range" min="2" max="17" step="1" value="5" /><label for="ditherSize">Pixel size<output id="ditherSizeValue">2px</output></label><input id="ditherSize" type="range" min="1" max="6" step="0.5" value="2" /><label for="ditherContrast">Contrast<output id="ditherContrastValue">2.5×</output></label><input id="ditherContrast" type="range" min="0.5" max="5" step="0.1" value="2.5" /><label for="ditherMidpoint">Light / dark balance<output id="ditherMidpointValue">0.6</output></label><input id="ditherMidpoint" type="range" min="0" max="1" step="0.05" value="0.6" /><button id="resetdither" type="button">Reset dither tuning</button></details><details class="visual-tuning"><summary>ASCII tuning</summary><p class="muted">Lower edge coverage keeps more silhouette characters. Blending softens character changes while moving.</p><label for="asciiSize">Character size<output id="asciiSizeValue">1×</output></label><input id="asciiSize" type="range" min="0.5" max="2" step="0.1" value="1" /><label for="asciiExposure">Brightness<output id="asciiExposureValue">1×</output></label><input id="asciiExposure" type="range" min="0.5" max="3" step="0.1" value="1" /><label for="asciiDensity">Character density<output id="asciiDensityValue">1×</output></label><input id="asciiDensity" type="range" min="0.5" max="2" step="0.1" value="1" /><label for="asciiCoverage">Edge coverage required<output id="asciiCoverageValue">0.16</output></label><input id="asciiCoverage" type="range" min="0.02" max="0.6" step="0.02" value="0.16" /><label for="asciiBlend">Character blending<output id="asciiBlendValue">1</output></label><input id="asciiBlend" type="range" min="0" max="1" step="0.1" value="1" /><button id="resetascii" type="button">Reset ascii tuning</button></details>
-<fieldset class="piece-colors"><legend>Tetromino colors</legend><p class="muted">Shared by both apps and saved on this device. Color assignments and puzzle rules stay the same.</p><div class="piece-color-grid"><label for="pieceColorO">O<input id="pieceColorO" type="color" aria-label="O piece color" /></label><label for="pieceColorT">T<input id="pieceColorT" type="color" aria-label="T piece color" /></label><label for="pieceColorL">L<input id="pieceColorL" type="color" aria-label="L piece color" /></label><label for="pieceColorJ">J<input id="pieceColorJ" type="color" aria-label="J piece color" /></label><label for="pieceColorS">S<input id="pieceColorS" type="color" aria-label="S piece color" /></label><label for="pieceColorZ">Z<input id="pieceColorZ" type="color" aria-label="Z piece color" /></label></div><button id="resetPieceColors" type="button">Reset colors</button></fieldset>
-          <label><input id="topOutNewGame" type="checkbox" checked /> Show New game button after top out</label>
-<fieldset class="solid-identities"><legend>Freed whole tetrominos</legend>
-<label><input id="rebuildSolidIdentities" type="checkbox" checked /> Distinguish freed whole-piece IDs with solid shapes</label>
-<label><input id="solidUniform" type="checkbox" checked /> One color for all solid ID shapes <output id="solidUniformValue">On</output></label>
-<label>Solid shape color <input id="solidColor" type="color" value="#c8c8c8" /><output id="solidColorValue">#c8c8c8</output></label>
-<label><input id="solidFixed" type="checkbox" /> Keep solid shapes aligned during slice turns <output id="solidFixedValue">Off</output></label>
-<label><input id="solidUniform" type="checkbox" checked /> One color for all solid ID shapes <output id="solidUniformValue">On</output></label>
-<label>Solid shape color <input id="solidColor" type="color" value="#c8c8c8" /><output id="solidColorValue">#c8c8c8</output></label>
-<label><input id="solidFixed" type="checkbox" /> Keep solid shapes aligned during slice turns <output id="solidFixedValue">Off</output></label>
-<label><input id="solidGray" type="checkbox" checked /> Use gray shades when one color is off <output id="solidGrayValue">On</output></label>
-<p class="muted">Each freed whole-piece ID gets a Platonic solid or sphere. Color and alignment preferences are shared with Family exploration. Turn off one color to use gray shades; turn off both to use piece colors. Same-color pieces remain interchangeable under the game rules.</p>
-</fieldset><details class="visual-tuning transparency-settings"><summary>Transparency</summary>
-<label><input id="ditherTransparency" type="checkbox" checked /> Dither-style transparency <output id="ditherTransparencyValue">On</output></label>
-<p>Uses stable pixel patterns instead of sorting transparent surfaces. Enabled by default for speed. Always used by the Dithered filter and recent-placement ghosts. Turn off for smooth transparency in other styles.</p>
+<input id="combined" type="checkbox" checked hidden />
+<p class="muted">Changes apply immediately unless you are setting up a new game. Unavailable options keep their values. Appearance preferences marked shared also affect the explorer.</p>
+<nav class="settings-nav" aria-label="Settings categories">
+<button type="button" id="navgameplaySettings" data-settings-target="gameplaySettings">Rules</button>
+<button type="button" id="navcontrolSettings" data-settings-target="controlSettings">Controls</button>
+<button type="button" id="navhintSettings" data-settings-target="hintSettings">Hints</button>
+<button type="button" id="navappearanceSettings" data-settings-target="appearanceSettings">Appearance</button>
+<button type="button" id="navvisibilitySettings" data-settings-target="visibilitySettings">Visibility</button>
+<button type="button" id="navinfoSettings" data-settings-target="infoSettings">Game info</button>
+</nav>
+<div id="gameplayHome">
+<details id="gameplaySettings" class="settings-section" open>
+<summary>Gameplay<small>Debug, clears, gravity and piece freedom</small>
+</summary>
+<div class="settings-section-body">
+<p id="rulesEditStatus" class="setting-reason" role="status" hidden>
+</p>
+<p id="settingsRulesSummary" class="settings-summary">
+</p>
+<p id="legacyRuleNote" class="muted" hidden>This shared puzzle uses older gameplay rules. Changing a gameplay option adopts the rules shown here and removes movement bandages.</p>
+<p id="gameplayValidation" role="status" class="setting-reason">
+</p>
+<fieldset>
+<legend>Debug mode</legend>
+<label><input id="scienceMode" type="checkbox" checked /> For Science!</label>
+<p class="muted">Choose the current and held pieces, including an empty hold pocket. Undo is available during play. With this off, Undo is available only after top out.</p>
+<div id="scienceOptions">
+<label for="debugCurrent">Current piece</label>
+<select id="debugCurrent">
+<option value="0">Random / keep current</option>
+<option value="1">O</option>
+<option value="2">T</option>
+<option value="3">L</option>
+<option value="4">J</option>
+<option value="5">S</option>
+<option value="6">Z</option>
+</select>
+<button id="applyCurrent" type="button">Set current piece</button>
+<label for="debugHeld">Hold pocket</label>
+<select id="debugHeld">
+<option value="0">Empty</option>
+<option value="1">O</option>
+<option value="2">T</option>
+<option value="3">L</option>
+<option value="4">J</option>
+<option value="5">S</option>
+<option value="6">Z</option>
+</select>
+<button id="applyHeld" type="button">Set hold pocket</button>
+<p id="debugEditNote" class="muted">
+</p>
+</div>
+</fieldset>
+<fieldset>
+<legend>Clear types · select at least one</legend>
+<label><input id="clearFullFace" type="checkbox" checked /> Full face clears</label>
+<label><input id="clearRingFace" type="checkbox" /> Ring face clears</label>
+<label><input id="clearFullSlice" type="checkbox" checked /> Full slice clears</label>
+<label><input id="clearRingSlice" type="checkbox" /> Ring slice clears</label>
+<p class="muted">Full clears require all 9 cells. Rings require the 8 perimeter cells; the center is optional. Both remove the whole plane. Faces are outside planes; slices are the three interior planes. A plane counts once even if both types are enabled.</p>
+</fieldset>
+<fieldset>
+<legend>Gravity</legend>
+<label><input id="gravityEnabled" type="checkbox" checked /> Enabled</label>
+<p id="gravityDependency" class="setting-reason">Enable gravity to adjust its direction and timing.</p>
+<fieldset id="gravityDirectionOptions">
+<legend>Direction</legend>
+<label><input id="gravityDirection0" name="gravityDirection" type="radio" value="0" checked /> Towards the last cleared plane</label>
+<label><input id="gravityDirection1" name="gravityDirection" type="radio" value="1" /> Away from the last cleared plane</label>
+<label><input id="gravityDirection2" name="gravityDirection" type="radio" value="2" /> Always towards the Down (D) face</label>
+<label><input id="gravityDirection3" name="gravityDirection" type="radio" value="3" /> Random direction every tetromino placement</label>
+<p class="muted">Towards / away uses the most recent cleared plane. Before the first clear there is no direction. Away from an interior slice pushes pieces toward their respective outer faces.</p>
+</fieldset>
+<fieldset id="gravityOccurrenceOptions">
+<legend>Occurrence</legend>
+<label><input id="gravityOccurrence0" name="gravityOccurrence" type="radio" value="0" checked /> Once after a clear</label>
+<label><input id="gravityOccurrence1" name="gravityOccurrence" type="radio" value="1" /> Always enabled</label>
+<p class="muted">Always enabled also runs after each cube turn and placement. Random direction changes on placement, never on camera motion or individual turns.</p>
+</fieldset>
+<fieldset id="gravityDistanceOptions">
+<legend>Fall distance</legend>
+<label><input id="fallOneCell" type="checkbox" checked /> Fall at most one cell per gravity event</label>
+<p class="muted">Off: pieces settle until blocked. Each cascade clear can trigger another gravity event.</p>
+</fieldset>
+</fieldset>
+<fieldset>
+<legend>Stack pieces become active</legend>
+<label><input id="freedomEnabled" type="checkbox" checked /> Enabled</label>
+<p id="freedomDependency" class="setting-reason">Enable stack-piece release to configure these rules.</p>
+<fieldset id="freedomSizeOptions">
+<legend>Pieces able to be freed · select at least one</legend>
+<label><input id="freeSize4" type="checkbox" checked /> Whole tetrominos</label>
+<label><input id="freeSize3" type="checkbox" checked /> Fragments containing 3 cubies</label>
+<label><input id="freeSize2" type="checkbox" checked /> Fragments containing 2 cubies</label>
+<label><input id="freeSize1" type="checkbox" checked /> Fragments containing 1 cubie</label>
+<p class="muted">Freed pieces are never bandaged while moving. Whole pieces must form four face-connected cubies. With the same-face requirement off, Left Screw, Right Screw and Branch are also valid. They retain their original color; same-color whole-piece cubies can mix.</p>
+</fieldset>
+<fieldset id="freedomReconstructionOptions">
+<legend>Reconstruction</legend>
+<label><input id="fragmentsConnected" type="checkbox" checked /> Fragments must be face-to-face connected when locking</label>
+<div class="setting-dependency">
+<label><input id="fragmentsFacebound" type="checkbox" checked /> Each reconstructed piece must lie on one outer face</label>
+<p id="faceboundDependency" class="setting-reason">Requires connected fragments.</p>
+</div>
+<p class="muted">Connection applies to each released fragment separately, including single cubies. The same-face requirement also applies to whole-piece reconstruction. Each piece may use a different face. They lock with the successful sphere piece. Stack overlap always blocks placement.</p>
+</fieldset>
+<fieldset id="freedomEventOptions">
+<legend>When to free pieces</legend>
+<label><input id="freedomEvent0" name="freedomEvent" type="radio" value="0" checked /> One piece freedom attempt per clear</label>
+<label><input id="freedomEvent1" name="freedomEvent" type="radio" value="1" /> One piece freedom attempt per tetromino placement</label>
+<label><input id="freedomEvent2" name="freedomEvent" type="radio" value="2" /> Every eligible piece freed per clear</label>
+<p class="muted">Each cleared plane grants an attempt, including multi-clears and cascades. Placement attempts happen once when the next piece starts; hold and slice turns do not repeat them.</p>
+</fieldset>
+<fieldset id="freedomMethodOptions">
+<legend>How an attempt chooses a piece</legend>
+<label><input id="freedomMethod0" name="freedomMethod" type="radio" value="0" checked /> Random eligible piece from stack</label>
+<label><input id="freedomMethod1" name="freedomMethod" type="radio" value="1" /> Random cubie spot (occupied eligible cells only; empty cells miss)</label>
+<label><input id="freedomMethod2" name="freedomMethod" type="radio" value="2" /> Prioritize pieces with more cubies</label>
+<label><input id="freedomMethod3" name="freedomMethod" type="radio" value="3" /> Prioritize pieces with fewer cubies</label>
+<p id="freedomMethodNote" class="muted">
+</p>
+</fieldset>
+</fieldset>
+<div id="legacyGameplay" hidden inert>
 
 
-            <label for="activeTransparency"
-              >Active cubies
-              <output id="activeTransparencyValue">0%</output></label
-            ><input
-              id="activeTransparency"
-              type="range"
-              min="0"
-              max="100"
-              value="0"
-              step="1"
-            />
-            <label for="centerTransparency"
-              >Active centers
-              <output id="centerTransparencyValue">0%</output></label
-            ><input
-              id="centerTransparency"
-              type="range"
-              min="0"
-              max="100"
-              value="0"
-              step="1"
-            />
-            <label for="stackTransparency"
-              >Placed cubies
-              <output id="stackTransparencyValue">0%</output></label
-            ><input
-              id="stackTransparency"
-              type="range"
-              min="0"
-              max="100"
-              value="0"
-              step="1"
-            />
-            <p class="muted">0% is fully opaque. 100% is invisible.</p>
-          </details>
+<p class="muted">Release modes combine. Options below become available when their parent mode is enabled. Disabling a mode leaves already freed pieces playable until they lock.</p>
           <fieldset>
-            <legend>Placement previews</legend>
-            <label
-              ><input id="placementGlow" type="checkbox" checked /> Lightweight markers on
-              placement-making cubies</label
-            >
-            <p class="muted">
-              Hover a sticker or arrow to mark the active cubies that would
-              form the target after a successful move. No extra cells or grid
-              lines are drawn.
-            </p>
-          </fieldset>
-        </div>
-      </details>
-      <details class="settings-section" name="settings-section">
-        <summary>Grids<small>Visibility and layering</small></summary>
-        <div class="settings-section-body">
-          <fieldset>
-            <legend>Show grids</legend>
-            <label
-              ><input id="controlGrid" type="checkbox" checked /> Active cube
-              grid (split view)</label
-            ><label
-              ><input id="stackGrid" type="checkbox" checked /> Stack cube
-              outline (split view)</label
-            ><label
-              ><input id="combinedGrid" type="checkbox" checked /> Combined cube
-              grid</label
-            >
-          </fieldset>
-          <fieldset>
-            <legend>Grid visibility</legend>
-            <label
-              ><input id="rearGridOnly" type="checkbox" checked /> Grid on
-              rear-facing faces only</label
-            >
-          </fieldset>
-        </div>
-      </details>
-      <details class="settings-section" name="settings-section">
-        <summary>
-          Rendering order<small>Camera depth or custom layers</small>
-        </summary>
-        <div class="settings-section-body">
-          <label
-            ><input id="customLayers" type="checkbox" /> Custom layer
-            order</label
-          >
-          <p class="muted">
-            Off: all scene elements use their actual distance from the camera.
-            On: items at the top draw over those below, with normal depth inside
-            each item. Transparency still applies. HUD and Settings stay outside
-            the 3D scene.
-          </p>
-          <ol id="renderLayers" class="render-layers"></ol>
-          <button id="resetLayers">Restore normal depth</button>
-          <p id="layerOrderStatus" class="sr-only" role="status"></p>
-        </div>
-      </details>
-      <div id="gameplayHome"><details id="gameplaySettings" class="settings-section" name="settings-section">
-        <summary>
-          Gameplay<small>Gravity and combinable clear rewards</small>
-        </summary>
-        <div class="settings-section-body">
-          <fieldset>
-            <legend>Piece selection</legend><label><input id="chooseNext" type="checkbox" /> Choose the next queued tetromino</label><p class="muted">Theorycrafting: set the next piece from the playfield. The current piece stays unchanged.</p></fieldset><fieldset><legend>Clearing</legend>
+            <legend>Piece selection</legend>
+<label><input id="chooseNext" type="checkbox" /> Choose the next queued tetromino</label>
+<p class="muted">Theorycrafting: set the next piece from the playfield. The current piece stays unchanged.</p>
+</fieldset>
+<fieldset>
+<legend>Clearing</legend>
 <label for="sliceClearMode">Faces and slices</label>
-<select id="sliceClearMode"><option value="1" selected>Full slice — interior required (default)</option><option value="2">Surface ring — interior not required</option></select>
+<select id="sliceClearMode">
+<option value="1" selected>Full slice — interior required (default)</option>
+<option value="2">Surface ring — interior not required</option>
+</select>
 <p class="muted">A full middle slice needs all 9 cells, including the core. Surface-ring mode needs only its 8 surface cells. Either mode clears the entire slice. Each cleared face or slice grants the same score and perks.</p>
-</fieldset><fieldset><legend>Gravity</legend>
+</fieldset>
+<fieldset>
+<legend>Gravity</legend>
             <label for="gravityMode">Mode</label
-            ><select id="gravityMode">
+            >
+<select id="gravityMode">
               <option value="0">Clears only (default)</option>
               <option value="1">Off completely</option>
               <option value="2">Always on · random changes each move</option>
             </select>
-            <label><input id="sliceGravity" type="checkbox" /> Slice clears cause gravity</label>
+            <div class="setting-dependency">
+<p class="setting-reason" id="gravityOptions0Reason">Enable gravity to use these options.</p>
+<fieldset id="gravityOptions0" aria-describedby="gravityOptions0Reason">
+<label><input id="sliceGravity" type="checkbox" /> Slice clears cause gravity</label>
+</fieldset>
+</div>
             <p class="muted">Off: clearing an interior ring or full slice causes no gravity. Face clears still follow the selected gravity mode.</p>
-            <label><input id="gravityOneStep" type="checkbox" checked /> Fall at most one cell per gravity event</label>
+            <div class="setting-dependency">
+<p class="setting-reason" id="gravityOptions1Reason">Enable gravity to use these options.</p>
+<fieldset id="gravityOptions1" aria-describedby="gravityOptions1Reason">
+<label><input id="gravityOneStep" type="checkbox" checked /> Fall at most one cell per gravity event</label>
+</fieldset>
+</div>
             <p class="muted">Each separated piece moves at most one cell when gravity runs. Another cascade clear can trigger another step. Off: settle until blocked.</p>
             <p class="muted">
               Clears only: fall toward the most recently cleared face or slice for that
@@ -471,10 +423,8 @@
             <label
               ><input id="fragmentPerk" type="checkbox" /> Free broken pieces</label
             >
-            <details id="fragmentOptions"><summary>White cubie options</summary>            <label
-              ><input id="activeSpheres" type="checkbox" /> Spherical loose white
-              fragments</label
-            >
+            <details id="fragmentOptions">
+<summary>White cubie options</summary>
 
             <p class="muted">
               Each cleared face grants one completed-piece turn. Broken pieces
@@ -484,24 +434,37 @@
               cascades add turns. Switching this off lets existing white cubies
               finish their current turn.
             </p>
-            <label
+            <div class="setting-dependency">
+<p class="setting-reason" id="brokenOptions0Reason">Enable Free broken pieces to use these options.</p>
+<fieldset id="brokenOptions0" aria-describedby="brokenOptions0Reason">
+<label
               ><input id="bandagedFragments" type="checkbox" checked /> Bandage
               connected white fragments</label
             >
+</fieldset>
+</div>
             <p class="muted">
               Connected white cubies from the same original piece stay together.
               Turns that split their bandage are blocked. White groups retain their connected shape.
             </p>
+<div class="setting-dependency">
+<p class="setting-reason" id="brokenOptions1Reason">Enable Free broken pieces to use these options.</p>
+<fieldset id="brokenOptions1" aria-describedby="brokenOptions1Reason">
 <label
               ><input id="randomCubies" type="checkbox" /> Free one random cubie
               per cleared plane</label
             >
+</fieldset>
+</div>
             <p class="muted">
               Each clear selects distinct cubies from the remaining stack. They
               turn white and relock with your next completed piece. Can be
               combined with broken fragments and reconstruction.
             </p>
-            </details></fieldset><fieldset><legend>Whole tetromino reconstruction</legend>
+            </details>
+</fieldset>
+<fieldset>
+<legend>Whole tetromino reconstruction</legend>
             <label for="rebuildMode"
               >Rebuild whole tetrominoes after clears</label
             >
@@ -512,65 +475,426 @@
                 Free one random whole piece per cleared plane
               </option>
             </select>
-            <p class="muted">
-              Released whole pieces keep their colors. Same-colored rebuildable
-              cubies can mix freely; form complete planar tetrominos from all of them.
-              The current piece must use its own spheres. All must be
-              valid, and clear of the stack, when your current piece locks.
-              Rebuilding pieces are not bandaged. Random stack groups are selected first when enabled, then reconstruction pieces, broken fragments, and random individual cubies; a
-              cubie is never selected twice. One random whole piece per cleared plane
-              is the default. These rewards can be combined independently. Disabling release modes leaves already
-              freed cubies playable until they lock.
-            </p>
-            <p id="rebuildStatus" class="muted" role="status"></p>
-            <p id="fragmentStatus" class="muted" role="status"></p>
+            <p class="muted">Released whole pieces keep their colors. Same-colored rebuilding cubies can mix; the current piece must use its own spheres. Rebuilding pieces are not bandaged.</p>
+<p id="rebuildRequirements" class="muted">
+</p>
+<details class="visual-tuning">
+<summary>How combined rewards are selected</summary>
+<p class="muted">Random stack groups are selected first, then whole pieces for reconstruction, broken fragments, and random individual cubies. A cubie is never selected twice. Disabling a release mode leaves existing freed cubies playable until they lock.</p>
+</details>
+            <p id="rebuildStatus" class="muted" role="status">
+</p>
+            <p id="fragmentStatus" class="muted" role="status">
+</p>
           </fieldset>
-          <fieldset><legend>Random stack piece</legend>
+          <fieldset>
+<legend>Random stack piece</legend>
             <label for="releaseTrigger">Free one connected stack group</label>
             <select id="releaseTrigger">
               <option value="0" selected>Off</option>
               <option value="1">Once per cleared plane</option>
               <option value="2">At the start of each new piece turn</option>
             </select>
-            <label><input id="releaseBandaged" type="checkbox" checked /> Keep randomly freed groups bandaged while moving</label>
+            <div class="setting-dependency">
+<p class="setting-reason" id="randomReleaseOptions0Reason">Enable random stack release to configure its bandages.</p>
+<fieldset id="randomReleaseOptions0" aria-describedby="randomReleaseOptions0Reason">
+<label><input id="releaseBandaged" type="checkbox" checked /> Keep randomly freed groups bandaged while moving</label>
+</fieldset>
+</div>
             <p class="muted">May select a lone cubie, a connected fragment, or a whole tetromino. Released groups are white and lock with the current sphere piece. A new piece turn begins after placement, including automatic placements; slice turns and hold swaps do not repeat the event.</p>
           </fieldset>
-          <fieldset><legend>Freed-piece selection and locking</legend>
-            <label><input id="earlyLock" type="checkbox" checked /> Allow early locking of white bandaged groups</label>
+          <fieldset>
+<legend>Freed-piece selection and locking</legend>
+            <div class="setting-dependency">
+<p class="setting-reason" id="earlyLockOptions0Reason">Requires a mode that releases bandaged white groups, or a bandaged group already in play.</p>
+<fieldset id="earlyLockOptions0" aria-describedby="earlyLockOptions0Reason">
+<label><input id="earlyLock" type="checkbox" checked /> Allow early locking of white bandaged groups</label>
+</fieldset>
+</div>
 <p class="muted">Use Lock white pieces below the cube, then click a white group. Occupied stack cells block locking. Clears wait for normal piece placement; Undo restores the group.</p>
 
             <label for="releaseSelection">Random selection method</label>
-            <select id="releaseSelection">
+            <p id="selectionOptions0Reason" class="setting-reason">Used by random release modes; free-all modes do not use a lottery.</p>
+<fieldset id="selectionOptions0" aria-describedby="selectionOptions0Reason">
+<select id="releaseSelection">
               <option value="0" selected>Equal chances per eligible piece</option>
               <option value="1">Weight by occupied cubies</option>
               <option value="2">Try one random cell (empty cells miss)</option>
               <option value="3">Prefer more connected segments</option>
               <option value="4">Prefer fewer connected segments</option>
             </select>
-            <p class="muted">Applies to modes that choose random pieces. Cubie weighting gives a 4-cell piece four times a singleton's chance. A random-cell attempt includes all 27 cells and does not retry misses. Size preference selects the largest or smallest connected group, breaking ties randomly. Free-all modes still release every eligible piece. The random-single-cubie perk removes one cubie from the selected group; equal chances retains its existing uniform-cubie behavior.</p>
-            <label><input id="releaseScattered" type="checkbox" /> Let freed pieces lock scattered when the sphere piece succeeds</label>
-            <p class="muted">On: reconstruction pieces need not make tetrominos, and randomly freed groups need not reconnect. Off: reconstruction pieces must form complete tetrominos and randomly freed groups must be connected. Existing loose white fragments may still lock separately. Overlap with the stack is never allowed. To separate a rigid group, also disable its bandaging option.</p>
+</fieldset>
+            <p id="selectionExplanation" class="muted">
+</p>
+<p class="muted">Selection applies to enabled random-release modes. Free-all modes release every eligible piece. The random-single-cubie perk removes only one cubie from the chosen group.</p>
+            <div class="setting-dependency">
+<p class="setting-reason" id="scatteredOptions0Reason">Used by reconstruction and random stack groups.</p>
+<fieldset id="scatteredOptions0" aria-describedby="scatteredOptions0Reason">
+<label><input id="releaseScattered" type="checkbox" /> Let freed pieces lock scattered when the sphere piece succeeds</label>
+</fieldset>
+</div>
+            <p id="scatteredExplanation" class="muted">
+</p>
+<p class="muted">Loose white fragments can lock separately in either mode. Overlap with the stack is never allowed. To separate a rigid group while moving it, disable that group’s bandaging option too.</p>
           </fieldset>
 
         </div>
-      </details></div>
-      <details class="settings-section" name="settings-section">
+</div>
+</details>
+</div>
+<details id="controlSettings" class="settings-section">
+<summary>Controls and camera<small>Input, orbit and projection</small>
+</summary>
+<div class="settings-section-body">
+<fieldset>
+<legend>Input</legend>
+<label
+              ><input id="classicControls" type="checkbox" /> Show classic
+              button grid</label
+            >
+<label
+              ><input id="showArrows" type="checkbox" /> Show arrow
+              buttons</label
+            >
+<div class="setting-dependency">
+<p class="setting-reason" id="arrowOptionsReason">Enable arrow buttons to show their guide lines.</p>
+<fieldset id="arrowOptions" aria-describedby="arrowOptionsReason">
+<label
+              ><input id="arrowGuides" type="checkbox" /> Sticker-to-arrow guide
+              lines</label
+            >
+</fieldset>
+</div>
+</fieldset>
+<fieldset>
+<legend>Camera</legend>
+<label><input id="perspectiveCamera" type="checkbox" checked /> Perspective camera</label>
+<label
+              ><input id="freeOrbit" type="checkbox" checked /> Free 360°
+              rotation</label
+            >
+<p class="muted">Perspective shows depth through size. Turn it off for orthographic projection. Free rotation allows the cube to turn upside down.</p>
+</fieldset>
+<p class="muted">Drag a sticker to turn a slice. Drag outside the cube or right-drag to orbit. Alt-drag turns a wide layer. Press C to hold.</p>
+</div>
+</details>
+<details id="hintSettings" class="settings-section">
+<summary>Hints and analysis<small>Hover feedback and queue search</small>
+</summary>
+<div class="settings-section-body">
+<fieldset>
+<legend>Hover feedback</legend>
+<label
+              ><input id="hoverRings" type="checkbox" checked /> Slice
+              rings</label
+            >
+<div class="setting-dependency">
+<p class="setting-reason" id="ringOptionsReason">Enable slice rings to show move letters.</p>
+<fieldset id="ringOptions" aria-describedby="ringOptionsReason">
+<label
+              ><input id="ringLabels" type="checkbox" /> Move letters on
+              rings</label
+            >
+</fieldset>
+</div>
+<label
+              ><input id="hoverOutline" type="checkbox" /> Cel-style outlines on
+              affected cubies</label
+            >
+<label
+              ><input id="placementGlow" type="checkbox" checked /> Lightweight markers on
+              placement-making cubies</label
+            >
+<p class="muted">Hover a sticker or arrow to preview affected cubies and mark moves that complete the current piece.</p>
+</fieldset>
+<fieldset>
+<legend>Queue search</legend>
+<label><input id="queueForecast" type="checkbox" /> Check for queue dead ends (experimental)</label>
+<p class="muted">Searches legal turns, face choices, early locks and automatic placements through the shown queue. A crossed circle appears only after exhaustive proof. Large searches may stay inconclusive.</p>
+<p id="forecastStatus" role="status" aria-live="polite">
+</p>
+<button id="forecastReplay" disabled>Inspect / replay found path</button>
+<details id="forecastWitness" hidden>
+<summary>Found move sequence</summary>
+<p id="forecastSequence" class="forecast-sequence">
+</p>
+</details>
+</fieldset>
+</div>
+</details>
+<details id="appearanceSettings" class="settings-section">
+<summary>Appearance<small>Style, color, lighting and motion</small>
+</summary>
+<div class="settings-section-body">
+<fieldset>
+<legend>Rendering style</legend>
+<label for="pieceAppearance">Style</label>
+<select id="pieceAppearance">
+<option value="jelly">Jelly</option>
+<option value="dither">Dithered</option>
+<option value="matte">Matte</option>
+<option value="voxel">Voxel</option>
+<option value="cel">Cel shaded</option>
+<option value="ascii">ASCII</option>
+</select>
+<label
+              ><input id="animations" type="checkbox" checked />
+              Animations</label
+            >
+<p class="muted">Animations includes breathing for all styles. The current piece always uses spheres; white bandaged groups retain their connected shape.</p>
+</fieldset>
+<fieldset>
+<legend>Freed-piece shapes</legend>
+<label
+              ><input id="activeSpheres" type="checkbox" /> Spherical loose white
+              fragments</label
+            >
+<div class="setting-dependency">
+<p class="setting-reason" id="rebuildShapeOptionsReason">Enable whole-piece reconstruction, or have rebuilding pieces in play.</p>
+<fieldset id="rebuildShapeOptions" aria-describedby="rebuildShapeOptionsReason">
+<label><input id="rebuildSolidIdentities" type="checkbox" checked /> Distinguish freed whole-piece IDs with solid shapes</label>
+</fieldset>
+</div>
+<div class="setting-dependency">
+<p class="setting-reason" id="solidOptionsReason">Enable solid ID shapes to configure their appearance.</p>
+<fieldset id="solidOptions" aria-describedby="solidOptionsReason">
+<label><input id="solidFixed" type="checkbox" /> Keep solid shapes aligned during slice turns <output id="solidFixedValue">Off</output>
+</label>
+<label><input id="solidUniform" type="checkbox" checked /> One color for all solid ID shapes <output id="solidUniformValue">On</output>
+</label>
+<div class="setting-dependency">
+<p class="setting-reason" id="solidColorOptionsReason">Used when one color is enabled.</p>
+<fieldset id="solidColorOptions" aria-describedby="solidColorOptionsReason">
+<label>Solid shape color <input id="solidColor" type="color" value="#c8c8c8" /><output id="solidColorValue">#c8c8c8</output>
+</label>
+</fieldset>
+</div>
+<div class="setting-dependency">
+<p class="setting-reason" id="solidGrayOptionsReason">Used when one color is off.</p>
+<fieldset id="solidGrayOptions" aria-describedby="solidGrayOptionsReason">
+<label><input id="solidGray" type="checkbox" checked /> Use gray shades when one color is off <output id="solidGrayValue">On</output>
+</label>
+</fieldset>
+</div>
+</fieldset>
+</div>
+<p class="muted">Solid colors and alignment are shared with family exploration.</p>
+</fieldset>
+<details class="visual-tuning">
+<summary>Lighting</summary>
+<p class="muted">Camera-relative direction. Horizontal: left / right; vertical: below / above. Shared by both apps and all styles.</p>
+<label for="lightAzimuth">Horizontal angle<output id="lightAzimuthValue">-20°</output>
+</label><input id="lightAzimuth" type="range" min="-180" max="180" step="1" value="-20" />
+<label for="lightElevation">Vertical angle<output id="lightElevationValue">25°</output>
+</label><input id="lightElevation" type="range" min="-85" max="85" step="1" value="25" />
+<label for="lightIntensity">Light strength<output id="lightIntensityValue">1×</output>
+</label><input id="lightIntensity" type="range" min="0" max="3" step="0.05" value="1" />
+<label for="lightAmbient">Fill light<output id="lightAmbientValue">0.35</output>
+</label><input id="lightAmbient" type="range" min="0" max="1" step="0.05" value="0.35" />
+<button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button>
+</details>
+<details class="visual-tuning">
+<summary>Dither tuning</summary>
+<div class="setting-dependency">
+<p class="setting-reason" id="ditherTuningReason">Choose the matching rendering style to adjust these settings.</p>
+<fieldset id="ditherTuning" aria-describedby="ditherTuningReason">
+<p class="muted">Pixel size sets the resolution of the whole 3D view, including silhouettes. Fewer shading levels give bolder bands; balance shifts dark versus colored pixels.</p>
+<label for="ditherLevels">Shading levels<output id="ditherLevelsValue">5</output>
+</label><input id="ditherLevels" type="range" min="2" max="17" step="1" value="5" />
+<label for="ditherSize">Pixel size<output id="ditherSizeValue">2px</output>
+</label><input id="ditherSize" type="range" min="1" max="6" step="0.5" value="2" />
+<label for="ditherContrast">Contrast<output id="ditherContrastValue">2.5×</output>
+</label><input id="ditherContrast" type="range" min="0.5" max="5" step="0.1" value="2.5" />
+<label for="ditherMidpoint">Light / dark balance<output id="ditherMidpointValue">0.6</output>
+</label><input id="ditherMidpoint" type="range" min="0" max="1" step="0.05" value="0.6" />
+<button id="resetdither" type="button">Reset dither tuning</button>
+</fieldset>
+</div>
+</details>
+<details class="visual-tuning">
+<summary>ASCII tuning</summary>
+<div class="setting-dependency">
+<p class="setting-reason" id="asciiTuningReason">Choose the matching rendering style to adjust these settings.</p>
+<fieldset id="asciiTuning" aria-describedby="asciiTuningReason">
+<p class="muted">Lower edge coverage keeps more silhouette characters. Blending softens character changes while moving.</p>
+<label for="asciiSize">Character size<output id="asciiSizeValue">1×</output>
+</label><input id="asciiSize" type="range" min="0.5" max="2" step="0.1" value="1" />
+<label for="asciiExposure">Brightness<output id="asciiExposureValue">1×</output>
+</label><input id="asciiExposure" type="range" min="0.5" max="3" step="0.1" value="1" />
+<label for="asciiDensity">Character density<output id="asciiDensityValue">1×</output>
+</label><input id="asciiDensity" type="range" min="0.5" max="2" step="0.1" value="1" />
+<label for="asciiCoverage">Edge coverage required<output id="asciiCoverageValue">0.16</output>
+</label><input id="asciiCoverage" type="range" min="0.02" max="0.6" step="0.02" value="0.16" />
+<label for="asciiBlend">Character blending<output id="asciiBlendValue">1</output>
+</label><input id="asciiBlend" type="range" min="0" max="1" step="0.1" value="1" />
+<button id="resetascii" type="button">Reset ascii tuning</button>
+</fieldset>
+</div>
+</details>
+<fieldset class="piece-colors">
+<legend>Tetromino colors</legend>
+<p class="muted">Shared by both apps and saved on this device. Color assignments and puzzle rules stay the same.</p>
+<div class="piece-color-grid">
+<label for="pieceColorO">O<input id="pieceColorO" type="color" aria-label="O piece color" />
+</label>
+<label for="pieceColorT">T<input id="pieceColorT" type="color" aria-label="T piece color" />
+</label>
+<label for="pieceColorL">L<input id="pieceColorL" type="color" aria-label="L piece color" />
+</label>
+<label for="pieceColorJ">J<input id="pieceColorJ" type="color" aria-label="J piece color" />
+</label>
+<label for="pieceColorS">S<input id="pieceColorS" type="color" aria-label="S piece color" />
+</label>
+<label for="pieceColorZ">Z<input id="pieceColorZ" type="color" aria-label="Z piece color" />
+</label>
+</div>
+<button id="resetPieceColors" type="button">Reset colors</button>
+</fieldset>
+</div>
+</details>
+<details id="visibilitySettings" class="settings-section">
+<summary>Visibility and layers<small>Transparency, grids and depth</small>
+</summary>
+<div class="settings-section-body">
+<details class="visual-tuning transparency-settings">
+<summary>Transparency</summary>
+<div class="setting-dependency">
+<p class="setting-reason" id="transparencyStyleReason">Dithered rendering always uses dither transparency; other styles let you choose.</p>
+<fieldset id="transparencyStyle" aria-describedby="transparencyStyleReason">
+<label><input id="ditherTransparency" type="checkbox" checked /> Dither-style transparency <output id="ditherTransparencyValue">On</output>
+</label>
+</fieldset>
+</div>
+<p>Uses stable pixel patterns instead of sorting transparent surfaces. Enabled by default for speed. Always used by the Dithered filter. Turn off for smooth transparency in other styles.</p>
+
+
+            <label for="activeTransparency"
+              >Active cubies
+              <output id="activeTransparencyValue">0%</output>
+</label
+            ><input
+              id="activeTransparency"
+              type="range"
+              min="0"
+              max="100"
+              value="0"
+              step="1"
+            />
+            <label for="centerTransparency"
+              >Active centers
+              <output id="centerTransparencyValue">0%</output>
+</label
+            ><input
+              id="centerTransparency"
+              type="range"
+              min="0"
+              max="100"
+              value="0"
+              step="1"
+            />
+            <label for="stackTransparency"
+              >Placed cubies
+              <output id="stackTransparencyValue">0%</output>
+</label
+            ><input
+              id="stackTransparency"
+              type="range"
+              min="0"
+              max="100"
+              value="0"
+              step="1"
+            />
+            <p class="muted">0% is fully opaque. 100% is invisible.</p>
+          </details>
+<fieldset>
+<legend>Grids and outlines</legend>
+<div class="setting-dependency">
+<p class="setting-reason" id="splitGridOptionsReason">Available in split view. Use the view button below the cube to switch.</p>
+<fieldset id="splitGridOptions" aria-describedby="splitGridOptionsReason">
+<label
+              ><input id="controlGrid" type="checkbox" checked /> Active cube
+              grid (split view)</label
+            >
+<label
+              ><input id="stackGrid" type="checkbox" checked /> Stack cube
+              outline (split view)</label
+            >
+<label
+              ><input id="xray" type="checkbox" checked /> See through empty
+              cells</label
+            >
+</fieldset>
+</div>
+<div class="setting-dependency">
+<p class="setting-reason" id="combinedGridOptionsReason">Available in combined view.</p>
+<fieldset id="combinedGridOptions" aria-describedby="combinedGridOptionsReason">
+<label
+              ><input id="combinedGrid" type="checkbox" checked /> Combined cube
+              grid</label
+            >
+</fieldset>
+</div>
+<div class="setting-dependency">
+<p class="setting-reason" id="rearGridOptionsReason">Enable the active or combined cube grid to use this option.</p>
+<fieldset id="rearGridOptions" aria-describedby="rearGridOptionsReason">
+<label
+              ><input id="rearGridOnly" type="checkbox" checked /> Grid on
+              rear-facing faces only</label
+            >
+</fieldset>
+</div>
+<label
+              ><input id="activeOutlines" type="checkbox" /> Active cubie
+              outlines</label
+            >
+</fieldset>
+<fieldset>
+<legend>Depth ordering</legend>
+<label
+            ><input id="customLayers" type="checkbox" /> Custom layer
+            order</label
+          >
+<p class="muted">Normally every element uses camera depth. Custom order draws categories at the top over those below, preserving depth within each category.</p>
+<div class="setting-dependency">
+<p class="setting-reason" id="layerOptionsReason">Enable custom layer order to rearrange categories.</p>
+<fieldset id="layerOptions" aria-describedby="layerOptionsReason">
+<ol id="renderLayers" class="render-layers">
+</ol>
+<button id="resetLayers">Restore normal depth</button>
+<p id="layerOrderStatus" class="sr-only" role="status">
+</p>
+</fieldset>
+</div>
+</fieldset>
+<fieldset>
+<legend>Top out</legend>
+<label><input id="topOutNewGame" type="checkbox" checked /> Show New game button after top out</label>
+<p class="muted">Turn off to inspect failed puzzles without a New game button on the playfield.</p>
+</fieldset>
+</div>
+</details>
+<details class="settings-section" id="infoSettings">
         <summary>
           Game information<small>Statistics, face map and rules</small>
         </summary>
         <div class="settings-section-body">
           <div class="settings-stats">
-            <div>Pieces <strong id="pieces">0</strong></div>
-            <div>Planes cleared <strong id="clears">0</strong></div>
+            <div>Pieces <strong id="pieces">0</strong>
+</div>
+            <div>Planes cleared <strong id="clears">0</strong>
+</div>
             <div class="capacity">
               <span id="capacityLabel">0 / 27 cells</span
               ><meter id="capacity" min="0" max="27" value="0"></meter>
             </div>
-            <p id="inventory" class="muted"></p>
+            <p id="inventory" class="muted">
+</p>
           </div>
           <details class="face-card" open>
-            <summary>Face map <span>Outside views</span></summary>
-            <div class="net" id="net"></div>
+            <summary>Face map <span>Outside views</span>
+</summary>
+            <div class="net" id="net">
+</div>
             <p class="map-note">
               Filled = stack · ring = active<br />Pink ring = overlap; keep
               turning
@@ -595,14 +919,8 @@
                 </p>
               </div>
               <div>
-                <h2>Clear a whole face</h2>
-                <p>
-                  Fill all nine cells of a face to clear it. Full faces clear
-                  simultaneously. By default, connected fragments fall toward
-                  the last cleared face (ties use D, F, R, B, L, U order), then
-                  gravity switches off. Settings also offers no gravity or
-                  continuous gravity with random direction changes on moves.
-                </p>
+                <h2>Clear faces and slices</h2>
+                <p>Choose full planes, perimeter rings, or both. A full plane needs 9 cells; a ring needs 8. Matching planes clear simultaneously. Gravity follows your chosen direction and timing. Freed whole pieces must be rebuilt; freed fragments follow your selected connection rules. They can always move without bandages.</p>
               </div>
               <div>
                 <h2>Every turn is available</h2>
@@ -622,7 +940,7 @@
                   facebound gap fits, it tries a planar surface-only gap, then
                   one through the core. Only failure of all three tiers ends the
                   game. Automatic fills can clear faces and continue into the
-                  next piece. Undo restores the entire chain.
+                  next piece. Undo restores the entire chain; before top out it requires For Science mode.
                 </p>
               </div>
             </div>

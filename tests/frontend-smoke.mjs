@@ -31,6 +31,9 @@ const savedState=Array.from(context.state);
 $('explorer').explorerReady=Promise.resolve();$('explorerTab').onclick();assert($('gamePage').hidden);assert(!$('explorerPage').hidden);assert(!html.includes('<iframe'));assert($('explorer').explorerReady);
 $('gameTab').onclick();assert(!$('gamePage').hidden);assert($('explorerPage').hidden);assert.deepEqual(Array.from(context.state),savedState);
 console.log('PASS: packing tab lazy load and game state preservation.');
+// New defaults are active on startup. The following legacy-state checks remain useful for old shared puzzles.
+assert.notEqual(context.engine.game_rules(),0xffffffff);assert($('scienceMode').checked);assert($('freedomEnabled').checked);assert(!$('bandagedFragments').checked);assert(!$('earlyLock').checked);
+context.engine.game_init(123);context.engine.game_set_fragments(false);context.engine.game_set_modes(true,false,2);context.engine.game_set_gravity_rules(false,true);context.update();
 assert(!$('queueForecast').checked);assert(!$('sliceGravity').checked);assert($('gravityOneStep').checked);assert.equal(context.engine.game_gravity_rules(),2);assert($('bandagedFragments').checked);assert($('earlyLock').checked);assert(!$('randomCubies').checked);assert.equal($('rebuildMode').value,'2');assert(!$('fragmentPerk').checked);assert(!$('fragmentOptions').open);assert(context.renderers[0].perspective);
 $('fragmentPerk').checked=true;$('fragmentPerk').onchange();assert($('fragmentOptions').open);
 $('bandagedFragments').checked=true;$('bandagedFragments').onchange();
@@ -64,7 +67,7 @@ $('shareState').onclick();assert($('stateDialog').open);const shared=$('stateTex
 const exported=context.engine.exportState();$('stateText').value='{"bad":true}';$('loadState').onclick();assert.deepEqual(context.engine.exportState(),exported);assert($('stateDialog').open);
 $('stateText').value=shared;$('loadState').onclick();assert(!$('stateDialog').open);assert.deepEqual(context.engine.exportState(),exported);
 $('new').onclick();assert($('setupDialog').open);const beforeSetup=context.engine.exportState();
-$('gravityMode').value='1';$('gravityMode').onchange();assert.deepEqual(context.engine.exportState(),beforeSetup);
+$('gravityEnabled').checked=false;$('gravityEnabled').onchange();assert.deepEqual(context.engine.exportState(),beforeSetup);
 await $('setupStart').onclick();flush();assert.equal(context.engine.snapshot()[158],1);
 // Lightweight feedback uses 144 vertices per marker, not three sphere meshes.
 const renderer=context.renderers[0], previews=context.engine.placement_previews;
@@ -141,12 +144,26 @@ assert.equal(renderer.ghostSolid.count,0);assert(renderer.ghostLines.count>0);
 renderer.ghost=null;renderer.setState(context.state);
 console.log('PASS: optional top-out restart is guarded and placement ghosts contain lines only.');
 
-assert.equal(context.engine.game_release_rules(),4,'random release off, its bandaging on by default');
+context.engine.game_init(19);context.update();
+assert.equal(context.engine.game_release_rules(),4,'legacy random release remains compatible');
 $('releaseTrigger').value='1';$('releaseBandaged').checked=true;$('releaseScattered').checked=true;$('releaseSelection').value='3';
 $('releaseTrigger').onchange();assert.equal(context.engine.game_release_rules(),61);
 assert.equal(context.engine.exportState()[1],3);
 context.update();assert.equal($('releaseTrigger').value,'1');assert($('releaseScattered').checked);
-$('new').onclick();$('releaseTrigger').value='2';$('releaseBandaged').checked=false;$('releaseScattered').checked=false;$('releaseSelection').value='1';
-$('animations').checked=false;await $('setupStart').onclick();flush();assert.equal(context.engine.game_release_rules(),18);
-assert.equal($('releaseTrigger').value,'2');assert(!$('releaseBandaged').checked);
-console.log('PASS: release controls reach Wasm, state transport and confirmed new-game setup.');
+$('new').onclick();$('freedomEvent1').checked=true;$('freedomEvent1').onchange();
+$('debugCurrent').value='2';$('debugHeld').value='6';
+$('animations').checked=false;await $('setupStart').onclick();flush();
+assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],4);
+$('debugHeld').value='0';await $('applyHeld').onclick();assert.equal(context.state[164],0);
+$('scienceMode').checked=false;$('scienceMode').onchange();assert($('stageUndo').disabled);assert(!context.engine.game_debug_piece(1,3));
+$('scienceMode').checked=true;$('scienceMode').onchange();assert(!$('stageUndo').disabled);
+console.log('PASS: new gameplay defaults, setup choices, current/empty hold editing, and debug Undo policy reach real Wasm.');
+
+$('navappearanceSettings').onclick();assert($('appearanceSettings').open);
+$('new').onclick();assert($('setupDialog').open);
+$('gravityMode').value='1';$('setupDialog').listeners.change();assert($('gravityOptions0').disabled);assert($('rulesEditStatus').hidden);
+$('gravityMode').value='0';$('setupDialog').listeners.input();assert(!$('gravityOptions0').disabled);
+$('setupCancel').onclick();assert(!$('setupDialog').open);
+$('showArrows').checked=false;$('settingsDialog').listeners.change();assert($('arrowOptions').disabled);
+$('showArrows').checked=true;$('settingsDialog').listeners.input();assert(!$('arrowOptions').disabled);
+console.log('PASS: settings navigation and dependency refresh in both setup and live settings dialogs.');

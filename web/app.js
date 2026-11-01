@@ -1,3 +1,4 @@
+import {initializeGameplay,readGameplay,writeGameplay,refreshGameplay} from './ui/gameplay-settings.js';
 import { createReplay } from './ui/forecast-replay.js';
 import { createForecast } from './ui/forecast.js';
 import { initializeSession } from "./ui/session.js";
@@ -15,6 +16,7 @@ import { createEngine } from "./engine/wasm.js";
 import { moveLabels } from "./engine/coordinates.js";
 import {
   initializeSettings,
+  refreshSettings,
   syncDisplaySettings,
   layerOrder,
 } from "./ui/settings.js";
@@ -160,6 +162,7 @@ function snapshot() {
 }
 function update(message) {
   state = snapshot();
+  writeGameplay(engine.game_rules());
   $("earlyLock").checked = !!engine.game_early_lock();
   $("sliceClearMode").value = String(engine.game_slice_clear_mode());
   $("gravityMode").value = String(state[S.GRAVITY_MODE]);
@@ -176,6 +179,7 @@ function update(message) {
   $('releaseScattered').checked=!!(releaseRules&8);
   $('releaseSelection').value=String((releaseRules>>4)&7);
   syncFragmentOptions();
+  refreshSettings();
   $("rebuildStatus").textContent = state[S.REBUILD_MASK] || state[S.REBUILD_PENDING]
     ? state[S.REBUILD_PENDING]
       ? `Freed reconstruction pieces must form complete tetrominos; randomly freed groups must reconnect. Same-colored reconstruction cubies can mix.`
@@ -315,6 +319,7 @@ const faceButtons = faceLabels.map((label, f) => {
 });
 function setBusy(value) {
   busy = value;
+  refreshSettings();
   syncOverlayControls();
   moveButtons.forEach(
     (b) => (b.disabled = value || !!state[S.OVER] || !!state[S.PENDING_FACES]),
@@ -322,7 +327,7 @@ function setBusy(value) {
   faceButtons.forEach(
     (b, f) => (b.disabled = value || !(state[S.PENDING_FACES] & (1 << f))),
   );
-  $("undo").disabled = value || !state[S.UNDO_COUNT];
+  $("undo").disabled = value || !state[S.UNDO_COUNT] || (state.gameplayRules!==0xffffffff && !(state.gameplayRules&1) && !state[S.OVER]);
   $("new").disabled = value;
   $("gravityMode").disabled = value || !!state[S.PENDING_FACES];
   for (const id of ["bandagedFragments", "randomCubies", "rebuildMode", "releaseTrigger", "releaseBandaged", "releaseScattered", "releaseSelection"])
@@ -441,6 +446,8 @@ async function newGame() {
   animationController.clearGhost();
   renderers[0].ghost = null;
   renderers[0].preview = 0;
+  const chosenRules=readGameplay();
+  const chosenCurrent=+$("debugCurrent").value, chosenHeld=+$("debugHeld").value;
   const seed = crypto.getRandomValues(new Uint32Array(1))[0];
   const gravityMode = +$("gravityMode").value;
   const releaseRules=[+$('releaseTrigger').value,$('releaseBandaged').checked,$('releaseScattered').checked,+$('releaseSelection').value];
@@ -457,6 +464,8 @@ async function newGame() {
     $("fragmentPerk").checked && $("randomCubies").checked,
     +$("rebuildMode").value,
   );
+  engine.game_configure_rules(chosenRules);
+  if(chosenRules&1){if(chosenCurrent)engine.game_debug_piece(0,chosenCurrent);engine.game_debug_piece(1,chosenHeld);}
   update();
   setBusy(true);
   try {
@@ -563,7 +572,7 @@ $("viewMode").onclick = () => {
     "aria-label",
     split ? "Combine active cube and stack" : "Separate active cube and stack",
   );
-  $("xray").closest("label").hidden = !split;
+  refreshSettings();
   // Both canvases start at the same camera, scale, and horizontal position.
   // The stack is rendered once, on its own canvas throughout the transition.
   control.combined = false;
@@ -600,9 +609,19 @@ $("viewMode").onclick = () => {
 const context = {
   get lockMode() { return lockMode && $("earlyLock").checked; },
   lockBand,
+  async debugPiece(held,piece) {
+    if(busy||session?.starting)return;
+    const before=copyState(state);
+    if(!engine.game_debug_piece(held,piece))return;
+    animationController.clearGhost();renderers[0].ghost=null;renderers[0].preview=0;
+    const after=snapshot(),trace=events();setBusy(true);
+    try {if(trace.length)await resolveAnimations(before,after,trace);update('Debug piece changed. Undo restores the previous state.');}
+    finally {setBusy(false);invalidate();}
+  },
   get state() {
     return state;
   },
+  get settingUp() { return !!session?.starting; },
   get busy() {
     return busy || !!session?.starting;
   },
@@ -660,7 +679,8 @@ function syncOverlayControls() {
       `${moveLabels[m % 15]}${m >= 15 ? " prime" : ""}${win ? " — places the current piece" : ""}`,
     );
   }
-  const canUndo = !busy && !!state[S.UNDO_COUNT];
+  const canUndo = !busy && !!state[S.UNDO_COUNT] && (state.gameplayRules===0xffffffff || !!(state.gameplayRules&1) || !!state[S.OVER]);
+  $("undo").disabled=!canUndo;
   $("stageUndo").disabled = !canUndo;
   $("overUndo").disabled = !canUndo;
   $("gameOver").hidden = busy || !state[S.OVER];
@@ -689,6 +709,7 @@ $("fragmentOptions").addEventListener("toggle",()=>{
 });
 $("fragmentPerk").onchange = () => {
   syncFragmentOptions();
+  refreshSettings();
   if (!engine || busy || session?.starting) return;
   engine.game_set_fragments($("fragmentPerk").checked);
   engine.game_set_modes(
@@ -769,6 +790,7 @@ $("freeOrbit").addEventListener("change", () => {
 });
 configureRenderer(context);
 initializeSettings(context);
+initializeGameplay(context);
 selectMode("face");
 async function start() {
   try {
@@ -783,7 +805,7 @@ async function start() {
     ];
     syncDisplaySettings();
     renderers[0].combined = $("combined").checked;
-    $("xray").closest("label").hidden = $("combined").checked;
+    refreshSettings();
     const stage = document.querySelector(".views");
     const resizeStage = () => {
       const rect = stage.getBoundingClientRect();

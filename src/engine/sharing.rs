@@ -3,10 +3,10 @@ use super::*;
 impl Game {
     pub fn export_state(&self) -> Vec<u32> {
         let s = &self.state;
-        let extended=s.release_trigger!=0 || !s.release_bandaged || s.release_scattered || s.release_selection!=0 || s.release_started.is_some() || !s.free_groups.is_empty();
+        let extended=s.rules.is_some() || s.release_trigger!=0 || !s.release_bandaged || s.release_scattered || s.release_selection!=0 || s.release_started.is_some() || !s.free_groups.is_empty();
         let mut v = vec![
             0x53554931,
-            if extended {3} else {2},
+            if s.rules.is_some() {4} else if extended {3} else {2},
             s.rng,
             s.active,
             s.pieces,
@@ -47,6 +47,7 @@ impl Game {
             v.extend([s.release_trigger,s.release_bandaged as u32,s.release_scattered as u32,s.release_selection,s.release_started.unwrap_or(u32::MAX),s.free_groups.len() as u32]);
             v.extend(&s.free_groups);
         }
+        if let Some(rules)=s.rules { v.extend([rules, s.gravity_plane.map_or(9, |p|p as u32)]); }
         v
     }
     pub fn import_state(&mut self, data: &[u32]) -> bool {
@@ -56,7 +57,7 @@ impl Game {
                 return None;
             }
             let version=it.next()?;
-            if !(1..=3).contains(&version) { return None; }
+            if !(1..=4).contains(&version) { return None; }
             let mut s = State::empty(it.next()?);
             s.active = it.next()?;
             s.pieces = it.next()?;
@@ -208,6 +209,12 @@ impl Game {
                     free_union|=group;s.free_groups.push(group);
                 }
             }
+            if version >= 4 {
+                let rules=it.next()?; let plane=it.next()?;
+                if !State::valid_rules(rules) || plane>9 { return None; }
+                s.rules=Some(rules); s.gravity_plane=(plane!=9).then_some(plane as usize);
+                if !s.bands.is_empty() { return None; }
+            }
             if !s.bandaged && s.bands.iter().any(|band|!s.release_bandaged || !s.free_groups.iter().any(|group|band&group==*band)) {return None;}
             if it.next().is_some() {
                 return None;
@@ -238,7 +245,7 @@ impl Game {
         true
     }
     pub fn set_next_piece(&mut self, piece: u32) -> bool {
-        if !(1..=6).contains(&piece) || self.state.over || !self.pending.is_empty() {
+        if self.state.rules.is_some_and(|r|r&1==0) || !(1..=6).contains(&piece) || self.state.over || !self.pending.is_empty() {
             return false;
         }
         self.history.push_back(self.state.clone());

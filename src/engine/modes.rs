@@ -2,6 +2,13 @@
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 impl State {
+    pub fn reconstruction_facebound(&self) -> bool {
+        self.rules.is_some_and(|r| r & (1<<14) != 0 && r & (1<<15) != 0)
+    }
+    pub fn spatial_reconstruction(&self) -> bool {
+        self.rules.is_some() && !self.reconstruction_facebound()
+    }
+
     pub fn rebuilding_mask(&self) -> u32 {
         self.floating
             .iter()
@@ -23,12 +30,14 @@ impl State {
                     .any(|p| p.mask == mask)
             })
             .or_else(|| {
+                if self.reconstruction_facebound() { return None; }
                 std::iter::once(old).chain(1..=6).find(|&color| {
                     t.fallback[color as usize - 1]
                         .iter()
                         .any(|&(m, _)| m == mask)
                 })
             })
+            .or_else(|| (self.spatial_reconstruction() && t.tetracubes.contains(&mask)).then_some(old))
     }
     /// Same-colored released pieces form an interchangeable pool. Exact cover
     /// prevents greedy matches from stranding cubies or counting one cell twice.
@@ -83,6 +92,7 @@ impl State {
             let mut seen = BTreeSet::new();
             // Prefer facebound shapes and preserve the old color when ambiguous.
             for fallback in [false, true] {
+                if fallback && self.reconstruction_facebound() { continue; }
                 for color in std::iter::once(old).chain(1..=6) {
                     let masks: Vec<_> = if fallback {
                         t.fallback[color as usize - 1]
@@ -102,6 +112,11 @@ impl State {
                     }
                 }
             }
+            if self.spatial_reconstruction() {
+                for &m in &t.tetracubes {
+                    if m & mask == m { candidates.push((m, old)); }
+                }
+            }
             let mut pieces = vec![];
             if !cover(mask, &candidates, &mut pieces, &mut BTreeSet::new()) {
                 return None;
@@ -118,10 +133,15 @@ impl State {
         Some(result)
     }
     pub fn rebuild_ready(&self, t: &Tables) -> bool {
+        if let Some(r) = self.rules {
+            return self.rebuild_partition(t).is_some() && self.free_groups.iter().all(|&m| {
+                r & (1<<14) == 0 || (Self::connected(m) && (r & (1<<15) == 0 || t.faces.iter().any(|face| m & face == m)))
+            });
+        }
         self.release_scattered || (self.free_groups.iter().all(|&m| Self::connected(m)) && self.rebuild_partition(t).is_some())
     }
     pub fn finish_rebuilds(&mut self, t: &Tables) {
-        if self.release_scattered { self.rebuild_ids.clear(); return; }
+        if self.rules.is_none() && self.release_scattered { self.rebuild_ids.clear(); return; }
         let Some(pieces) = self.rebuild_partition(t) else {
             return;
         };
@@ -167,6 +187,7 @@ impl State {
     }
     pub fn refresh_bands(&mut self) {
         self.bands.clear();
+        if self.rules.is_some() { return; }
         if self.release_bandaged {
             self.bands.extend(self.free_groups.iter().flat_map(|&m| Self::connected_parts(m)).filter(|m| m.count_ones()>1));
         }

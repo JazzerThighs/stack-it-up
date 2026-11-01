@@ -74,7 +74,9 @@ impl Game {
         for f in &mut s.floating {
             f.cell = self.tables.permutations[m][f.cell];
         }
-        if s.gravity_mode == 2 {
+        if s.rules.is_some_and(|r| r & (1<<5) != 0 && r & (1<<8) != 0) {
+            s.clear(&self.tables);
+        } else if s.rules.is_none() && s.gravity_mode == 2 {
             let old = s.gravity.unwrap_or(1);
             s.gravity = Some(if s.range(2) == 1 {
                 (old + 1 + s.range(5) as usize) % 6
@@ -127,7 +129,7 @@ impl Game {
             .filter(|&m| !self.preview(m).is_empty())
             .fold(0, |mask, m| mask | 1 << m)
     }
-    fn save_history(&mut self) {
+    pub(super) fn save_history(&mut self) {
         let mut previous = self.state.clone();
         previous.events.clear();
         self.history.push_back(previous);
@@ -249,6 +251,7 @@ impl Game {
         true
     }
     pub fn undo(&mut self) -> bool {
+        if self.state.rules.is_some_and(|r| r & 1 == 0) && !self.state.over { return false; }
         if let Some(s) = self.history.pop_back() {
             self.state = s;
             self.pending.clear();

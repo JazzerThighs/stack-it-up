@@ -6,6 +6,7 @@ mod modes;
 mod release;
 mod state;
 mod sharing;
+mod rules;
 mod tables;
 pub use coordinates::*;
 pub use game::*;

@@ -19,6 +19,9 @@ pub struct Fragment {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct State {
+    /// Versioned gameplay configuration; None preserves imported legacy rules.
+    pub rules: Option<u32>,
+    pub gravity_plane: Option<usize>,
     pub floating: Vec<Fragment>,
     pub bandaged: bool,
     pub early_lock: bool,
@@ -63,6 +66,8 @@ pub struct State {
 impl State {
     pub fn empty(seed: u32) -> Self {
         Self {
+            rules: None,
+            gravity_plane: None,
             floating: vec![],
             bandaged: false,
             early_lock: true,
@@ -278,6 +283,7 @@ impl State {
             self.ids[i] = self.pieces + 1;
         }
         self.pieces += 1;
+        if self.rules.is_some_and(|r| (r >> 6) & 3 == 3) { self.gravity = Some(self.range(6) as usize); }
         self.score += 100;
         self.active = 0;
         self.record(1, mask, 0, std::array::from_fn(|i| i));
@@ -290,7 +296,11 @@ impl State {
         self.auto_tiers = 0;
         let mut all_clears = std::mem::take(&mut self.last_clears);
         loop {
-            if self.release_trigger == 2 && self.release_started != Some(self.pieces) {
+            if self.rules.is_some_and(|r| r & (1<<9) != 0 && (r>>16)&3 == 1) && self.release_started != Some(self.pieces) {
+                self.release_started = Some(self.pieces);
+                self.release_configured(1, t);
+            }
+            if self.rules.is_none() && self.release_trigger == 2 && self.release_started != Some(self.pieces) {
                 self.release_started = Some(self.pieces);
                 self.release_random_groups(1);
                 self.refresh_bands();
@@ -298,7 +308,7 @@ impl State {
             match self.spawn_decision(t) {
                 SpawnDecision::Active => {
                     self.last_clears = all_clears;
-                    if self.gravity_mode != 2 {
+                    if self.rules.is_none() && self.gravity_mode != 2 {
                         self.gravity = None;
                     }
                     return true;
@@ -306,7 +316,7 @@ impl State {
                 SpawnDecision::TopOut => {
                     self.over = true;
                     self.last_clears = all_clears;
-                    if self.gravity_mode != 2 {
+                    if self.rules.is_none() && self.gravity_mode != 2 {
                         self.gravity = None;
                     }
                     return false;

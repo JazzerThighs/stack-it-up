@@ -6,6 +6,8 @@ pub struct Placement {
     pub required: u32,
 }
 pub struct Tables {
+    /// Connected nonplanar tetracubes: both screws and the branch.
+    pub tetracubes: Vec<u32>,
     pub placements: [Vec<Placement>; 6],
     /// Non-facebound planar placements, ordered surface-only then core-containing.
     pub fallback: [Vec<(u32, u8)>; 6],
@@ -123,7 +125,17 @@ impl Tables {
                 idx(p)
             })
         });
+        // Enumerate once, outside move previews and exact-cover searches.
+        let mut tetracubes = Vec::new();
+        for a in 0..24 { for b in a+1..25 { for c in b+1..26 { for d in c+1..27 {
+            let cells=[a,b,c,d];
+            let mask=cells.iter().fold(0,|m,&i|m|1<<i);
+            if (0..3).all(|axis|cells.iter().any(|&i|xyz(i)[axis]!=xyz(a)[axis])) && State::connected(mask) {
+                tetracubes.push(mask);
+            }
+        }}}}
         Self {
+            tetracubes,
             placements,
             fallback,
             spawns,

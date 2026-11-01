@@ -1,26 +1,32 @@
+import {refreshGameplay,validateGameplay} from './gameplay-settings.js';
+import {refreshSettingsAvailability} from './settings-availability.js';
 export function initializeSession({engine, snapshot, update, newGame, clearAnimations, isBusy}) {
   const $ = id => document.getElementById(id);
   let starting = false, started = false;
   const rules = $("gameplaySettings"), home = $("gameplayHome");
-  function restoreRules() { home.append(rules); starting = false; }
+  function restoreRules() { home.append(rules); starting = false; refreshSettingsAvailability(document, snapshot()); }
   function setup() {
     if (isBusy()) return;
     starting = true;
     $("setupCancel").hidden = !started;
     $("setupRules").append(rules); rules.open = true;
     for (const el of rules.querySelectorAll("input,select")) el.disabled = false;
+    refreshSettingsAvailability(document);
+    $("debugCurrent").value="0";$("debugHeld").value="0";
+    refreshGameplay(document,{starting:true});
     $("setupDialog").showModal();
   }
-  $("setupDialog").addEventListener("cancel", e => { if (!started) e.preventDefault(); });
+  $("setupDialog").addEventListener("cancel", e => { e.preventDefault(); if(started) $("setupCancel").onclick(); });
   $("setupDialog").addEventListener("close", restoreRules);
   $("setupCancel").onclick = () => { $("setupDialog").close(); restoreRules(); update(); };
   $("setupStart").onclick = async () => {
+    validateGameplay(document);
     $("setupDialog").close(); restoreRules(); started = true;
     await newGame();
   };
   $("new").onclick = () => { $("settingsDialog").close(); setup(); };
   $("overNew").onclick = () => {if($("topOutNewGame").checked)setup();};
-  const syncTheory = () => { $("nextPieceControls").hidden = !$("chooseNext").checked; };
+  const syncTheory = () => { const r=engine()?.game_rules(); $("nextPieceControls").hidden = !$("chooseNext").checked || (r!==0xffffffff && !(r&1)); };
   $("chooseNext").onchange = syncTheory;
   $("setNextPiece").onclick = () => {
     if (!starting && !isBusy() && engine().game_set_next(Number($("nextPiece").value))) update("Next queued piece changed. Undo restores it.");

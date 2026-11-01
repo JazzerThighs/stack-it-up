@@ -2530,3 +2530,34 @@ main.explorer-active > .topbar { padding:0 14px; }
 .game-over #overUndo { display:none; }
 .game-over #overNew { font-size:16px; min-height:40px; }
 .game-over #overNew[hidden] { display:none; }
+
+/* Game settings: purpose-based groups and visible parent-option dependencies. */
+.settings-nav { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+.settings-nav button { flex:1 1 100px; min-height:44px; padding:10px 14px; font-size:16px; }
+.settings-dialog .settings-section { scroll-margin-top:90px; }
+.settings-dialog .settings-section-body { display:block; }
+.settings-dialog .setting-dependency { margin:10px 0; padding-left:14px; border-left:2px solid #425762; }
+.settings-dialog .setting-dependency fieldset { border:0; padding:0; margin:0; min-width:0; }
+.settings-dialog .setting-dependency fieldset:disabled { opacity:.5; }
+.settings-dialog .setting-reason { color:#c3d4de; font-size:15px; margin:6px 0; line-height:1.5; }
+.settings-dialog .setting-reason[hidden] { display:none; }
+.settings-summary { padding:12px 16px; border-radius:10px; background:#263c41; color:#d5f1e4; line-height:1.5; }
+.settings-dialog .visual-tuning { margin:12px 0; }
+.settings-dialog .settings-section-body > fieldset { padding:16px; border:1px solid #34434c; border-radius:10px; }
+.settings-dialog .settings-section-body select { max-width:100%; min-width:0; }
+.settings-dialog button:focus-visible, .settings-dialog summary:focus-visible { outline:2px solid #a2e3ce; outline-offset:3px; }
+@media (max-width:600px) {
+  .settings-dialog .settings-section-body > fieldset { padding:12px; }
+  .settings-dialog .setting-dependency { padding-left:10px; }
+  .settings-nav button { flex-basis:28%; }
+}
+
+#legacyGameplay[hidden] { display:none !important; }
+#gameplaySettings input[type="radio"] { width:22px; height:22px; accent-color:#a5dfca; flex-shrink:0; }
+#gameplaySettings fieldset:disabled { opacity:.5; }
+#gameplaySettings fieldset fieldset { margin:16px 0; border-left:2px solid #425762; padding:12px 16px; }
+#gameplaySettings label { min-height:40px; }
+#scienceOptions { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; }
+#scienceOptions[hidden] { display:none; }
+#scienceOptions label, #scienceOptions p { grid-column:1/-1; }
+#setupDialog .session-actions { position:sticky; bottom:-1px; background:#182128; padding:12px 0; z-index:3; }

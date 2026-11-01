@@ -361,3 +361,13 @@ pub extern "C" fn game_set_release_rules(trigger:u32,bandaged:u32,scattered:u32,
 pub extern "C" fn game_release_rules()->u32 {
     APP.with_borrow(|a| {let s=&a.game.state;s.release_trigger | ((s.release_bandaged as u32)<<2) | ((s.release_scattered as u32)<<3) | (s.release_selection<<4)})
 }
+#[unsafe(no_mangle)]
+pub extern "C" fn game_configure_rules(rules:u32)->u32 {
+    APP.with_borrow_mut(|a| {let ok=a.game.configure_rules(rules);a.sync();ok as u32})
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn game_rules()->u32 {APP.with_borrow(|a|a.game.state.rules.unwrap_or(u32::MAX))}
+#[unsafe(no_mangle)]
+pub extern "C" fn game_debug_piece(held:u32,piece:u32)->u32 {
+    APP.with_borrow_mut(|a| {let ok=a.game.debug_piece(held!=0,piece);a.sync();ok as u32})
+}

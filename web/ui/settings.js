@@ -1,3 +1,6 @@
+import {refreshGameplay} from './gameplay-settings.js';
+import {S} from '../engine/snapshot.js';
+import {refreshSettingsAvailability} from './settings-availability.js';
 import {solidStyleKey} from '../render/identity-solids.js';
 import {visualSettings} from '../render/visual-settings.js';
 import {initializePaletteControls} from './palette-controls.js';
@@ -5,6 +8,15 @@ import {subscribePalette} from '../render/palette.js';
 import {initializeVisualControls} from "./visual-controls.js";
 const $ = (id) => document.getElementById(id);
 let context;
+export function refreshSettings() {
+  refreshSettingsAvailability(document, context?.settingUp ? null : context?.state);
+  refreshGameplay(document,{starting:!!context?.settingUp,busy:!!context?.busy,state:context?.state});
+  const status = $('rulesEditStatus');
+  const pending = !context?.settingUp && context?.state?.[S.PENDING_FACES];
+  const busy = !context?.settingUp && context?.busy;
+  status.hidden = !pending && !busy;
+  status.textContent = pending ? 'Choose a placement face before changing gameplay rules.' : busy ? 'Gameplay rules are temporarily locked while the move resolves.' : '';
+}
 const defaultLayers = [
   ["arrows", "Arrow buttons"],
   ["arrowGuides", "Arrow guide lines"],
@@ -55,7 +67,8 @@ export function renderLayerSettings(focusId = null) {
         renderLayerSettings(id);
         $("layerOrderStatus").textContent =
           `${name.textContent}: position ${next + 1}`;
-        context.invalidate();
+        refreshSettings();
+    context.invalidate();
       };
       row.append(b);
       if (focusId === id && !b.disabled) requestAnimationFrame(() => b.focus());
@@ -66,11 +79,23 @@ export function renderLayerSettings(focusId = null) {
 }
 export function initializeSettings(value) {
   context = value;
+  for (const id of ['settingsDialog', 'setupDialog']) {
+    $(id).addEventListener('input', refreshSettings);
+    $(id).addEventListener('change', refreshSettings);
+  }
+  for (const id of ['gameplaySettings','controlSettings','hintSettings','appearanceSettings','visibilitySettings','infoSettings']) {
+    $('nav' + id).onclick = () => {
+      $(id).open = true;
+      $(id).scrollIntoView?.({block:'start', behavior:'smooth'});
+      $(id).querySelector?.('summary')?.focus();
+    };
+  }
   initializePaletteControls();
   initializeVisualControls(document,()=>{
     for(const r of context.renderers) {
       if(r.solidStyle!==solidStyleKey()){r.solidStyle=solidStyleKey();r.solidGray=!!visualSettings.solidGray;if(r.state)r.setState(r.state,r.animation);}
     }
+    refreshSettings();
     context.invalidate();
   });
   try {const saved=globalThis.localStorage?.getItem('stack-it-up.rebuild-solids');if(saved!==null && saved!==undefined) $('rebuildSolidIdentities').checked=saved==='true';} catch {}
@@ -85,12 +110,14 @@ export function initializeSettings(value) {
   });
   $("customLayers").onchange = () => {
     renderLayerSettings();
+    refreshSettings();
     context.invalidate();
   };
   $("resetLayers").onclick = () => {
     layerOrder = defaultLayers.map(([id]) => id);
     $("customLayers").checked = false;
     renderLayerSettings();
+    refreshSettings();
     context.invalidate();
   };
   renderLayerSettings();
@@ -143,5 +170,6 @@ export function syncDisplaySettings() {
   for (const name of ["active", "center", "stack"])
     $(name + "TransparencyValue").textContent =
       $(name + "Transparency").value + "%";
+  refreshSettings();
   context.invalidate();
 }

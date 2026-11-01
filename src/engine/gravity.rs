@@ -47,6 +47,9 @@ impl State {
         self.settle_toward(axis, side, face as u32 + 1);
     }
     fn settle_toward(&mut self, axis: usize, target: i32, event_plane: u32) {
+        self.settle_axis(axis, target, event_plane, false);
+    }
+    pub(super) fn settle_axis(&mut self, axis: usize, target: i32, event_plane: u32, away: bool) {
         let mut groups = self.groups();
         let mut fallen = vec![false; groups.len()];
         loop {
@@ -62,6 +65,7 @@ impl State {
                 } else {
                     continue;
                 };
+                let step = if away { -step } else { step };
                 let mut next = 0;
                 let mut valid = true;
                 let occupied = self.occupied();
@@ -116,6 +120,7 @@ impl State {
         }
     }
     pub fn clear(&mut self, t: &Tables) -> u32 {
+        if self.rules.is_some() { return self.clear_configured(t); }
         let mut total = 0;
         if self.gravity_mode == 1 {
             self.gravity = None;
