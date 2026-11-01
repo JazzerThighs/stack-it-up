@@ -1,5 +1,5 @@
-// Fixed isometric preview: no animation, WebGL context, or mirrored transforms.
-export function spatialPreview(cells,color) {
+// Fixed isometric preview; optional horizontal reflection for paired queue icons.
+export function spatialPreview(cells,color,mirror=false) {
   if(!/^#[0-9a-f]{6}$/i.test(color))color='#cccccc';
   const project=([x,y,z])=>[50+(x-z)*13,65+(x+z)*6-y*15];
   const faces=[[[0,1,0],[1,1,0],[1,1,1],[0,1,1]],[[1,0,0],[1,0,1],[1,1,1],[1,1,0]],[[0,0,1],[0,1,1],[1,1,1],[1,0,1]]];
@@ -10,6 +10,6 @@ export function spatialPreview(cells,color) {
   })).join('');
   const projected=cells.flatMap(p=>[0,1].flatMap(x=>[0,1].flatMap(y=>[0,1].map(z=>project([p[0]+x,p[1]+y,p[2]+z])))));
   const min=[0,1].map(a=>Math.min(...projected.map(p=>p[a]))-3),max=[0,1].map(a=>Math.max(...projected.map(p=>p[a]))+3);
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${min[0]} ${min[1]} ${max[0]-min[0]} ${max[1]-min[1]}">${polygons}</svg>`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${min[0]} ${min[1]} ${max[0]-min[0]} ${max[1]-min[1]}">${mirror?`<g transform="translate(${min[0]+max[0]} 0) scale(-1 1)">${polygons}</g>`:polygons}</svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }

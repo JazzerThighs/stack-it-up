@@ -54,7 +54,7 @@ function shape(el) {
     el.style.color = colors[piece];
     const spatial=piece>6;
     el.classList.toggle('spatial-shape',spatial);
-    el.style.backgroundImage=spatial?spatialPreview(pieces[piece-1].cells,colors[piece]):'';
+    el.style.backgroundImage=spatial?spatialPreview(pieces[piece===8?8:piece-1].cells,colors[piece],piece===8):'';
     el.title=pieces[piece-1]?.name || 'Empty';
     cells.forEach((c, i) =>
       c.classList.toggle("filled", piece>0 && piece<=6 && !!(state[134 + piece - 1] & (1 << i))),
