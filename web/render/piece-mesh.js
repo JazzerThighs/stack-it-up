@@ -1,3 +1,5 @@
+import {tagCoverage} from './transparency.js';
+import {joinMeshes} from './cell-fragments.js';
 // Shared native surfaces and retained colored pieces. Fragments can key their
 // cache by these stable arrays, independent of the current packing or piece ID.
 import {rgb, box, xyz} from './geometry.js';
@@ -23,7 +25,7 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly') {
       const mesh=cache.get(mask);
       for(let i=0;i<mesh.length;i+=9)out.push(...mesh.subarray(i,i+6),...c);
     }
-    const mesh=new Float32Array(out);
+    const mesh=tagCoverage(new Float32Array(out),xyz(31-Math.clz32(mask&-mask)));
     while(coloredBytes+mesh.byteLength>16*1024*1024 && colored.size) {
       const first=colored.keys().next().value;coloredBytes-=colored.get(first).byteLength;colored.delete(first);
     }
@@ -32,6 +34,5 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly') {
 }
 export function compositeMesh(board,ids,palette,generate,appearance='jelly') {
   const parts=compositeParts(board,ids,palette,generate,appearance);
-  const result=new Float32Array(parts.reduce((n,m)=>n+m.length,0));let offset=0;
-  for(const part of parts){result.set(part,offset);offset+=part.length;}return result;
+  return joinMeshes(parts);
 }

@@ -118,9 +118,10 @@ impl State {
         Some(result)
     }
     pub fn rebuild_ready(&self, t: &Tables) -> bool {
-        self.rebuild_partition(t).is_some()
+        self.release_scattered || (self.free_groups.iter().all(|&m| Self::connected(m)) && self.rebuild_partition(t).is_some())
     }
     pub fn finish_rebuilds(&mut self, t: &Tables) {
+        if self.release_scattered { self.rebuild_ids.clear(); return; }
         let Some(pieces) = self.rebuild_partition(t) else {
             return;
         };
@@ -140,9 +141,6 @@ impl State {
         if m >= 30 {
             return false;
         }
-        if !self.bandaged {
-            return true;
-        }
         let base = m % 15;
         let (axis, layer, wide) = if base < 6 {
             let (a, s) = FACES[base];
@@ -154,6 +152,7 @@ impl State {
             (a, s, true)
         };
         self.bands.iter().all(|&mask| {
+            if !self.bandaged && !(self.release_bandaged && self.free_groups.iter().any(|group| group & mask == mask)) { return true; }
             let affected = bits(mask)
                 .filter(|&i| {
                     if wide {
@@ -168,12 +167,14 @@ impl State {
     }
     pub fn refresh_bands(&mut self) {
         self.bands.clear();
-        if !self.bandaged {
-            return;
+        if self.release_bandaged {
+            self.bands.extend(self.free_groups.iter().flat_map(|&m| Self::connected_parts(m)).filter(|m| m.count_ones()>1));
         }
+        if !self.bandaged { return; }
+        let free_mask=self.free_groups.iter().fold(0,|all,m|all|m);
         let mut groups = BTreeMap::<u32, u32>::new();
         for f in &self.floating {
-            if !self.rebuild_ids.contains(&f.id) {
+            if !self.rebuild_ids.contains(&f.id) && free_mask & (1<<f.cell)==0 {
                 *groups.entry(f.id).or_default() |= 1 << f.cell;
             }
         }
@@ -207,7 +208,7 @@ impl State {
             }
         }
     }
-    fn free_mask(&mut self, mask: u32) {
+    pub(super) fn free_mask(&mut self, mask: u32) {
         for i in bits(mask) {
             self.floating.push(Fragment {
                 cell: i,
@@ -225,6 +226,7 @@ impl State {
         if cleared == 0 {
             return;
         }
+        if self.release_trigger == 1 { self.release_random_groups(cleared); }
         // Whole-piece reconstruction gets first choice; random singles never
         // take a cubie from a group already released for reconstruction.
         if self.rebuild_mode != 0 {
@@ -251,11 +253,14 @@ impl State {
             } else {
                 cleared as usize
             };
-            for _ in 0..count.min(candidates.len()) {
+            for _ in 0..count {
+                if candidates.is_empty() { break; }
                 let index = if self.rebuild_mode == 1 {
                     0
                 } else {
-                    self.range(candidates.len() as u32) as usize
+                    let masks: Vec<_> = candidates.iter().map(|(_,mask)|*mask).collect();
+                    let Some(index)=self.select_release(&masks) else { continue; };
+                    index
                 };
                 let (id, mask) = candidates.remove(index);
                 self.rebuild_ids.push(id);
@@ -270,7 +275,14 @@ impl State {
                 if choices.is_empty() {
                     break;
                 }
-                let cell = choices[self.range(choices.len() as u32) as usize];
+                let cell = if self.release_selection==0 {
+                    choices[self.range(choices.len() as u32) as usize]
+                } else {
+                    let groups: Vec<_> = self.groups().iter().map(|g|g.mask).collect();
+                    let Some(index)=self.select_release(&groups) else { continue; };
+                    let cells: Vec<_> = bits(groups[index]).collect();
+                    cells[self.range(cells.len() as u32) as usize]
+                };
                 self.free_mask(1 << cell);
             }
         }

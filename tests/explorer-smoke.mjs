@@ -335,6 +335,8 @@ $('targetTransparency').value='0';$('targetTransparency').listeners.input();asse
 $('familySolidIdentities').checked=true;$('familySolidIdentities').onchange();
 const greyMove=Array.from({length:30},(_,i)=>i).find(m=>detectPieces(turn(familyView.cells,m)).some(p=>!p.letter));
 await familyView.play(greyMove);
+assert.equal(visual.visualSettings.solidUniform,1);
+$('solidUniform').checked=false;$('solidUniform').listeners.change();
 const grayState=structuredClone(familyView.cells);
 $('solidGray').checked=true;$('solidGray').listeners.change();const grayMesh=familyView.solid.data.slice();
 $('solidGray').checked=false;$('solidGray').listeners.change();
@@ -345,3 +347,21 @@ assert(familyView.explorationGray);assert.deepEqual(familyView.solid.data,grayMe
 const transparencyMenu=html.slice(html.indexOf('<summary>Transparency</summary>')).split('</details>')[0];
 assert(transparencyMenu.includes('id="ditherTransparency"') && transparencyMenu.includes('id="targetTransparency"'));
 console.log('PASS: explorer-wide transparency, gray/color identity toggle and unified transparency menu.');
+
+// A quarter turn carries solid orientation; settling must not recreate an
+// unassembled tetrahedron in its original pose. Undo restores the same objects.
+const {turnTransform,composeRotation,IDENTITY,movedCell}=await import(new URL('render/transforms.js',assetRoot));
+const orientationBefore=familyView.cells.slice();
+await familyView.play(1);
+const {turn:turnCells}=await import(new URL('explorer/model.js',assetRoot));
+const expectedPoses=turnCells(orientationBefore.map((c,i)=>movedCell(i,1)?composeRotation(turnTransform(1,1),c?.solidRotation):c?.solidRotation),1);
+familyView.cells.forEach((c,i)=>assert.deepEqual(c?.solidRotation,expectedPoses[i]));
+familyView.undo();assert.deepEqual(familyView.cells.map(c=>c?.solidRotation),orientationBefore.map(c=>c?.solidRotation));
+$('solidFixed').checked=true;$('solidFixed').listeners.change();
+assert(familyView.fixedSolidBuffers.some(b=>b.count));
+const fixedRetained=familyView.fixedSolidBuffers.map(b=>b.data);
+for(const t of [.1,.4,.8]){familyView.setState(familyView.cells,{kind:'turn',move:1,t});familyView.draw();}
+familyView.fixedSolidBuffers.forEach((b,i)=>assert.equal(b.data,fixedRetained[i]));
+familyView.setState(familyView.cells);
+$('solidFixed').checked=false;$('solidFixed').listeners.change();
+console.log('PASS: persistent explorer solid orientations, undo, and retained aligned-solid animation buffers.');

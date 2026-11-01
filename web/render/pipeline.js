@@ -28,6 +28,7 @@ export function renderPackets(packets, context) {
   gl.disable(gl.STENCIL_TEST);
   const stippled=p=>this.appearance==='dither' || !!visualSettings.ditherTransparency || p.id==='recent';
   const draw = (p) => {
+    gl.uniform1i(this.uniforms.fixedShape,p.fixedShape?1:0);
     gl.uniformMatrix3fv(this.uniforms.modelRotation,false,p.rotation || IDENTITY);
     gl.uniform1f(this.uniforms.modelScale,p.modelScale ?? 1);
     gl.uniform3fv(this.uniforms.modelOffset,p.offset || [0,0,0]);
@@ -55,12 +56,14 @@ export function renderPackets(packets, context) {
           const vertices = [];
           let depth = 0;
           for (let j = i; j < i + size; j += 9) {
-            const point = transformPoint([0, 1, 2].map((a) => {
+            const localPoint = [0, 1, 2].map((a) => {
               const cell = Math.floor(data[j + a] + 0.5);
               return cell + (data[j + a] - cell) * p.breathe + data[j + 3 + a] * (p.pulse || 0);
-            }),p);
+            });
+            const center=localPoint.map(v=>Math.floor(v+.5));
+            const point=p.fixedShape?transformPoint(center,p).map((v,a)=>v+(localPoint[a]-center[a])*(p.modelScale??1)):transformPoint(localPoint,p);
             depth += this.project(point)[2];
-            vertices.push(...point, ...transformPoint(Array.from(data.slice(j+3,j+6)),{rotation:p.rotation}),...data.slice(j+6,j+9));
+            vertices.push(...point, ...transformPoint(Array.from(data.slice(j+3,j+6)),{rotation:p.fixedShape?undefined:p.rotation}),...data.slice(j+6,j+9));
           }
           primitives.push({ p, vertices, depth: depth / (size / 9) });
         }
@@ -74,7 +77,7 @@ export function renderPackets(packets, context) {
     const flush = () => {
       if (!run) return;
       this.upload(this.transparentBuffer, new Float32Array(vertices));
-      draw({ ...run, target: this.transparentBuffer, breathe: 1, pulse: 0, rotation:IDENTITY,modelScale:1,offset:[0,0,0] });
+      draw({ ...run, target: this.transparentBuffer, breathe: 1, pulse: 0, rotation:IDENTITY,modelScale:1,offset:[0,0,0],fixedShape:false });
     };
     for (const primitive of primitives) {
       const p = primitive.p;

@@ -148,8 +148,11 @@
             </div>
             <fieldset class="target-display"><legend>Family exploration</legend>
 <label><input id="familySolidIdentities" type="checkbox" checked /> Distinguish piece IDs with solid shapes</label>
-<label><input id="solidGray" type="checkbox" checked /> Gray shades for solid ID shapes <output id="solidGrayValue">On</output></label>
-<p class="settings-help">Tetrahedron, cube, octahedron, dodecahedron, icosahedron and sphere. Incomplete pieces keep their ID shape, with gray shades by default or their assigned colors. Completed tetrominos join and use their canonical color.</p>
+<label><input id="solidUniform" type="checkbox" checked /> One color for all solid ID shapes <output id="solidUniformValue">On</output></label>
+<label>Solid shape color <input id="solidColor" type="color" value="#c8c8c8" /><output id="solidColorValue">#c8c8c8</output></label>
+<label><input id="solidFixed" type="checkbox" /> Keep solid shapes aligned during slice turns <output id="solidFixedValue">Off</output></label>
+<label><input id="solidGray" type="checkbox" checked /> Use gray shades when one color is off <output id="solidGrayValue">On</output></label>
+<p class="settings-help">Tetrahedron, cube, octahedron, dodecahedron, icosahedron and sphere. Incomplete pieces keep their ID shape, with one chosen color by default, optional gray shades, or their assigned colors. Completed tetrominos join and use their canonical color.</p>
 </fieldset>
 <details class="visual-tuning"><summary>Transparency</summary>
 <label><input id="ditherTransparency" type="checkbox" checked /> Dither-style transparency <output id="ditherTransparencyValue">On</output></label>

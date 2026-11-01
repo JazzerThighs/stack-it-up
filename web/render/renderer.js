@@ -1,7 +1,8 @@
+import {vertexCoverage,withCoverage} from './transparency.js';
 import {activeCubie,rebuildSlots} from './active-cubie.js';
-import {mergeFragments,exposedFragment,neighborCell} from './cell-fragments.js';
+import {mergeFragments,joinMeshes,exposedFragment,neighborCell} from './cell-fragments.js';
 import {CAMERA_DISTANCE, projectPoint, viewPoint} from "./camera.js";
-import {compositeMesh,compositeParts} from "./piece-mesh.js";
+import {compositeParts} from "./piece-mesh.js";
 import { S } from "../engine/snapshot.js";
 import { sceneDecorations } from "./decorations.js";
 import { renderPackets } from "./pipeline.js";
@@ -83,7 +84,7 @@ class Renderer {
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
       throw Error(gl.getProgramInfoLog(this.program));
     this.uniforms = Object.fromEntries(
-      ["ditherSeed", "modelRotation", "modelScale", "modelOffset", "screenDoor", "orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
+      ["fixedShape", "ditherSeed", "modelRotation", "modelScale", "modelOffset", "screenDoor", "orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
         n,
         gl.getUniformLocation(this.program, n),
       ]),
@@ -128,26 +129,31 @@ class Renderer {
       gl.enableVertexAttribArray(loc);
       gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 36, i * 12);
     }
-    return { vao, buffer, count: 0 };
+    const coverageBuffer=gl.createBuffer(),loc=gl.getAttribLocation(this.program,'coveragePosition');
+    gl.bindBuffer(gl.ARRAY_BUFFER,coverageBuffer);gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc,3,gl.FLOAT,false,12,0);
+    return { vao, buffer, coverageBuffer, count: 0 };
   }
   upload(target, data) {
     target.data = data;
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, target.buffer);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    const coverage=data.coverage || Float32Array.from(Array.from({length:data.length/9},(_,v)=>vertexCoverage(data,v*9)).flat());
+    gl.bindBuffer(gl.ARRAY_BUFFER,target.coverageBuffer);gl.bufferData(gl.ARRAY_BUFFER,coverage,gl.STATIC_DRAW);
     target.count = data.length / 9;
   }
   setMesh(data) {
     this.stackPackets=null;
     this.stackEvent=null;
     this.sourceMesh = data;
-    this.upload(this.stackMesh, this.state
-      ? compositeMesh(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance) : data);
+    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance) : [data];
+    this.upload(this.stackMesh,joinMeshes(parts));
   }
   setState(s, animation = null) {
     this.gridKey = null;
     this.state = s;
-    this.rebuildSlots=rebuildSlots(s);
+    this.rebuildSlots=rebuildSlots(s,this.rebuildSlots);
     this.animation = animation;
     this.gravity = s[S.GRAVITY];
     const activeGeometry = [], floatingGeometry = [];
@@ -206,8 +212,8 @@ class Renderer {
         const destination = floating && !s[S.REBUILD_COLORS+i] ? floatingGeometry : activeGeometry;
         for (let j=startSolid;j<solid.length;j++) destination.push(solid[j]);
       }
-    const bands = [];
-    if (!this.isStack && s[S.BANDAGED]) {
+    const bands = [],bandCoverage=[];
+    if (!this.isStack && s.slice(S.BAND_IDS,S.BAND_IDS+27).some(Boolean)) {
       const groups = new Map();
       for (let i=0;i<27;i++) if (s[S.BAND_IDS+i] && (s[S.FLOATING] & (1<<i)))
         groups.set(s[S.BAND_IDS+i], (groups.get(s[S.BAND_IDS+i]) || 0) | (1<<i));
@@ -218,20 +224,21 @@ class Renderer {
         }
         const start = bands.length;
         for (const value of this.bandCache.get(mask)) bands.push(value);
+        for(let j=start;j<bands.length;j+=9)bandCoverage.push(...xyz(31-Math.clz32(mask&-mask)));
         if (animation?.kind === "turn") {
           const cell = 31 - Math.clz32(mask & -mask);
           rotateCell(bands, start, cell, animation.move, animation.t);
         }
       }
     }
-    this.upload(this.bandMesh, new Float32Array(bands));
+    this.upload(this.bandMesh, withCoverage(new Float32Array(bands),new Float32Array(bandCoverage)));
     this.upload(this.activeLines, new Float32Array(activeLines));
     this.upload(this.centers, new Float32Array(centers));
     this.upload(this.overlaps, new Float32Array(overlaps));
     if (!this.isStack && this.ghost) {
       for (let i = 0; i < 27; i++)
         if (this.ghost.mask & (1 << i)) {
-          balloon(ghostSolid, xyz(i), 0.46, rgb(colors[this.ghost.piece]));
+
           wire(ghostLines, xyz(i), 0.47, [0.85, 1, 0.92]);
         }
     }
@@ -253,7 +260,8 @@ class Renderer {
     if(this.stackEvent===event)return;
     this.stackEvent=event;
     const source=event.kind===2?from:to;
-    const fragments=mergeFragments(compositeParts(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance));
+    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance);
+    const fragments=mergeFragments(parts);
     this.stackCellBuffers ??= Array.from({length:81},()=>this.buffer());
     for(let phase=0;phase<3;phase++) {
       const t=phase/2,transforms=Array.from({length:27},(_,i)=>this.stackTransform(event,i,t));
@@ -371,7 +379,7 @@ class Renderer {
         breath,
       );
       add("floating", this.bandMesh, gl.TRIANGLES, this.activeOpacity, false, 1, this.breathing && this.animation?.kind !== "turn" ? (breath - 1.04) * 0.10 : 0);
-      add("recent", this.ghostSolid, gl.TRIANGLES, 0.18);
+
       add("recent", this.ghostLines, gl.LINES, 0.45, true);
       if (this.activeOutlines)
         add("outlines", this.activeLines, gl.LINES, 1, true, breath);

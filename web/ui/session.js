@@ -19,7 +19,7 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
     await newGame();
   };
   $("new").onclick = () => { $("settingsDialog").close(); setup(); };
-  $("overNew").onclick = setup;
+  $("overNew").onclick = () => {if($("topOutNewGame").checked)setup();};
   const syncTheory = () => { $("nextPieceControls").hidden = !$("chooseNext").checked; };
   $("chooseNext").onchange = syncTheory;
   $("setNextPiece").onclick = () => {

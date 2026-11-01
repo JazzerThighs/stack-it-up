@@ -18,6 +18,9 @@ const state=engine.snapshot(),view={rebuildSolidIdentities:true,rebuildSlots:reb
 assert.equal(state.rebuildIds[0],10);assert.equal(state.rebuildIds[18],16);
 assert.equal(view.rebuildSlots.get(10),0);assert.equal(view.rebuildSlots.get(16),1);
 const geometry=cell=>{const mesh=[];activeCubie(mesh,[0,0,0],.438,[1,0,0],cell,state,view);return mesh;};
+assert.equal(visualSettings.solidUniform,1);
+assert.deepEqual(geometry(0).slice(6,9),geometry(18).slice(6,9));
+visualSettings.solidUniform=0;
 visualSettings.solidGray=1;
 const tetra=geometry(0),cube=geometry(18);
 assert.equal(tetra.length/27,4);assert.equal(cube.length/27,12);
@@ -38,3 +41,16 @@ const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
 const menu=html.slice(html.indexOf('<summary>Transparency</summary>')).split('</details>')[0];
 for(const id of ['ditherTransparency','activeTransparency','centerTransparency','stackTransparency'])assert(menu.includes(`id="${id}"`));
 console.log('PASS: same-color freed IDs retain distinct solid/gray identities through turns and undo; all game opacity controls share one menu.');
+
+const {IDENTITY,turnTransform,composeRotation}=await import('../web/render/transforms.js');
+const beforeRotation=engine.snapshot();
+assert.equal(engine.game_turn(1),1);
+const rotated=engine.snapshot();
+for(let i=0;i<27;i++)if(rotated.rebuildIds[i] && Math.floor(i/3)%3===0)assert.deepEqual(rotated.solidRotations[i],composeRotation(turnTransform(1,1),IDENTITY));
+assert.equal(engine.game_undo(),1);assert.deepEqual(engine.snapshot().solidRotations,beforeRotation.solidRotations);
+const surviving={rebuildIds:new Uint32Array([16])};assert.equal(rebuildSlots(surviving,view.rebuildSlots).get(16),1);
+visualSettings.solidFixed=1;
+const fixed=[];activeCubie(fixed,[0,0,0],.438,[1,0,0],0,{...state,solidRotations:Array(27).fill(turnTransform(1,1))},view);
+assert.deepEqual(fixed,tetra);
+visualSettings.solidFixed=0;
+console.log('PASS: uniform default color, stable surviving IDs, retained game orientations and undo.');

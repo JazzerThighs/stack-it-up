@@ -55,3 +55,10 @@ assert.equal($('forecastReplayBar').hidden,true);
 replay.setWitness({initial,...result});engine.game_turn(0);
 $('forecastReplay').onclick();assert.equal($('forecastReplay').disabled,true);
 console.log('PASS: witness notation, live step replay, final-state verification, restore and stale-path rejection.');
+
+engine.game_init(19);const oldRelease=engine.exportState();
+engine.game_set_release_rules(2,true,true,1);const newRelease=engine.exportState();
+assert.notEqual(stateKey(oldRelease),stateKey(newRelease));
+assert(engine.importState(newRelease));assert.equal(engine.game_release_rules(),30);
+const releaseForecast=run(engine,newRelease,1,10000);assert.equal(releaseForecast.status,'safe');
+console.log('PASS: forecast retains new release rules and searches actual turn-start releases.');

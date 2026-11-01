@@ -1,3 +1,4 @@
+import {withCoverage,vertexCoverage} from './transparency.js';
 // Clip a triangle mesh at an actual layer boundary, closing the exposed cut.
 // Vertices have position, normal, RGB (9 floats). Built once per drag/turn.
 const EPS=1e-5;
@@ -9,7 +10,7 @@ export function clipMesh(mesh,axis,plane,side) {
   if(side>0 ? high<=plane : low>=plane)return new Float32Array(0);
   const out=[], segments=[];
   for(let i=0;i<mesh.length;i+=27) {
-    const tri=[Array.from(mesh.slice(i,i+9)),Array.from(mesh.slice(i+9,i+18)),Array.from(mesh.slice(i+18,i+27))];
+    const tri=[[...mesh.slice(i,i+9),...vertexCoverage(mesh,i)],[...mesh.slice(i+9,i+18),...vertexCoverage(mesh,i+9)],[...mesh.slice(i+18,i+27),...vertexCoverage(mesh,i+18)]];
     const polygon=[],cuts=[];
     for(let j=0;j<3;j++) {
       const a=tri[j],b=tri[(j+1)%3], da=side*(a[axis]-plane),db=side*(b[axis]-plane);
@@ -51,7 +52,9 @@ export function clipMesh(mesh,axis,plane,side) {
     }
     if(key(current)===start) cap(out,loop,axis,-side);
   }
-  return new Float32Array(out);
+  const geometry=[],coverage=[];
+  for(let i=0;i<out.length;i+=12){geometry.push(...out.slice(i,i+9));coverage.push(...out.slice(i+9,i+12));}
+  return withCoverage(new Float32Array(geometry),new Float32Array(coverage));
 }
 function cap(out,loop,axis,normal) {
   const a=(axis+1)%3,b=(axis+2)%3;
@@ -65,7 +68,7 @@ function cap(out,loop,axis,normal) {
   const area=loop.reduce((sum,p,i)=>{const q=loop[(i+1)%loop.length];return sum+p[a]*q[b]-q[a]*p[b];},0);
   if(area<0) loop.reverse();
   const emit=(p,q,r)=>{
-    for(const v of normal>0?[p,q,r]:[r,q,p]) {const n=[0,0,0];n[axis]=normal;out.push(...v.slice(0,3),...n,...v.slice(6,9));}
+    for(const v of normal>0?[p,q,r]:[r,q,p]) {const n=[0,0,0];n[axis]=normal;out.push(...v.slice(0,3),...n,...v.slice(6,12));}
   };
   while(loop.length>3) {
     let found=false;

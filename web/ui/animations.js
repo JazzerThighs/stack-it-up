@@ -1,8 +1,9 @@
+import {turnTransform,composeRotation,movedCell} from '../render/transforms.js';
 import {CubeStack} from "../engine/coordinates.js";
 import { S } from "../engine/snapshot.js";
 const $ = (id) => document.getElementById(id);
 const names = ["", "O", "T", "L", "J", "S", "Z"];
-const copyState=s=>{const copy=s.slice();if(s.rebuildIds)copy.rebuildIds=s.rebuildIds.slice();return copy;};
+export const copyState=s=>{const copy=s.slice();if(s.solidRotations)copy.solidRotations=s.solidRotations.slice();if(s.rebuildIds)copy.rebuildIds=s.rebuildIds.slice();return copy;};
 // Carry the visible active cells to the end of the player's completed turn.
 export function landedState(before, move) {
   const state=copyState(before);
@@ -20,6 +21,7 @@ export function landedState(before, move) {
     const j=p[0]*9+p[1]*3+p[2];
     for (const field of [S.ACTIVE,S.FLOATING]) if (before[field] & (1<<i)) state[field]|=1<<j;
     if(state.rebuildIds)state.rebuildIds[j]=before.rebuildIds[i];
+    if(state.solidRotations)state.solidRotations[j]=movedCell(i,move)?composeRotation(turnTransform(move,1),before.solidRotations[i]):before.solidRotations[i];
     state[S.REBUILD_COLORS+j]=before[S.REBUILD_COLORS+i];
     state[S.BAND_IDS+j]=before[S.BAND_IDS+i];
   }
@@ -67,6 +69,7 @@ export function createAnimations(context) {
       if (e.kind === 5) {
         next.set(after.slice(S.BANDAGED), S.BANDAGED);
         next.rebuildIds=after.rebuildIds?.slice();
+        next.solidRotations=after.solidRotations?.slice();
       }
       next[S.FLOATING] = e.floatMask || 0;
       next[S.FRAGMENT_TURNS] = e.fragmentTurns || 0;

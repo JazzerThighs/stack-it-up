@@ -2525,3 +2525,8 @@ main.explorer-active > .topbar { padding:0 14px; }
 .visual-tuning > button { min-height:44px; margin-top:8px; }
 
 .game-panel:has(canvas[data-appearance="dither"]) { background:#000; }
+
+.game-over .end-actions { display:flex; margin-top:8px; pointer-events:auto; }
+.game-over #overUndo { display:none; }
+.game-over #overNew { font-size:16px; min-height:40px; }
+.game-over #overNew[hidden] { display:none; }

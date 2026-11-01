@@ -39,7 +39,7 @@ impl App {
         v[170] = if s.rebuild_ready(&self.game.tables) {
             0
         } else {
-            s.rebuild_ids.len() as u32
+            (s.rebuild_ids.len()+s.free_groups.len()) as u32
         };
         v[171] = (0..30)
             .filter(|&m| s.move_allowed(m))
@@ -351,4 +351,13 @@ pub extern "C" fn rebuild_id_at(cell: u32) -> u32 {
         s.floating.iter().find(|f| f.cell == cell as usize && s.rebuild_ids.contains(&f.id))
             .map_or(0, |f| f.id)
     })
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn game_set_release_rules(trigger:u32,bandaged:u32,scattered:u32,selection:u32) {
+    APP.with_borrow_mut(|a|{a.game.set_release_rules(trigger,bandaged!=0,scattered!=0,selection);a.sync();});
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn game_release_rules()->u32 {
+    APP.with_borrow(|a| {let s=&a.game.state;s.release_trigger | ((s.release_bandaged as u32)<<2) | ((s.release_scattered as u32)<<3) | (s.release_selection<<4)})
 }

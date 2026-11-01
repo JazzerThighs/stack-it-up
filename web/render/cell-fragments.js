@@ -1,3 +1,4 @@
+import {withCoverage,vertexCoverage} from './transparency.js';
 import {clipMesh} from './slice-mesh.js';
 const cache=new Map();let bytes=0;
 // Each cell gets a closed, static slice of the original curved surface. Create
@@ -27,31 +28,49 @@ export function cellFragments(mesh) {
 export function mergeFragments(meshes) {
   const cells=Array.from({length:27},()=>[]);
   for(const mesh of meshes)for(const fragment of cellFragments(mesh))cells[fragment.cell].push(fragment.mesh);
-  return cells.map(parts=>{
-    const result=new Float32Array(parts.reduce((n,p)=>n+p.length,0));let offset=0;
-    for(const part of parts){result.set(part,offset);offset+=part.length;}return result;
-  });
+  return cells.map(joinMeshes);
 }
 export function joinMeshes(parts) {
-  const result=new Float32Array(parts.reduce((n,p)=>n+p.length,0));let offset=0;
-  for(const part of parts){result.set(part,offset);offset+=part.length;}return result;
+  const result=new Float32Array(parts.reduce((n,p)=>n+p.length,0));
+  const coverage=new Float32Array(result.length/3);let offset=0;
+  for(const part of parts){
+    result.set(part,offset);
+    if(part.coverage)coverage.set(part.coverage,offset/3);
+    else for(let i=0;i<part.length;i+=9)coverage.set(vertexCoverage(part,i),(offset+i)/3);
+    offset+=part.length;
+  }
+  return withCoverage(result,coverage);
 }
 
 // Caps are the only triangles exactly on a cell boundary with its axis normal.
 // Keep the cached closed solids intact; prepare visible-surface variants once.
+const visibleVariants=new WeakMap();
 export function exposedFragment(mesh,cell,separated) {
-  const center=[Math.floor(cell/9)-1,Math.floor(cell/3)%3-1,cell%3-1],out=[];
-  for(let i=0;i<mesh.length;i+=27) {
-    let hidden=false;
-    for(let axis=0;axis<3&&!hidden;axis++)for(const side of [-1,1]) {
+  let cached=visibleVariants.get(mesh);
+  if(!cached || cached.cell!==cell) {
+    const center=[Math.floor(cell/9)-1,Math.floor(cell/3)%3-1,cell%3-1];
+    const caps=new Uint8Array(mesh.length/27);
+    for(let i=0;i<mesh.length;i+=27)for(let axis=0;axis<3;axis++)for(const side of [-1,1]) {
       const plane=center[axis]+side*.5;
-      const cap=[0,9,18].every(v=>Math.abs(mesh[i+v+axis]-plane)<1e-6 &&
-        [0,1,2].every(a=>Math.abs(mesh[i+v+3+a]-(a===axis?side:0))<1e-6));
-      if(cap && !separated(axis,side))hidden=true;
+      if([0,9,18].every(v=>Math.abs(mesh[i+v+axis]-plane)<1e-6 &&
+        [0,1,2].every(a=>Math.abs(mesh[i+v+3+a]-(a===axis?side:0))<1e-6)))caps[i/27]|=1<<(axis*2+(side>0?1:0));
     }
-    if(!hidden)for(let j=i;j<i+27;j++)out.push(mesh[j]);
+    cached={cell,caps,variants:new Map()};visibleVariants.set(mesh,cached);
   }
-  return new Float32Array(out);
+  let show=0;
+  for(let axis=0;axis<3;axis++)for(const side of [-1,1])if(separated(axis,side))show|=1<<(axis*2+(side>0?1:0));
+  if(cached.variants.has(show))return cached.variants.get(show);
+  const keep=cached.caps.map(cap=>!(cap & ~show));
+  const count=keep.reduce((sum,v)=>sum+v,0);
+  if(count===keep.length){cached.variants.set(show,mesh);return mesh;}
+  const out=new Float32Array(count*27),coverage=new Float32Array(count*9);let offset=0;
+  for(let tri=0;tri<keep.length;tri++)if(keep[tri]) {
+    out.set(mesh.subarray(tri*27,tri*27+27),offset);
+    if(mesh.coverage)coverage.set(mesh.coverage.subarray(tri*9,tri*9+9),offset/3);
+    else for(let j=0;j<27;j+=9)coverage.set(vertexCoverage(mesh,tri*27+j),(offset+j)/3);
+    offset+=27;
+  }
+  const result=withCoverage(out,coverage);cached.variants.set(show,result);return result;
 }
 export function neighborCell(cell,axis,side) {
   const stride=[9,3,1][axis],coordinate=Math.floor(cell/stride)%3;

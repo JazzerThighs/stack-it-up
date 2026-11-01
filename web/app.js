@@ -3,7 +3,7 @@ import { createForecast } from './ui/forecast.js';
 import { initializeSession } from "./ui/session.js";
 import { mountExplorer } from "./explorer/mount.js";
 import { S } from "./engine/snapshot.js";
-import { createAnimations } from "./ui/animations.js";
+import { createAnimations,copyState } from "./ui/animations.js";
 import { createMoveButtons } from "./ui/move-buttons.js";
 import {
   Renderer,
@@ -170,17 +170,22 @@ function update(message) {
   $("bandagedFragments").checked = !!state[S.BANDAGED];
   $("randomCubies").checked = !!state[S.RANDOM_CUBIES];
   $("rebuildMode").value = String(state[S.REBUILD_MODE]);
+  const releaseRules=engine.game_release_rules();
+  $('releaseTrigger').value=String(releaseRules&3);
+  $('releaseBandaged').checked=!!(releaseRules&4);
+  $('releaseScattered').checked=!!(releaseRules&8);
+  $('releaseSelection').value=String((releaseRules>>4)&7);
   syncFragmentOptions();
-  $("rebuildStatus").textContent = state[S.REBUILD_MASK]
+  $("rebuildStatus").textContent = state[S.REBUILD_MASK] || state[S.REBUILD_PENDING]
     ? state[S.REBUILD_PENDING]
-      ? `Rebuildable rounded cubies must all form complete tetrominos. Same-colored cubies can mix; the current piece uses spheres.`
+      ? `Freed reconstruction pieces must form complete tetrominos; randomly freed groups must reconnect. Same-colored reconstruction cubies can mix.`
       : "Reconstructed pieces are ready to lock with the current piece."
     : "";
   $("fragmentBadge").hidden = !state[S.FLOATING_COUNT];
   $("fragmentBadge").textContent =
     `${state[S.FLOATING_COUNT]} freed cubies${state[S.REBUILD_PENDING] ? " · rebuilding" : ""}`;
   $("fragmentStatus").textContent = state[S.FLOATING_COUNT]
-    ? `Freed cubies lock with the current piece. ${state[S.FLOATING_OVERLAPS] ? "Move them off the stack first. " : ""}${state[S.BANDAGED] ? "White connections cannot be split by a turn. " : ""}${state[S.FRAGMENT_TURNS] ? `${state[S.FRAGMENT_TURNS]} broken-fragment perk turns remain.` : ""}`
+    ? `Freed cubies lock with the current piece. ${state[S.FLOATING_OVERLAPS] ? "Move them off the stack first. " : ""}${state.slice(S.BAND_IDS,S.BAND_IDS+27).some(Boolean) ? "White connections cannot be split by a turn. " : ""}${state[S.FRAGMENT_TURNS] ? `${state[S.FRAGMENT_TURNS]} broken-fragment perk turns remain.` : ""}`
     : "";
   const p = state[S.PIECE];
   target(p);
@@ -320,7 +325,7 @@ function setBusy(value) {
   $("undo").disabled = value || !state[S.UNDO_COUNT];
   $("new").disabled = value;
   $("gravityMode").disabled = value || !!state[S.PENDING_FACES];
-  for (const id of ["bandagedFragments", "randomCubies", "rebuildMode"])
+  for (const id of ["bandagedFragments", "randomCubies", "rebuildMode", "releaseTrigger", "releaseBandaged", "releaseScattered", "releaseSelection"])
     $(id).disabled = value || !!state[S.PENDING_FACES];
   $("fragmentPerk").disabled = value || !!state[S.PENDING_FACES];
 }
@@ -330,7 +335,7 @@ function events() {
 async function play(m, fromT = 0) {
   if (lockMode) { $("message").textContent = "Select Resume turns to turn slices again."; return; }
   if (!engine || busy || session?.starting || state[S.PENDING_FACES]) return;
-  const before = state.slice();
+  const before = copyState(state);
   if (!engine.game_turn(m)) {
     renderers[0].setState(state);
     invalidate();
@@ -364,7 +369,7 @@ async function play(m, fromT = 0) {
 }
 async function lockBand(cell) {
   if (!engine || busy || !context.lockMode || state[S.OVER] || state[S.PENDING_FACES]) return;
-  const before = state.slice();
+  const before = copyState(state);
   engine.game_set_early_lock($("earlyLock").checked);
   if (!engine.game_lock_band(cell)) {
     $("message").textContent = "This white group cannot lock here: its cells must be clear of the stack.";
@@ -385,7 +390,7 @@ async function holdPiece() {
     state[S.HOLD_USED]
   )
     return;
-  const before = state.slice();
+  const before = copyState(state);
   if (!engine.game_hold()) return;
   const after = snapshot(),
     trace = events();
@@ -407,7 +412,7 @@ async function holdPiece() {
 }
 async function choose(face) {
   if (busy || !state[S.PENDING_FACES]) return;
-  const before = state.slice();
+  const before = copyState(state);
   if (!engine.game_choose(face)) return;
   renderers[0].preview = 0;
   const after = snapshot(),
@@ -438,7 +443,9 @@ async function newGame() {
   renderers[0].preview = 0;
   const seed = crypto.getRandomValues(new Uint32Array(1))[0];
   const gravityMode = +$("gravityMode").value;
+  const releaseRules=[+$('releaseTrigger').value,$('releaseBandaged').checked,$('releaseScattered').checked,+$('releaseSelection').value];
   engine.game_init(seed);
+  engine.game_set_release_rules(...releaseRules);
   engine.game_set_early_lock($("earlyLock").checked);
   setLockMode(false);
   engine.game_set_gravity(gravityMode);
@@ -471,7 +478,7 @@ $("newDialog").addEventListener("close", () => {
   if ($("newDialog").returnValue === "new") newGame();
 });
 function setLockMode(enabled) {
-  lockMode = enabled && !$("lockBands").hidden && $("earlyLock").checked && $("bandagedFragments").checked;
+  lockMode = enabled && !$("lockBands").hidden && $("earlyLock").checked;
   $("lockBands").textContent = lockMode ? "Resume turns" : "Lock white pieces";
   $("lockBands").setAttribute("aria-pressed", String(lockMode));
   renderers.forEach(r => { r.hover = null; r.arrowHover = null; r.canvas.style.cursor = lockMode ? "pointer" : ""; });
@@ -591,7 +598,7 @@ $("viewMode").onclick = () => {
   viewTransition = requestAnimationFrame(frame);
 };
 const context = {
-  get lockMode() { return lockMode && $("earlyLock").checked && $("bandagedFragments").checked; },
+  get lockMode() { return lockMode && $("earlyLock").checked; },
   lockBand,
   get state() {
     return state;
@@ -635,12 +642,12 @@ const { overlayButtons, attachedNodes, layoutCubeControls } =
 function syncOverlayControls() {
   if (!state) return;
   const hasBands = state.slice(S.BAND_IDS, S.BAND_IDS + 27).some(Boolean);
-  $("lockBands").hidden = !hasBands || !$("earlyLock").checked || !state[S.BANDAGED];
+  $("lockBands").hidden = !hasBands || !$("earlyLock").checked;
   if ($("lockBands").hidden && lockMode) setLockMode(false);
   $("shareState").disabled = busy;
   $("setNextPiece").disabled = busy || !!state[S.OVER] || !!state[S.PENDING_FACES];
-  $("lockBands").disabled = $("lockBands").hidden || busy || !!state[S.OVER] || !!state[S.PENDING_FACES] || !$("earlyLock").checked || !state[S.BANDAGED];
-  if (!state[S.BANDAGED] && lockMode) setLockMode(false);
+  $("lockBands").disabled = $("lockBands").hidden || busy || !!state[S.OVER] || !!state[S.PENDING_FACES] || !$("earlyLock").checked;
+  if (!hasBands && lockMode) setLockMode(false);
   $("holdPiece").disabled =
     busy || !!state[S.OVER] || !!state[S.PENDING_FACES] || !!state[S.HOLD_USED];
   for (const b of overlayButtons) {
@@ -657,6 +664,7 @@ function syncOverlayControls() {
   $("stageUndo").disabled = !canUndo;
   $("overUndo").disabled = !canUndo;
   $("gameOver").hidden = busy || !state[S.OVER];
+  $("overNew").hidden = !$("topOutNewGame").checked;
   if (renderers[0]) renderers[0].orbitOnly = !!state[S.OVER];
   $("controlViewport").classList.toggle("topped-out", !!state[S.OVER]);
   $("finalScore").textContent =
@@ -700,6 +708,11 @@ for (const id of ["bandagedFragments", "randomCubies", "rebuildMode"])
     );
     update();
   };
+for (const id of ['releaseTrigger','releaseBandaged','releaseScattered','releaseSelection']) $(id).onchange=()=>{
+  if(!engine || busy || session?.starting || state[S.PENDING_FACES])return;
+  engine.game_set_release_rules(+$('releaseTrigger').value,$('releaseBandaged').checked,$('releaseScattered').checked,+$('releaseSelection').value);
+  update();
+};
 $("sliceClearMode").onchange = () => {
   if (!engine || busy || session?.starting) return;
   engine.game_set_slice_clears(+$("sliceClearMode").value);
@@ -724,7 +737,8 @@ $("new").onclick = () => {
 };
 $("stageUndo").onclick = undo;
 $("overUndo").onclick = undo;
-$("overNew").onclick = newGame;
+try {const saved=localStorage.getItem('stack-it-up.topout-new');if(saved!=null)$("topOutNewGame").checked=saved==='true';}catch{}
+$("topOutNewGame").onchange=()=>{try{localStorage.setItem('stack-it-up.topout-new',String($("topOutNewGame").checked));}catch{}syncOverlayControls();};
 document.addEventListener("visibilitychange", invalidate);
 // Wrap complete revolutions without changing the visible orientation.
 

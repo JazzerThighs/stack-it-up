@@ -1,6 +1,8 @@
+import {visualSettings} from './visual-settings.js';
+import {IDENTITY,transformPoint} from './transforms.js';
 // Six durable identities: five Platonic solids and a sphere. Flat face normals
 // keep the polyhedra legible under every material/filter.
-import {sphere} from './geometry.js';
+import {sphere,rgb} from './geometry.js';
 export const identityShapeNames=['Tetrahedron','Cube','Octahedron','Dodecahedron','Icosahedron','Sphere'];
 const phi=(1+Math.sqrt(5))/2;
 const tetra=[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]];
@@ -42,11 +44,22 @@ function hull(vertices) {
   return new Float32Array(out);
 }
 const meshes=[tetra,cube,octa,dodeca,ico].map(hull);
-export function identitySolid(out,p,h,color,id) {
+export function identitySolid(out,p,h,color,id,rotation=IDENTITY) {
+  const start=out.length;
   const shape=((id%6)+6)%6;
   if(shape===5){sphere(out,p,h,color);return;}
   const mesh=meshes[shape];
   for(let i=0;i<mesh.length;i+=6)out.push(...p.map((x,a)=>x+mesh[i+a]*h),...mesh.slice(i+3,i+6),...color);
+  if(!visualSettings.solidFixed)for(let i=start;i<out.length;i+=9) {
+    const q=transformPoint(out.slice(i,i+3).map((v,a)=>v-p[a]),{rotation});
+    const n=transformPoint(out.slice(i+3,i+6),{rotation});
+    for(let a=0;a<3;a++){out[i+a]=q[a]+p[a];out[i+3+a]=n[a];}
+  }
 }
 
 export function identityGray(id) {const value=[.34,.46,.58,.70,.82,.94][((id%6)+6)%6];return [value,value,value];}
+
+export function solidColor(id,color,gray=visualSettings.solidGray) {
+  return visualSettings.solidUniform?rgb(visualSettings.solidColor):gray?identityGray(id):color;
+}
+export function solidStyleKey(){return [visualSettings.solidGray,visualSettings.solidUniform,visualSettings.solidColor,visualSettings.solidFixed].join(':');}

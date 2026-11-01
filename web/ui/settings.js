@@ -1,3 +1,4 @@
+import {solidStyleKey} from '../render/identity-solids.js';
 import {visualSettings} from '../render/visual-settings.js';
 import {initializePaletteControls} from './palette-controls.js';
 import {subscribePalette} from '../render/palette.js';
@@ -68,7 +69,7 @@ export function initializeSettings(value) {
   initializePaletteControls();
   initializeVisualControls(document,()=>{
     for(const r of context.renderers) {
-      if(r.solidGray!==!!visualSettings.solidGray){r.solidGray=!!visualSettings.solidGray;if(r.state)r.setState(r.state,r.animation);}
+      if(r.solidStyle!==solidStyleKey()){r.solidStyle=solidStyleKey();r.solidGray=!!visualSettings.solidGray;if(r.state)r.setState(r.state,r.animation);}
     }
     context.invalidate();
   });

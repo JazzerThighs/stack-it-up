@@ -56,3 +56,8 @@ setVisualSetting('ditherSize',3);dither.begin(641,479);dither.finish(2);
 assert.deepEqual(dither.layout,{block:6,width:107,height:80});assert.equal(allocations,beforeAllocations+2);
 dither.destroy();resetVisualSettings();
 console.log('PASS: whole-scene dither renders at low resolution, restores output viewport, reuses buffers and resizes with pixel tuning.');
+
+assert(setVisualSetting('solidColor','#abc123'));assert.equal(visualSettings.solidColor,'#abc123');
+assert(!setVisualSetting('solidColor','invalid'));resetVisualSettings('solid');
+assert.equal(visualSettings.solidUniform,1);assert.equal(visualSettings.solidColor,'#c8c8c8');assert.equal(visualSettings.solidFixed,0);
+console.log('PASS: chosen solid color validation and requested display defaults.');

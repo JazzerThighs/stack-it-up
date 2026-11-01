@@ -25,6 +25,14 @@ pub struct State {
     pub random_cubies: bool,
     pub rebuild_mode: u32,
     pub rebuild_ids: Vec<u32>,
+    /// Random stack-group perk: 0 off, 1 per cleared plane, 2 per new placement turn.
+    pub release_trigger: u32,
+    pub release_bandaged: bool,
+    pub release_scattered: bool,
+    /// 0 equal groups, 1 cubie-weighted, 2 one random board cell, 3 largest, 4 smallest.
+    pub release_selection: u32,
+    pub release_started: Option<u32>,
+    pub free_groups: Vec<u32>,
     pub bands: Vec<u32>,
     pub fragment_enabled: bool,
     pub fragment_turns: u32,
@@ -61,6 +69,12 @@ impl State {
             random_cubies: false,
             rebuild_mode: 0,
             rebuild_ids: vec![],
+            release_trigger: 0,
+            release_bandaged: true,
+            release_scattered: false,
+            release_selection: 0,
+            release_started: None,
+            free_groups: vec![],
             bands: vec![],
             fragment_enabled: true,
             fragment_turns: 0,
@@ -247,6 +261,7 @@ impl State {
         let piece = self.queue.pop_front().unwrap();
         self.hold_used = false;
         self.bands.clear();
+        self.free_groups.clear();
         let fragments = std::mem::take(&mut self.floating);
         let mut mask_f = 0;
         for f in &fragments {
@@ -275,6 +290,11 @@ impl State {
         self.auto_tiers = 0;
         let mut all_clears = std::mem::take(&mut self.last_clears);
         loop {
+            if self.release_trigger == 2 && self.release_started != Some(self.pieces) {
+                self.release_started = Some(self.pieces);
+                self.release_random_groups(1);
+                self.refresh_bands();
+            }
             match self.spawn_decision(t) {
                 SpawnDecision::Active => {
                     self.last_clears = all_clears;

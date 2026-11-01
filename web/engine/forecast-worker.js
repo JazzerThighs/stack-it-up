@@ -2,7 +2,7 @@ import {createEngine} from './wasm.js';
 import {forecast} from './forecast-search.js';
 self.onmessage = async ({data}) => {
   try {
-    const engine = await createEngine();
+    const engine = await createEngine({trackSolids:false});
     engine.game_init(1); // Initialize thread-local tables before importing the snapshot.
     const search = forecast(engine, data.words, data.horizon);
     let last = 0;

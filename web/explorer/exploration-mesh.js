@@ -1,4 +1,5 @@
-import {identitySolid,identityGray} from '../render/identity-solids.js';
+import {tagCoverage} from '../render/transparency.js';
+import {identitySolid,identityGray,solidColor} from '../render/identity-solids.js';
 import {detectedColor} from './family-colors.js';
 import {detectPieces} from './family-exploration.js';
 import {PALETTE} from './model.js';
@@ -25,10 +26,12 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
     const out=[];
     for(const i of indices) {
       const color=rgb(PALETTE[cells[i].color]||PALETTE.d);
-      if(solidIdentities && cells[i].piece>=0) identitySolid(out,xyz(i),.465,gray?identityGray(cells[i].piece):color,cells[i].piece);
+      if(solidIdentities && cells[i].piece>=0) identitySolid(out,xyz(i),.465,solidColor(cells[i].piece,color,gray),cells[i].piece,cells[i].solidRotation);
       else (appearance==='voxel'?box:balloon)(out,xyz(i),.465,color);
     }
-    return new Float32Array(out);
+    const mesh=tagCoverage(new Float32Array(out),xyz(indices[0]));
+    if(solidIdentities && cells[indices[0]].piece>=0)Object.defineProperty(mesh,"identityCell",{value:indices[0]});
+    return mesh;
   });
 }
 export function sliceForTurn(meshes,move) {

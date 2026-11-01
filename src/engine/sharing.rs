@@ -3,9 +3,10 @@ use super::*;
 impl Game {
     pub fn export_state(&self) -> Vec<u32> {
         let s = &self.state;
+        let extended=s.release_trigger!=0 || !s.release_bandaged || s.release_scattered || s.release_selection!=0 || s.release_started.is_some() || !s.free_groups.is_empty();
         let mut v = vec![
             0x53554931,
-            2,
+            if extended {3} else {2},
             s.rng,
             s.active,
             s.pieces,
@@ -42,6 +43,10 @@ impl Game {
         v.push(s.last_clears.len() as u32);
         v.extend(s.last_clears.iter().map(|&x| x as u32));
         v.extend([s.slice_gravity as u32, s.gravity_one_step as u32]);
+        if extended {
+            v.extend([s.release_trigger,s.release_bandaged as u32,s.release_scattered as u32,s.release_selection,s.release_started.unwrap_or(u32::MAX),s.free_groups.len() as u32]);
+            v.extend(&s.free_groups);
+        }
         v
     }
     pub fn import_state(&mut self, data: &[u32]) -> bool {
@@ -51,7 +56,7 @@ impl Game {
                 return None;
             }
             let version=it.next()?;
-            if version != 1 && version != 2 { return None; }
+            if !(1..=3).contains(&version) { return None; }
             let mut s = State::empty(it.next()?);
             s.active = it.next()?;
             s.pieces = it.next()?;
@@ -166,8 +171,7 @@ impl Game {
             let mut band_union = 0;
             for _ in 0..n {
                 let band = it.next()?;
-                if !s.bandaged
-                    || band.count_ones() < 2
+                if band.count_ones() < 2
                     || band & mask != band
                     || band & (band_union | s.rebuilding_mask()) != 0
                 {
@@ -187,7 +191,24 @@ impl Game {
                 }
                 s.last_clears.push(face as usize);
             }
-            if version == 2 { s.slice_gravity=boolean(&mut it)?; s.gravity_one_step=boolean(&mut it)?; }
+            if version >= 2 { s.slice_gravity=boolean(&mut it)?; s.gravity_one_step=boolean(&mut it)?; }
+            if version>=3 {
+                s.release_trigger=it.next()?;
+                s.release_bandaged=boolean(&mut it)?;
+                s.release_scattered=boolean(&mut it)?;
+                s.release_selection=it.next()?;
+                let started=it.next()?;
+                s.release_started=(started!=u32::MAX).then_some(started);
+                if s.release_trigger>2 || s.release_selection>4 || s.release_started.is_some_and(|n|n>s.pieces) {return None;}
+                let count=it.next()?;if count>27{return None;}
+                let mut free_union=0;
+                for _ in 0..count {
+                    let group=it.next()?;
+                    if group==0 || group&mask!=group || group&(free_union|s.rebuilding_mask())!=0 {return None;}
+                    free_union|=group;s.free_groups.push(group);
+                }
+            }
+            if !s.bandaged && s.bands.iter().any(|band|!s.release_bandaged || !s.free_groups.iter().any(|group|band&group==*band)) {return None;}
             if it.next().is_some() {
                 return None;
             }

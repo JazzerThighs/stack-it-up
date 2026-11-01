@@ -1,3 +1,4 @@
+import {solidStyleKey} from '../render/identity-solids.js';
 import {visualSettings} from '../render/visual-settings.js';
 import {createFamilyExplorer} from "./family-controller.js";
 import {initializePaletteControls} from '../ui/palette-controls.js';
@@ -25,7 +26,7 @@ export function createExplorerViews({
   const cubes = new Map();
   initializeVisualControls(root,()=>{
     for(const cube of cubes.values()) {
-      if(cube.explorationGray!==!!visualSettings.solidGray){cube.explorationGray=!!visualSettings.solidGray;cube.setState(cube.cells,cube.currentAnimation);}
+      if(cube.solidStyle!==solidStyleKey()){cube.solidStyle=solidStyleKey();cube.explorationGray=!!visualSettings.solidGray;cube.setState(cube.cells,cube.currentAnimation);}
       cube.invalidate();
     }
   });
@@ -46,6 +47,7 @@ export function createExplorerViews({
       view.perspective = $("explorerCamera").value !== "orthographic";
       view.meshGenerator = meshGenerator;
       view.explorationGray=!!visualSettings.solidGray;
+      view.solidStyle=solidStyleKey();
       view.opacity=1-Number($("targetTransparency").value)/100;
       view.connected = (id === "solvedCube" || id === "practiceRight") && $("targetComposite").checked;
       cubes.set(id, view);

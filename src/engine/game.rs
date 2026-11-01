@@ -67,6 +67,7 @@ impl Game {
         s.auto_placements = 0;
         s.auto_tiers = 0;
         s.active = self.tables.rotated(s.active, m);
+        for group in &mut s.free_groups { *group=self.tables.rotated(*group,m); }
         for band in &mut s.bands {
             *band = self.tables.rotated(*band, m);
         }
@@ -139,7 +140,6 @@ impl Game {
     pub fn lock_band(&mut self, cell: usize) -> bool {
         if cell >= 27
             || !self.state.early_lock
-            || !self.state.bandaged
             || self.state.over
             || !self.pending.is_empty()
         {
@@ -154,6 +154,9 @@ impl Game {
         else {
             return false;
         };
+        if !self.state.bandaged && !(self.state.release_bandaged && self.state.free_groups.iter().any(|group| group & mask == mask)) {
+            return false;
+        }
         if mask & self.state.occupied() != 0 {
             return false;
         }
@@ -172,6 +175,8 @@ impl Game {
         }
         s.floating.retain(|f| mask & (1 << f.cell) == 0);
         s.bands.retain(|band| band & mask == 0);
+        for group in &mut s.free_groups {*group &= !mask;}
+        s.free_groups.retain(|&group|group!=0);
         s.record(4, mask, 0, std::array::from_fn(|i| i));
         self.lock = None;
         self.lock_mask = 0;

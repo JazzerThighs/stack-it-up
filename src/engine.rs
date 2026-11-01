@@ -3,6 +3,7 @@ mod coordinates;
 mod game;
 mod gravity;
 mod modes;
+mod release;
 mod state;
 mod sharing;
 mod tables;

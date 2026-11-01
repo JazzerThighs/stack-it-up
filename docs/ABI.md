@@ -69,3 +69,8 @@ rebuild colors by cell; 199-225 white band IDs by cell.
 cubie, or zero. This presentation-only accessor does not alter the snapshot size
 or saved-state transport. The JS adapter attaches its 27 values as `rebuildIds`
 on each snapshot; animation copies and turns explicitly preserve that metadata.
+
+
+Random release rules retain the 226-word ABI-v4 snapshot. `game_set_release_rules(trigger, bandaged, scattered, selection)` accepts triggers 0=off, 1=per cleared plane, 2=per placement turn; selection 0=uniform eligible group, 1=occupied-cubie weighted, 2=one uniform cell among all 27 (no retry), 3=largest connected group, 4=smallest. `game_release_rules()` returns trigger in bits 0-1, bandaging in bit 2, scattered locking in bit 3, and selection in bits 4-6. Offset 170 includes random groups awaiting reconnection. Offset 199 remains authoritative for actual band membership, independent of the legacy bandage option at 166.
+
+State transport v3 appends random-release options, the last placement-turn counter that received the perk (u32::MAX means none), and the released-group masks after the v2 gravity flags. Default legacy configurations continue to export v2. Imports accept v1/v2/v3. Group masks rotate with floating cubies, survive undo and sharing, and disappear on locking. The forecast uses this same transport and native transitions; the once-per-turn marker is part of its search key.

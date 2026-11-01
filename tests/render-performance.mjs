@@ -96,3 +96,32 @@ for(const axis of [0,1,2])for(let mode=0;mode<5;mode++) {
 }
 for(const f of fragments)assert.deepEqual(exposedFragment(f.mesh,f.cell,()=>true),f.mesh,'separated pieces retain every closing face');
 console.log('PASS: joined cut surfaces removed; exposed caps preserved for single/wide turns and detached fragments.');
+
+const {coverageAnchors,cellCoverageAnchors}=await import('../web/render/transparency.js');
+const secondMesh=engine.bandMesh((1<<18)|(1<<19)|(1<<21)|(1<<22));
+const anchors=coverageAnchors([mesh,secondMesh]);
+const anchor=cell=>Array.from(anchors.slice(cell*3,cell*3+3));
+for(const cell of [0,1,3,4])assert.deepEqual(anchor(cell),anchor(0),'whole tetromino shares one pattern across joins');
+for(const cell of [18,19,21,22])assert.deepEqual(anchor(cell),anchor(18));
+assert.notDeepEqual(anchor(0),anchor(18),'separate solids keep independent coverage even with the same color');
+let rear=0;
+for(let y=0;y<8;y++)for(let x=0;x<8;x++) {
+  const rank=transparencyRank(x,y,anchor(0));
+  for(const cell of [1,3,4])assert.equal(transparencyRank(x,y,anchor(cell)),rank);
+  if(rank>=32 && transparencyRank(x,y,anchor(18))<32)rear++;
+}
+assert(rear>0,'rear whole pieces remain visible through the front piece');
+assert.deepEqual(anchor(13),Array.from(cellCoverageAnchors.slice(39,42)),'empty/unassigned cells preserve their own pattern');
+console.log('PASS: whole-piece dither continuity and independent coverage for rear solids.');
+
+const {tagCoverage}=await import('../web/render/transparency.js');
+const {joinMeshes}=await import('../web/render/cell-fragments.js');
+const tagged=tagCoverage(mesh.slice(),[7,8,9]);
+for(const f of cellFragments(tagged))for(const part of [f.mesh,exposedFragment(f.mesh,f.cell,()=>false)]) {
+  assert.equal(part.coverage.length,part.length/3);
+  for(let i=0;i<part.coverage.length;i+=3)assert.deepEqual(Array.from(part.coverage.slice(i,i+3)),[7,8,9]);
+}
+const joined=joinMeshes([tagged,tagCoverage(secondMesh.slice(),[1,2,3])]);
+assert.deepEqual(Array.from(joined.coverage.slice(0,3)),[7,8,9]);
+assert.deepEqual(Array.from(joined.coverage.slice(-3)),[1,2,3]);
+console.log('PASS: explicit piece coverage survives rounded surfaces, caps, trimming and merged draw buffers.');

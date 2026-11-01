@@ -9,3 +9,11 @@ export function turnTransform(move,t) {
 export function transformPoint(p,{rotation=IDENTITY,modelScale=1,offset=[0,0,0]}={}) {
   return [0,1,2].map(a=>offset[a]+modelScale*(rotation[a]*p[0]+rotation[3+a]*p[1]+rotation[6+a]*p[2]));
 }
+
+export function composeRotation(a,b=IDENTITY) {
+  return [0,1,2].flatMap(column=>transformPoint(b.slice(column*3,column*3+3),{rotation:a}).map(v=>Math.round(v)));
+}
+export function movedCell(cell,move) {
+  const [,axis,layer,side]=CubeStack.moves[move%15],p=CubeStack.xyz(cell);
+  return layer==='wide'?p[axis]!==2-side:p[axis]===layer;
+}

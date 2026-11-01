@@ -131,3 +131,22 @@ assert.equal(visualPrefs.visualSettings.ditherTransparency,0);
 $('ditherTransparency').checked=true;$('ditherTransparency').listeners.change();
 assert.equal(visualPrefs.visualSettings.ditherTransparency,1);
 console.log('PASS: cached clear fragments, zero animation uploads and dither transparency control.');
+
+assert($('topOutNewGame').checked);
+$('topOutNewGame').checked=false;$('topOutNewGame').onchange();assert($('overNew').hidden);
+$('setupDialog').open=false;$('overNew').onclick();assert(!$('setupDialog').open);
+$('topOutNewGame').checked=true;$('topOutNewGame').onchange();assert(!$('overNew').hidden);
+renderer.ghost={mask:15,piece:1};renderer.setState(context.state);
+assert.equal(renderer.ghostSolid.count,0);assert(renderer.ghostLines.count>0);
+renderer.ghost=null;renderer.setState(context.state);
+console.log('PASS: optional top-out restart is guarded and placement ghosts contain lines only.');
+
+assert.equal(context.engine.game_release_rules(),4,'random release off, its bandaging on by default');
+$('releaseTrigger').value='1';$('releaseBandaged').checked=true;$('releaseScattered').checked=true;$('releaseSelection').value='3';
+$('releaseTrigger').onchange();assert.equal(context.engine.game_release_rules(),61);
+assert.equal(context.engine.exportState()[1],3);
+context.update();assert.equal($('releaseTrigger').value,'1');assert($('releaseScattered').checked);
+$('new').onclick();$('releaseTrigger').value='2';$('releaseBandaged').checked=false;$('releaseScattered').checked=false;$('releaseSelection').value='1';
+$('animations').checked=false;await $('setupStart').onclick();flush();assert.equal(context.engine.game_release_rules(),18);
+assert.equal($('releaseTrigger').value,'2');assert(!$('releaseBandaged').checked);
+console.log('PASS: release controls reach Wasm, state transport and confirmed new-game setup.');
