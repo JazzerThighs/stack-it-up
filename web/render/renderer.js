@@ -147,7 +147,7 @@ class Renderer {
     this.stackPackets=null;
     this.stackEvent=null;
     this.sourceMesh = data;
-    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance) : [data];
+    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance,true) : [data];
     this.upload(this.stackMesh,joinMeshes(parts));
   }
   setState(s, animation = null) {
@@ -260,7 +260,7 @@ class Renderer {
     if(this.stackEvent===event)return;
     this.stackEvent=event;
     const source=event.kind===2?from:to;
-    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance);
+    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance,true);
     const fragments=mergeFragments(parts);
     this.stackCellBuffers ??= Array.from({length:81},()=>this.buffer());
     for(let phase=0;phase<3;phase++) {
