@@ -47,32 +47,7 @@ for (const [indices, axis, side] of [
       side,
     );
 }
-const families = [],
-  familyByLine = new Map();
-let family;
-for (const line of fs
-  .readFileSync(
-    new URL("../web/explorer/refined_families.txt", import.meta.url),
-    "utf8",
-  )
-  .split(/\r?\n/)) {
-  const head = /^FAMILY (\d+)/.exec(line);
-  if (head) {
-    family = { id: Number(head[1]), members: [] };
-    families.push(family);
-  }
-  const member = /^\s+line=(\d+) identities=\S+ scores=\S+ (.+)$/.exec(line);
-  if (member) {
-    const fields = member[2].split(/\s+/);
-    const p = {
-      lineNumber: Number(member[1]),
-      masks: fields.slice(0, 6).map((x) => parseInt(x, 16)),
-      extras: parseInt(fields[6].split("=")[1], 16),
-    };
-    family.members.push(p);
-    familyByLine.set(p.lineNumber, { family });
-  }
-}
+const {families,familyByLine}=await import('./packing-fixture.mjs');
 let checked = 0;
 for (const f of families)
   for (const p of f.members) {

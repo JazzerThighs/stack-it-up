@@ -195,7 +195,7 @@ impl Game {
     }
     pub fn debug_piece(&mut self, held: bool, piece: u32) -> bool {
         if !self.state.rules.is_some_and(|r| r & 1 != 0)
-            || piece > 6
+            || piece > 9
             || (!held && piece == 0)
             || self.state.over
             || !self.pending.is_empty()

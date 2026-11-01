@@ -38,7 +38,7 @@ export function* forecast(engine, initial, horizon, maxStates = 150000) {
     if (seen.size + stack.length >= maxStates) return {status:'unknown', longest, examined};
     seen.add(key); examined++;
     const next = [];
-    const actions = words[19] ? Array.from({length:6},(_,f)=>['game_choose',f]) :
+    const actions = words[19] ? Array.from({length:21},(_,f)=>['game_choose',f]) :
       [...Array.from({length:30},(_,m)=>['game_turn',m]),
        ...Array.from({length:27},(_,c)=>['game_lock_band',c])];
     for (const [method, arg] of actions) {

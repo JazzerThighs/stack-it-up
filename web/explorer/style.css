@@ -1219,3 +1219,7 @@ footer {
   max-height: none;
 }
 
+
+.composition-counts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; }
+.composition-counts input {width:100%;min-width:0;box-sizing:border-box;}
+#spatialFilters {min-width:0;}

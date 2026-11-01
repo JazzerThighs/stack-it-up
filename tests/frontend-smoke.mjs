@@ -153,7 +153,7 @@ context.update();assert.equal($('releaseTrigger').value,'1');assert($('releaseSc
 $('new').onclick();$('freedomEvent1').checked=true;$('freedomEvent1').onchange();
 $('debugCurrent').value='2';$('debugHeld').value='6';
 $('animations').checked=false;await $('setupStart').onclick();flush();
-assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],4);
+assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],5);
 $('debugHeld').value='0';await $('applyHeld').onclick();assert.equal(context.state[164],0);
 $('scienceMode').checked=false;$('scienceMode').onchange();assert($('stageUndo').disabled);assert(!context.engine.game_debug_piece(1,3));
 $('scienceMode').checked=true;$('scienceMode').onchange();assert(!$('stageUndo').disabled);
@@ -167,3 +167,41 @@ $('setupCancel').onclick();assert(!$('setupDialog').open);
 $('showArrows').checked=false;$('settingsDialog').listeners.change();assert($('arrowOptions').disabled);
 $('showArrows').checked=true;$('settingsDialog').listeners.input();assert(!$('arrowOptions').disabled);
 console.log('PASS: settings navigation and dependency refresh in both setup and live settings dialogs.');
+
+// Spatial queue integration: setup, previews, colors, transport and choices.
+const {pieces:catalog}=await import('../web/engine/pieces.js');
+$('new').onclick();
+for(let id=1;id<=9;id++)$('poolPiece'+id).checked=false;
+await $('setupStart').onclick();assert($('setupDialog').open,'empty pool must not start');
+for(let id=7;id<=9;id++)$('poolPiece'+id).checked=true;
+$('debugCurrent').value='7';$('debugHeld').value='9';
+await $('setupStart').onclick();flush();
+assert.equal(context.engine.game_piece_pool(),448);
+assert(context.engine.exportState().slice(77,77+context.engine.exportState()[76]).every(id=>id>=7));
+assert.equal(context.state[55],7);assert.equal(context.state[164],9);
+assert($('target').style.backgroundImage.includes('data:image/svg+xml'));
+assert($('heldShape').style.backgroundImage.includes('data:image/svg+xml'));
+for(const [id,letter]of [[7,'B'],[8,'D'],[9,'F']]) {
+ $('debugCurrent').value=String(id);await $('applyCurrent').onclick();flush();
+ assert.equal(context.state[55],id);
+ assert.equal(context.state[54]&(1<<13),0);
+ $('pieceColor'+letter).value='#abcdef';$('pieceColor'+letter).listeners.input();flush();
+}
+$('resetPieceColors').onclick();flush();
+// Reach a pending pair in an otherwise empty puzzle, without a face index.
+context.engine.game_init(55);assert(context.engine.game_configure_rules(3));assert(context.engine.game_debug_piece(0,7));
+const branch=catalog[6];let pair;
+for(const a of branch.surfacePlacements)for(const b of branch.surfacePlacements) {
+ if(a===b)continue;
+ const counts=[0,0,0];for(let i=0;i<27;i++)if((a|b)&(1<<i))counts[[Math.floor(i/9),Math.floor(i/3)%3,i%3].filter(v=>v!==1).length-1]++;
+ if(counts.every((n,i)=>n<=branch.surfaceInventory[i]))pair=[a,b];
+}
+assert(pair);
+const pendingWords=context.engine.exportState();pendingWords[3]=pair[0]|pair[1];pendingWords[19]=1;
+assert(context.engine.importState(pendingWords));context.update();flush();
+const choices=$('faceChoices').children.filter(b=>b.className==='spatial-choice'&&!b.hidden);
+assert(choices.length>=2);assert(choices[0].style.backgroundImage.includes('data:image/svg+xml'));
+choices[0].onfocus();flush();assert(context.renderers[0].preview);
+await choices[1].onclick();flush();assert.equal(context.state[62],1);
+assert(context.engine.mesh().every(Number.isFinite));
+console.log('PASS: spatial pool setup, multi-center spawn, hold preview, nine-color controls, v5 state and spatial placement choices.');

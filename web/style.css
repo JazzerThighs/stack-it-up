@@ -2561,3 +2561,8 @@ main.explorer-active > .topbar { padding:0 14px; }
 #scienceOptions[hidden] { display:none; }
 #scienceOptions label, #scienceOptions p { grid-column:1/-1; }
 #setupDialog .session-actions { position:sticky; bottom:-1px; background:#182128; padding:12px 0; z-index:3; }
+
+.spatial-shape { background-position:center; background-size:contain; background-repeat:no-repeat; }
+.spatial-shape > i { visibility:hidden; }
+.spatial-choice { min-width:5rem; min-height:5rem; background-position:center; background-size:contain; background-repeat:no-repeat; text-align:left; vertical-align:top; }
+#piecePoolOptions label { display:inline-flex; gap:.4em; padding:.4em; }

@@ -35,6 +35,17 @@ impl Game {
         self.lock = None;
         self.revision += 1;
     }
+    pub fn set_piece_pool(&mut self, pool:u32, redeal:bool)->bool {
+        if pool==0 || pool & !511 !=0 || !self.pending.is_empty() || self.state.over { return false; }
+        if redeal && self.state.pieces!=0 {return false;}
+        if !redeal && pool==self.state.piece_pool {return true;}
+        self.save_history();
+        self.state.piece_pool=pool;
+        if redeal {self.state.queue.clear();} else {self.state.queue.truncate(1);}
+        self.state.events.clear();self.state.last_lock=None;
+        if redeal {self.state.spawn(&self.tables);} else {self.state.refill();}
+        self.revision+=1;true
+    }
     pub fn set_fragments(&mut self, enabled: bool) {
         self.state.fragment_enabled = enabled;
         if !enabled {
@@ -234,10 +245,10 @@ impl Game {
         self.pending.clear();
         self.state.finish_rebuilds(&self.tables);
         let piece = self.state.lock_mask(hit.mask);
-        self.state.last_lock = Some((Some(hit.face), piece, hit.mask));
+        self.state.last_lock = Some(((hit.face<6).then_some(hit.face), piece, hit.mask));
         self.state.clear(&self.tables);
         self.state.spawn(&self.tables);
-        self.lock = Some((hit.face, piece));
+        self.lock = (hit.face<6).then_some((hit.face, piece));
         self.lock_mask = hit.mask;
         true
     }

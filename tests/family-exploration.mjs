@@ -7,43 +7,30 @@ import {explorationMeshes,sliceForTurn,animateSlices} from '../web/explorer/expl
 import {adaptEngine} from '../web/engine/wasm.js';
 const {instance}=await WebAssembly.instantiate(fs.readFileSync(new URL('../dist/cube_stack.wasm',import.meta.url)));
 const engine=adaptEngine(instance.exports);
-const packings=[],families=new Map();let family;
-for(const line of fs.readFileSync(new URL('../web/explorer/refined_families.txt',import.meta.url),'utf8').split(/\r?\n/)) {
-  const head=/^FAMILY (\d+)/.exec(line);if(head)family={id:+head[1]};
-  const match=/^\s+line=(\d+) identities=\S+ scores=\S+ (.+)$/.exec(line);
-  if(match) {
-    const fields=match[2].split(/\s+/),p={lineNumber:+match[1],masks:fields.slice(0,6).map(v=>parseInt(v,16)),extras:parseInt(fields[6].split('=')[1],16),identities:fields[8]};
-    packings.push(p);families.set(p.lineNumber,{family});
-  }
-}
-for(const packing of packings) {
-  const result=detectPieces(practicePair(packing,packing).left);
-  for(let i=0;i<6;i++) if('JLOSTZ'.includes(packing.identities[i]))
-    assert.equal(result.find(p=>p.id===i).letter,packing.identities[i],`catalog detection ${packing.lineNumber}/${i}`);
-}
-const source=packings.find(p=>p.lineNumber===77451),cells=practicePair(source,source).left;
+const {packings,familyByLine:families,official}=await import('./packing-fixture.mjs');
+const source=packings.find(p=>p.lineNumber===official.lineNumber),cells=practicePair(source,source).left;
 const familyId=families.get(source.lineNumber).family.id;
 const members=packings.filter(p=>families.get(p.lineNumber).family.id===familyId);
 const lookup=createFamilyLookup(members);
 assert.equal(detectPieces(cells).filter(p=>p.letter).length,6);
-assert(lookup(cells).matches.some(p=>p.lineNumber===77451));
+assert(lookup(cells).matches.some(p=>p.lineNumber===official.lineNumber));
 assert.equal(families.get(chooseFamilyPacking(packings,families,familyId,()=>.4).lineNumber).family.id,familyId);
 assert.equal(chooseFamilyPacking(packings,families,-1),null);
 // Color and piece numbering do not determine either shape or catalog identity.
 const recolored=cells.map(c=>({...c,color:'w',piece:c.piece>=0?5-c.piece:-1}));
 assert.equal(detectPieces(recolored).filter(p=>p.letter).length,6);
-assert(lookup(recolored).matches.some(p=>p.lineNumber===77451));
+assert(lookup(recolored).matches.some(p=>p.lineNumber===official.lineNumber));
 for(const rotation of ROTATIONS) {
   const rotated=Array(27);cells.forEach((c,i)=>rotated[rotation[i]]=c);
-  assert(lookup(rotated).matches.some(p=>p.lineNumber===77451));
+  assert(lookup(rotated).matches.some(p=>p.lineNumber===official.lineNumber));
 }
 for(let move=0;move<30;move++) {
   const moved=turn(cells,move),back=turn(moved,(move+15)%30);
   assert.deepEqual(detectPieces(back),detectPieces(cells));
   if(detectPieces(moved).some(p=>!p.letter)) assert.equal(lookup(moved).matches.length,0);
 }
-// Nonplanar chains and scattered cubies must not be joined as tetrominos.
-assert.equal(identifyMask((1<<0)|(1<<1)|(1<<4)|(1<<13)),null);
+// The former nonplanar-chain rejection is now a recognized left screw; scattered cells still fail.
+assert.equal(identifyMask((1<<0)|(1<<1)|(1<<4)|(1<<13)),'F');
 assert.equal(identifyMask((1<<0)|(1<<2)|(1<<20)|(1<<26)),null);
 const meshes=explorationMeshes(cells,engine.bandMesh,'jelly');
 const volume=mesh=>{

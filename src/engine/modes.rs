@@ -27,7 +27,7 @@ impl State {
             .find(|&color| {
                 t.placements[color as usize - 1]
                     .iter()
-                    .any(|p| p.mask == mask)
+                    .any(|p| p.face < 6 && p.mask == mask)
             })
             .or_else(|| {
                 if self.reconstruction_facebound() { return None; }
@@ -102,7 +102,7 @@ impl State {
                     } else {
                         t.placements[color as usize - 1]
                             .iter()
-                            .map(|p| p.mask)
+                            .filter(|p|p.face<6).map(|p| p.mask)
                             .collect()
                     };
                     for m in masks {

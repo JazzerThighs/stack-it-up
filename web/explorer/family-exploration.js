@@ -1,3 +1,4 @@
+import {pieces as pieceCatalog} from '../engine/pieces.js';
 import {cellsOf, displayIndex, ROTATIONS} from './model.js';
 import {CubeStack} from '../engine/coordinates.js';
 
@@ -19,9 +20,11 @@ for (const [letter,shape] of Object.entries(templates)) {
 const labels='123456789abcdefghijklmnopqr';
 const faces=['123456789','jmpknqlor','1aj2bk3cl','9ir8hq7gp','147adgjmp','3cl6fo9ir']
   .map(face=>[...face].map(c=>displayIndex(labels.indexOf(c))));
+const spatialLetters=new Map(pieceCatalog.filter(p=>p.spatial).flatMap(p=>p.placements.map(m=>[m,p.letter])));
 export function identifyMask(mask) {
   const cells=cellsOf(mask);
   if(cells.length!==4) return null;
+  if(spatialLetters.has(mask))return spatialLetters.get(mask);
   for(const face of faces) {
     if(cells.every(i=>face.includes(i))) {
       return patterns.get(normalized(cells.map(i=>{const n=face.indexOf(i);return [Math.floor(n/3),n%3];}))) || null;

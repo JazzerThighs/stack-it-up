@@ -16,7 +16,61 @@
             ><button id="random" class="primary">Random</button
             ><button id="next" aria-label="Next packing">→</button>
           </div>
-
+          <label id="navigationTargetLabel" hidden>Change cube<select id="navigationTarget"><option value="start">Start</option><option value="target">Target</option></select></label>
+            <details class="packing-picker">
+              <summary>Choose packing</summary>
+<div class="packing-picker-content">
+              <div class="explorer-section-body">              <label
+                >Packing family
+                <select id="familySelect">
+                  <option value="">All families</option>
+                </select></label
+              >
+<button id="exploreFamily" type="button">Stay in this family</button>
+<p class="settings-help">Skip forward or back within your current filters.</p><div class="nav-steps" aria-label="Skip matching packings">
+            <button id="back100">−100</button><button id="back10">−10</button
+            ><button id="forward10">+10</button
+            ><button id="forward100">+100</button>
+          </div>
+          <form id="sourceJump" class="source-jump">
+            <label for="sourceLine">Source line</label
+            ><input
+              id="sourceLine"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              required
+            /><button type="submit">Go</button
+            ><span id="jumpStatus" role="status"></span>
+          </form>
+</div>
+        <div id="practiceNavigation" hidden><form id="practiceLoad" class="practice-controls">
+          <label
+            >Start source line
+            <input id="practiceA" type="number" min="1" required
+          /></label>
+          <label
+            >Target source line
+            <input id="practiceB" type="number" min="1" required
+          /></label>
+          <button type="submit">Load pair</button>
+          <button id="practiceRandom" type="button">
+            Random pair in same family
+          </button>
+          <button id="practiceSwap" type="button">Swap start / target</button>
+        </form>
+        <p id="practiceStatus" role="status">
+          Random pairs respect the current explorer filters.
+        </p>
+        <p class="hint">
+          Drag stickers to turn the start cube. Drag the target to inspect it.
+          Colors identify physical pieces, not their current letters. Random
+          pairs respect the explorer filters.
+        </p>
+        </div>
+            </div>
+</details>
 
         </div>
         <details class="settings" id="settingsPanel">
@@ -32,20 +86,19 @@
             <details class="explorer-setting-section" open>
               <summary><span>Filter packings<small>Choose the shapes and families to explore</small></span></summary>
               <div class="explorer-section-body"><fieldset class="family-controls">
-              <legend>Collection</legend>
-              <label
-                >Edge family
-                <select id="familySelect">
-                  <option value="">All families</option>
-                </select></label
-              >
+              <legend>Collection</legend><label>Collection<select id="datasetSelect"><option value="spatial">All tetracubes (v2)</option><option value="classic">Classic collection (planar pieces only)</option></select></label>
               <label
                 >Bag
                 <select id="familyBag">
                   <option value="">All bags</option>
                 </select></label
               >
-              <div class="filter-flags">
+              <fieldset id="spatialFilters" hidden><legend>Spatial pieces and composition</legend>
+<p class="muted">B = branch, D = right screw, F = left screw. Lowercase b/d/f means core occupancy only. J/L and S/Z counts combine their spatially equivalent forms.</p>
+<label>Spatial composition<select id="spatialComposition"><option value="">Any</option><option value="none">Planar only</option><option value="mixed">Mixed planar and spatial</option><option value="only">Spatial only</option></select></label>
+<label>Planar pieces spanning faces<select id="planarSpanning"><option value="">Any</option><option value="none">None</option><option value="any">At least one</option><option value="surface">At least one without core</option><option value="core">At least one through core</option></select></label>
+<label>Piece occupying core<select id="corePieceType"><option value="">Any type</option><option value="O">O</option><option value="T">T</option><option value="JL">JL</option><option value="SZ">SZ</option><option value="B">B</option><option value="D">D</option><option value="F">F</option></select></label>
+<div class="composition-counts"><label>O minimum<input id="countMinO" type="number" min="0" max="6" value="0" /></label><label>O maximum<input id="countMaxO" type="number" min="0" max="6" value="6" /></label><label>T minimum<input id="countMinT" type="number" min="0" max="6" value="0" /></label><label>T maximum<input id="countMaxT" type="number" min="0" max="6" value="6" /></label><label>JL minimum<input id="countMinJL" type="number" min="0" max="6" value="0" /></label><label>JL maximum<input id="countMaxJL" type="number" min="0" max="6" value="6" /></label><label>SZ minimum<input id="countMinSZ" type="number" min="0" max="6" value="0" /></label><label>SZ maximum<input id="countMaxSZ" type="number" min="0" max="6" value="6" /></label><label>B minimum<input id="countMinB" type="number" min="0" max="6" value="0" /></label><label>B maximum<input id="countMaxB" type="number" min="0" max="6" value="6" /></label><label>D minimum<input id="countMinD" type="number" min="0" max="6" value="0" /></label><label>D maximum<input id="countMaxD" type="number" min="0" max="6" value="6" /></label><label>F minimum<input id="countMinF" type="number" min="0" max="6" value="0" /></label><label>F maximum<input id="countMaxF" type="number" min="0" max="6" value="6" /></label></div></fieldset><div class="filter-flags">
                 <label
                   ><input type="checkbox" id="oneOfEach" checked /> JLOSTZ
                   bag</label
@@ -69,10 +122,6 @@
                 <label
                   ><input type="checkbox" id="nonFaceboundSurface" />
                   Non-Facebound surface only</label
-                >
-                <label
-                  ><input type="checkbox" id="ungroupedOnly" /> No edge
-                  family</label
                 >
                 <label
                   title="A straight empty 1 by 1 passage through the cube along any axis. Extra cubies are treated as empty space."
@@ -106,7 +155,6 @@
                   </select></label
                 >
               </div>
-              <button id="exploreFamily" type="button">Whole family</button>
               <p id="familySummary" role="status"></p>
             </fieldset>
             </div>
@@ -164,30 +212,9 @@
 <label>Camera <select id="explorerCamera"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
 <label>Piece style <select id="pieceAppearance"><option value="jelly">Jelly</option><option value="dither">Dithered</option><option value="matte">Matte</option><option value="voxel">Voxel</option><option value="cel">Cel shaded</option><option value="ascii">ASCII</option></select></label></fieldset>
 <details class="visual-tuning"><summary>Lighting</summary><p class="muted">Camera-relative direction. Horizontal: left / right; vertical: below / above. Shared by both apps and all styles.</p><label for="lightAzimuth">Horizontal angle<output id="lightAzimuthValue">-20°</output></label><input id="lightAzimuth" type="range" min="-180" max="180" step="1" value="-20" /><label for="lightElevation">Vertical angle<output id="lightElevationValue">25°</output></label><input id="lightElevation" type="range" min="-85" max="85" step="1" value="25" /><label for="lightIntensity">Light strength<output id="lightIntensityValue">1×</output></label><input id="lightIntensity" type="range" min="0" max="3" step="0.05" value="1" /><label for="lightAmbient">Fill light<output id="lightAmbientValue">0.35</output></label><input id="lightAmbient" type="range" min="0" max="1" step="0.05" value="0.35" /><button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button></details><details class="visual-tuning"><summary>Dither tuning</summary><p class="muted">Pixel size sets the resolution of the whole 3D view, including silhouettes. Fewer shading levels give bolder bands; balance shifts dark versus colored pixels.</p><label for="ditherLevels">Shading levels<output id="ditherLevelsValue">5</output></label><input id="ditherLevels" type="range" min="2" max="17" step="1" value="5" /><label for="ditherSize">Pixel size<output id="ditherSizeValue">2px</output></label><input id="ditherSize" type="range" min="1" max="6" step="0.5" value="2" /><label for="ditherContrast">Contrast<output id="ditherContrastValue">2.5×</output></label><input id="ditherContrast" type="range" min="0.5" max="5" step="0.1" value="2.5" /><label for="ditherMidpoint">Light / dark balance<output id="ditherMidpointValue">0.6</output></label><input id="ditherMidpoint" type="range" min="0" max="1" step="0.05" value="0.6" /><button id="resetdither" type="button">Reset dither tuning</button></details><details class="visual-tuning"><summary>ASCII tuning</summary><p class="muted">Lower edge coverage keeps more silhouette characters. Blending softens character changes while moving.</p><label for="asciiSize">Character size<output id="asciiSizeValue">1×</output></label><input id="asciiSize" type="range" min="0.5" max="2" step="0.1" value="1" /><label for="asciiExposure">Brightness<output id="asciiExposureValue">1×</output></label><input id="asciiExposure" type="range" min="0.5" max="3" step="0.1" value="1" /><label for="asciiDensity">Character density<output id="asciiDensityValue">1×</output></label><input id="asciiDensity" type="range" min="0.5" max="2" step="0.1" value="1" /><label for="asciiCoverage">Edge coverage required<output id="asciiCoverageValue">0.16</output></label><input id="asciiCoverage" type="range" min="0.02" max="0.6" step="0.02" value="0.16" /><label for="asciiBlend">Character blending<output id="asciiBlendValue">1</output></label><input id="asciiBlend" type="range" min="0" max="1" step="0.1" value="1" /><button id="resetascii" type="button">Reset ascii tuning</button></details>
-<fieldset class="piece-colors"><legend>Tetromino colors</legend><p class="muted">Shared by both apps and saved on this device. Color assignments and puzzle rules stay the same.</p><div class="piece-color-grid"><label for="pieceColorO">O<input id="pieceColorO" type="color" aria-label="O piece color" /></label><label for="pieceColorT">T<input id="pieceColorT" type="color" aria-label="T piece color" /></label><label for="pieceColorL">L<input id="pieceColorL" type="color" aria-label="L piece color" /></label><label for="pieceColorJ">J<input id="pieceColorJ" type="color" aria-label="J piece color" /></label><label for="pieceColorS">S<input id="pieceColorS" type="color" aria-label="S piece color" /></label><label for="pieceColorZ">Z<input id="pieceColorZ" type="color" aria-label="Z piece color" /></label></div><button id="resetPieceColors" type="button">Reset colors</button></fieldset>
+<fieldset class="piece-colors"><legend>Tetromino colors</legend><p class="muted">Shared by both apps and saved on this device. Color assignments and puzzle rules stay the same.</p><div class="piece-color-grid"><label for="pieceColorO">O<input id="pieceColorO" type="color" aria-label="O piece color" /></label><label for="pieceColorT">T<input id="pieceColorT" type="color" aria-label="T piece color" /></label><label for="pieceColorL">L<input id="pieceColorL" type="color" aria-label="L piece color" /></label><label for="pieceColorJ">J<input id="pieceColorJ" type="color" aria-label="J piece color" /></label><label for="pieceColorS">S<input id="pieceColorS" type="color" aria-label="S piece color" /></label><label for="pieceColorZ">Z<input id="pieceColorZ" type="color" aria-label="Z piece color" /></label><label for="pieceColorB">B — Branch<input id="pieceColorB" type="color" aria-label="Branch piece color" /></label><label for="pieceColorD">D — Right screw<input id="pieceColorD" type="color" aria-label="Right screw piece color" /></label><label for="pieceColorF">F — Left screw<input id="pieceColorF" type="color" aria-label="Left screw piece color" /></label></div><button id="resetPieceColors" type="button">Reset colors</button></fieldset>
 <fieldset class="target-display"><legend>Target cube display</legend><label><input id="targetComposite" type="checkbox" checked /> Tetromino composite</label>
           </fieldset></div>
-            </details>
-            <details class="explorer-setting-section">
-              <summary><span>Jump to a packing<small>Source line and shortcuts through matching results</small></span></summary>
-              <div class="explorer-section-body"><p class="settings-help">Skip forward or back within your current filters.</p><div class="nav-steps" aria-label="Skip matching packings">
-            <button id="back100">−100</button><button id="back10">−10</button
-            ><button id="forward10">+10</button
-            ><button id="forward100">+100</button>
-          </div>
-          <form id="sourceJump" class="source-jump">
-            <label for="sourceLine">Source line</label
-            ><input
-              id="sourceLine"
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              required
-            /><button type="submit">Go</button
-            ><span id="jumpStatus" role="status"></span>
-          </form>
-</div>
             </details>
             <div class="status-row">
               <span id="status" role="status">Loading…</span
@@ -215,9 +242,6 @@
           <details class="family-explore-info">
             <summary id="familyExploreProgress" role="status">Choose a family</summary>
             <div class="packing-info">
-              <label for="familyExploreSelect">Packing family</label>
-              <select id="familyExploreSelect"></select>
-              <button id="familyExploreRandom" type="button">Random packing in this family</button>
               <p>Drag to turn. Joined pieces are sliced at the turning layer. Shape detection follows each physical piece, regardless of its color or original letter. Completed shapes use canonical colors; separated cubies keep their assigned ID colors. Optional solid shapes distinguish IDs in Settings.</p>
               <p id="familyExploreLetters"></p>
               <div id="familyExploreMatches"></div>
@@ -225,36 +249,7 @@
           </details>
         </section>
         <section id="practicePanel" hidden>
-        <details class="practice-config"><summary>Practice setup</summary><form id="practiceLoad" class="practice-controls">
-          <label
-            >Start source line
-            <input id="practiceA" type="number" min="1" required
-          /></label>
-          <label
-            >Target source line
-            <input id="practiceB" type="number" min="1" required
-          /></label>
-          <button type="submit">Load pair</button>
-          <button id="practiceUseSelected" type="button">
-            Use selection as start
-          </button>
-          <button id="practiceRandom" type="button">
-            Random pair in same family
-          </button>
-          <button id="practiceUseTarget" type="button">
-            Use selection as target
-          </button>
-          <button id="practiceSwap" type="button">Swap start / target</button>
-        </form>
-        <p id="practiceStatus" role="status">
-          Random pairs respect the current explorer filters.
-        </p>
-        <p class="hint">
-          Drag stickers to turn the start cube. Drag the target to inspect it.
-          Colors identify physical pieces, not their current letters. Random
-          pairs respect the explorer filters.
-        </p>
-        </details><div class="practice-cubes">
+<div class="practice-cubes">
           <section class="cube-card">
             <h2 id="practiceLeftTitle">Start</h2>
             <div id="practiceLeft" class="cube"></div>

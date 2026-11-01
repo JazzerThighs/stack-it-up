@@ -4,14 +4,16 @@ import {packingCells,CANONICAL_COLORS,cellsOf} from './model.js';
 import {detectPieces} from './family-exploration.js';
 import {defaultColors} from '../render/palette.js';
 import {rgb} from '../render/geometry.js';
-const keys=[...'ymobgr'];
-const reference=Object.fromEntries(keys.map((key,i)=>[key,rgb(defaultColors[i+1])]));
+const classicKeys=[...'ymobgr'];
+const allKeys=[...classicKeys,'B','D','F'];
+const reference=Object.fromEntries(allKeys.map((key,i)=>[key,rgb(defaultColors[i+1])]));
 const targets=letter=>(letter||'').split('/').map(l=>CANONICAL_COLORS[l]).filter(Boolean);
 const distance=(a,b)=>reference[a].reduce((sum,v,i)=>sum+(v-reference[b][i])**2,0);
 export function assignIdentityColors(letters) {
+  const keys=letters.some(l=>['B','D','F'].includes(l))?allKeys:classicKeys;
   let best, bestExact=-1,bestCost=Infinity;
   function visit(colors,unused,exact,cost) {
-    if(!unused.length) {
+    if(colors.length===letters.length) {
       if(exact>bestExact || exact===bestExact && cost<bestCost) {best=colors;bestExact=exact;bestCost=cost;}
       return;
     }

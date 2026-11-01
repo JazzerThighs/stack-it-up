@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "dataset": "tetracubes-v2",
+  "archive": "results.7z",
+  "sha256": "899b0f965c60c06279d2b92ecefc6cf2410f9211a4ba3e8b143d3f35ed0de6e4",
+  "files": [
+    "families.csv",
+    "membership.csv",
+    "piece_catalog.csv",
+    "refined_families.txt",
+    "schema.json"
+  ],
+  "packingCount": 1871891,
+  "familyCount": 2605
+}

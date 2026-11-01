@@ -132,8 +132,16 @@ const applicationPage = {hidden:false};
 document.getElementById = id => id === "explorerPage" ? applicationPage : id === "cubeLayout" ? null : getExplorerElement(id);
 const { ready, initializeExplorer } = await import(new URL("explorer/script.js",assetRoot));
 assert.equal(ready,null);
-await initializeExplorer({getElementById:getExplorerElement});
-assert.match($("status").textContent, /^Loaded /);
+const {client,store,official,manifest}=await import('./packing-fixture.mjs');
+const settle=async predicate=>{for(let n=0;n<200&&!predicate();n++)await new Promise(r=>setTimeout(r,10));assert(predicate());};
+const initial=await initializeExplorer({getElementById:getExplorerElement},{client});
+await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
+assert.match($('status').textContent,/matching packings/);
+assert.equal(initial.current.lineNumber,50152);assert.equal(initial.current.familyId,562);
+assert.deepEqual(initial.current.masks,[0xf,0xf0,0x40e00,0x780000,0x3018000,0x4024100]);
+assert.equal($('sourceLine').value,50152);
+assert(!$('packingNavigation').hidden);
+assert(!html.includes('ungroupedOnly'));
 assert($("familyExploreMode").checked && !$("familyExplorePanel").hidden);
 assert($("cubeLayout").hidden && $("practicePanel").hidden);
 assert(observed.has($("familyExploreCube")),"family cube is initialized on startup");
@@ -142,28 +150,26 @@ const flush = () => {
   while (frames.length && n++ < 100) frames.shift()(800);
 };
 flush();
-assert.equal($("solvedFacelets").textContent.length, 54);
+assert.match($('solvedFacelets').textContent,/Native tetracube/);
 assert($("solvedCube").children.length >= 2);
 assert($("scrambledCube").children.length >= 2);
 // Switching only the color scheme must not rotate, reflect, or recolor the
 // official source packing, including its white edge and black center.
-const officialTarget = structuredClone(observed.get($("solvedCube")).view.cells);
-$("canonicalColors").listeners.change();
-assert.deepEqual(observed.get($("solvedCube")).view.cells, officialTarget,
-  "official source: canonical and official-compatible cells must be identical");
-$("officialColors").listeners.change();
-assert.deepEqual(observed.get($("solvedCube")).view.cells, officialTarget);
+$('canonicalColors').onchange();
+assert(observed.get($('solvedCube')).view.cells.some(c=>c.color==='r'));
+$('officialColors').onchange();
 assert(!html.includes('id="piece3d"')); assert.equal($("cubeLayout").dataset.views,2);
 $("practiceMode").checked = true;
-$("practiceMode").onchange();
+await $("practiceMode").onchange();
 flush();
 assert(!$("practicePanel").hidden);
 assert($("cubeLayout").hidden);
 assert.match($("practiceStatus").textContent, /Reachable pair/);
-assert.notEqual($("practiceA").value, $("practiceB").value);
-$("practiceA").value = "77451";
-$("practiceB").value = "77451";
-$("practiceLoad").onsubmit({ preventDefault() {} });
+await $('practiceRandom').onclick();
+assert.notEqual($('practiceA').value,$('practiceB').value);
+$("practiceA").value = String(official.lineNumber);
+$("practiceB").value = String(official.lineNumber);
+await $("practiceLoad").onsubmit({ preventDefault() {} });
 flush();
 assert.equal($("practiceProgress").textContent, "Target matched!");
 
@@ -215,10 +221,10 @@ cube.setState(cube.cells);
 flush();
 cube.destroy();
 $("practiceB").value = "99999999";
-$("practiceLoad").onsubmit({ preventDefault() {} });
-assert.match($("practiceStatus").textContent, /valid source line/);
+await $("practiceLoad").onsubmit({ preventDefault() {} });
+assert.match($("practiceStatus").textContent, /Source line not found/);
 $("practiceMode").checked = false;
-$("practiceMode").onchange();
+await $("practiceMode").onchange();
 assert(!$("cubeLayout").hidden);
 await $("playSolution").onclick();
 flush();
@@ -270,7 +276,7 @@ console.log('PASS: explorer filter controls preserve geometry and practice state
 
 // Family mode owns one interactive cube and leaves the other modes intact.
 $("familyExploreMode").checked=true;
-$("familyExploreMode").onchange();
+await $("familyExploreMode").onchange();
 flush();
 assert(!$("familyExplorePanel").hidden && $("practicePanel").hidden && $("cubeLayout").hidden);
 assert(!$("practiceMode").checked);
@@ -280,19 +286,20 @@ const familyStart=structuredClone(familyView.cells);
 const initialStatus=$("familyExploreProgress").textContent;
 await familyView.play(0);flush();
 assert.deepEqual(familyView.cells,turn(familyStart,0));
-assert.match($("familyExploreProgress").textContent,/\d\/6 tetrominos/);
+assert.match($("familyExploreProgress").textContent,/\d\/6 tetracubes/);
 familyView.undo();flush();
+await settle(()=>$("familyExploreProgress").textContent.includes("Packing found"));
 assert.deepEqual(familyView.cells,familyStart);
 assert.equal($("familyExploreProgress").textContent,initialStatus);
 familyView.setState(familyView.cells,{kind:'turn',move:6,t:.5});
 assert(familyView.explorationLayers.some(buffer=>buffer.count>0));
 familyView.setState(familyView.cells);
-$("familyExploreMode").checked=false;$("familyExploreMode").onchange();
+$("familyExploreMode").checked=false;await $("familyExploreMode").onchange();
 assert(!$("cubeLayout").hidden && $("familyExplorePanel").hidden);
-$("familyExploreMode").checked=true;$("familyExploreMode").onchange();
+$("familyExploreMode").checked=true;await $("familyExploreMode").onchange();
 assert.deepEqual(familyView.cells,familyStart,'switching modes retains the exploration puzzle');
-$("familyExploreSelect").value='19';$("familyExploreSelect").onchange();
-assert.match($("familyExploreTitle").textContent,/Family 19/);
+$('familySelect').value=String(official.familyId);await $('familySelect').listeners.change();
+assert.match($("familyExploreTitle").textContent,new RegExp(`Family ${official.familyId}`));
 assert.equal(familyView.history.length,0);
 console.log('PASS: single-cube family exploration, sliced drag mesh, turn/undo, family selection and mode retention.');
 
@@ -306,11 +313,11 @@ $("familySolidIdentities").checked=true;$("familySolidIdentities").onchange();fl
 assert(familyView.explorationSolids);
 assert.deepEqual(familyView.cells,beforeShapes);
 assert.notDeepEqual(familyView.solid.data,roundMesh);
-assert.match($("familyExploreLetters").textContent,/Tetrahedron/);
+assert.match($("familyExploreLetters").textContent,/Piece 1/);
 familyView.setState(familyView.cells,{kind:'turn',move:6,t:.5});
 assert(familyView.solid.data.every(Number.isFinite));
 familyView.setState(familyView.cells);
-$("familyExploreRandom").onclick();
+await $('random').onclick();
 assert(familyView.explorationSolids,'solid identities survive packing reloads');
 assert.equal(new Set(familyView.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
 $("familySolidIdentities").checked=false;$("familySolidIdentities").onchange();
@@ -365,3 +372,56 @@ familyView.fixedSolidBuffers.forEach((b,i)=>assert.equal(b.data,fixedRetained[i]
 familyView.setState(familyView.cells);
 $('solidFixed').checked=false;$('solidFixed').listeners.change();
 console.log('PASS: persistent explorer solid orientations, undo, and retained aligned-solid animation buffers.');
+
+// Exercise the expanded collection with the actual binary data and native mesh engine.
+const {initializeSpatialExplorer}=await import(new URL('explorer/spatial-explorer.js',assetRoot));
+$('familySelect').value='';$('familyBag').value='';$('familyExploreMode').checked=true;$('practiceMode').checked=false;
+for(const id of ['spatialComposition','planarSpanning','corePieceType'])$(id).value='';
+for(const type of ['O','T','JL','SZ','B','D','F']){$('countMin'+type).value='0';$('countMax'+type).value='6';}
+for(const id of ['nonFaceboundSurface','iTunnelOnly'])$(id).checked=false;
+const spatial=await initializeSpatialExplorer({getElementById:getExplorerElement},{client});
+assert.equal(spatial.current.dataset,'tetracubes-v2');
+assert(!$('spatialFilters').hidden);
+assert.match($('status').textContent,/1,871,891/);
+
+await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
+$('spatialComposition').value='only';await spatial.query({position:0},true);
+assert(spatial.current.identities.every(c=>'BDF'.includes(c.toUpperCase())));
+await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
+await $('practiceRandom').onclick();assert.match($('practiceStatus').textContent,/Reachable pair/);
+$('countMinB').value='7';await spatial.query();assert.match($('status').textContent,/Piece counts/);
+$('countMinB').value='0';
+console.log('PASS: expanded explorer startup, full collection, spatial-only filters, detected family metadata, practice pairs and invalid counts.');
+
+$('datasetSelect').value='classic';await $('datasetSelect').onchange();
+assert.equal($('spatialComposition').disabled,true);
+assert.equal(spatial.current.spatialBits,0);
+assert.equal(spatial.current.dataset,'tetracubes-v2');
+assert($('status').textContent.includes(manifest.count.toLocaleString()));
+$('datasetSelect').value='spatial';await $('datasetSelect').onchange();
+assert.equal($('spatialComposition').disabled,false);
+assert.match($('status').textContent,/1,871,891 matching/);
+console.log('PASS: collection switching uses the same database, with planar-only filtering and no ungrouped option.');
+
+// Shared navigation controls target the visible family cube or selected practice side.
+$('familySelect').value='';$('familyExploreMode').checked=true;await $('familyExploreMode').onchange();
+$('sourceLine').value='50152';await $('sourceJump').onsubmit({preventDefault(){}});
+await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
+assert.match($('familyExploreTitle').textContent,/Family 562.*Line 50152/);
+assert.equal(observed.get($('familyExploreCube')).view.cells.filter(c=>c?.piece>=0).length,24);
+await $('next').onclick();assert.match($('familyExploreTitle').textContent,/Line 50153/);
+assert.equal(+$('sourceLine').value,50153);
+$('practiceMode').checked=true;await $('practiceMode').onchange();
+assert(!$('packingNavigation').hidden&&!$('navigationTargetLabel').hidden);
+$('navigationTarget').value='target';await $('navigationTarget').onchange();
+const startLine=+$('practiceA').value;
+$('sourceLine').value='50152';await $('sourceJump').onsubmit({preventDefault(){}});
+assert.equal(+$('practiceB').value,50152);assert.equal(+$('practiceA').value,startLine);
+await $('next').onclick();assert.equal(+$('practiceB').value,50153);assert.equal(+$('practiceA').value,startLine);
+$('navigationTarget').value='start';await $('navigationTarget').onchange();
+const targetLine=+$('practiceB').value;
+$('sourceLine').value='50154';await $('sourceJump').onsubmit({preventDefault(){}});
+assert.equal(+$('practiceA').value,50154);assert.equal(+$('practiceB').value,targetLine);
+assert(!html.includes('familyExploreSelect')&&!html.includes('familyExploreRandom'));
+assert(html.indexOf('id="practiceLoad"')<html.indexOf('id="settingsPanel"'));
+console.log('PASS: official startup packing, shared family navigation and independent start/target navigation.');

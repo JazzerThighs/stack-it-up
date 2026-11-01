@@ -67,7 +67,7 @@
               </div>
               <div id="forecastReplayBar" class="forecast-replay" hidden><span id="forecastReplayStatus" role="status"></span><button id="forecastStep">Next action</button><button id="forecastRestore">Restore starting puzzle</button><button id="forecastExit">Exit replay</button></div>
 <div class="stage-tools">
-                <span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
+                <span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
                 <button id="turnWidth" aria-pressed="false" title="Face turns: regular or two layers. Hold Shift while dragging for wide turns.">Regular turns</button>
                 <button id="resetView" title="Reset camera">↺ View</button
                 ><button
@@ -119,12 +119,12 @@
                   id="choice"
                   class="choice"
                   role="group"
-                  aria-label="Choose placement face"
+                  aria-label="Choose piece placement"
                   hidden
                 >
-                  <strong>Choose a face to place this piece</strong>
+                  <strong>Choose where to place this piece</strong>
                   <p>
-                    Highlighted face buttons place the piece without turning the
+                    Choose a highlighted face or spatial thumbnail. This places the piece without turning the
                     cube. Hover or focus to preview.
                   </p>
                   <div id="faceChoices"></div>
@@ -266,6 +266,12 @@
 </p>
 <p id="settingsRulesSummary" class="settings-summary">
 </p>
+<fieldset id="piecePoolOptions">
+<legend>Queue pieces</legend>
+<p class="muted">Choose pieces for the next new game. Spatial pieces are assembled around the core, never inside it.</p>
+<div><label><input type="checkbox" id="poolPiece1" checked /> O</label><label><input type="checkbox" id="poolPiece2" checked /> T</label><label><input type="checkbox" id="poolPiece3" checked /> L</label><label><input type="checkbox" id="poolPiece4" checked /> J</label><label><input type="checkbox" id="poolPiece5" checked /> S</label><label><input type="checkbox" id="poolPiece6" checked /> Z</label><label><input type="checkbox" id="poolPiece7" checked /> B — Branch</label><label><input type="checkbox" id="poolPiece8" checked /> D — Right screw</label><label><input type="checkbox" id="poolPiece9" checked /> F — Left screw</label></div>
+<p id="piecePoolNote" class="setting-reason">Confirm in New Game to apply this piece pool.</p>
+</fieldset>
 <p id="legacyRuleNote" class="muted" hidden>This shared puzzle uses older gameplay rules. Changing a gameplay option adopts the rules shown here and removes movement bandages.</p>
 <p id="gameplayValidation" role="status" class="setting-reason">
 </p>
@@ -282,7 +288,7 @@
 <option value="3">L</option>
 <option value="4">J</option>
 <option value="5">S</option>
-<option value="6">Z</option>
+<option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option>
 </select>
 <button id="applyCurrent" type="button">Set current piece</button>
 <label for="debugHeld">Hold pocket</label>
@@ -293,7 +299,7 @@
 <option value="3">L</option>
 <option value="4">J</option>
 <option value="5">S</option>
-<option value="6">Z</option>
+<option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option>
 </select>
 <button id="applyHeld" type="button">Set hold pocket</button>
 <p id="debugEditNote" class="muted">
@@ -746,7 +752,7 @@
 <label for="pieceColorS">S<input id="pieceColorS" type="color" aria-label="S piece color" />
 </label>
 <label for="pieceColorZ">Z<input id="pieceColorZ" type="color" aria-label="Z piece color" />
-</label>
+</label><label for="pieceColorB">B — Branch<input id="pieceColorB" type="color" aria-label="Branch piece color" /></label><label for="pieceColorD">D — Right screw<input id="pieceColorD" type="color" aria-label="Right screw piece color" /></label><label for="pieceColorF">F — Left screw<input id="pieceColorF" type="color" aria-label="Left screw piece color" /></label>
 </div>
 <button id="resetPieceColors" type="button">Reset colors</button>
 </fieldset>

@@ -2,8 +2,8 @@ import { CubeStack } from "../engine/coordinates.js";
 
 // Catalog identities are preserved by the proper rotation into renderer space.
 export const displayIdentity = identity => identity;
-export const CANONICAL_COLORS = {J:'b',L:'o',S:'g',Z:'r',O:'y',T:'m'};
-export const canonicalColor = identity => CANONICAL_COLORS[displayIdentity(identity)] || 'd';
+export const CANONICAL_COLORS = {J:'b',L:'o',S:'g',Z:'r',O:'y',T:'m',B:'B',D:'D',F:'F'};
+export const canonicalColor = identity => CANONICAL_COLORS[displayIdentity(identity)?.toUpperCase()] || 'd';
 
 export {packingPalette as PALETTE} from "../render/palette.js";
 export const cellsOf = (mask) =>

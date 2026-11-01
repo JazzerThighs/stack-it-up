@@ -19,6 +19,7 @@ pub struct Fragment {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct State {
+    pub piece_pool: u32,
     /// Versioned gameplay configuration; None preserves imported legacy rules.
     pub rules: Option<u32>,
     pub gravity_plane: Option<usize>,
@@ -66,6 +67,7 @@ pub struct State {
 impl State {
     pub fn empty(seed: u32) -> Self {
         Self {
+            piece_pool: 63,
             rules: None,
             gravity_plane: None,
             floating: vec![],
@@ -144,10 +146,10 @@ impl State {
             }
         }
     }
-    fn refill(&mut self) {
+    pub(super) fn refill(&mut self) {
         while self.queue.len() < 7 {
-            let mut bag = [1, 2, 3, 4, 5, 6];
-            for i in (1..6).rev() {
+            let mut bag:Vec<u8> = (1..=9).filter(|id|self.piece_pool & (1<<(id-1)) != 0).collect();
+            for i in (1..bag.len()).rev() {
                 let j = self.range((i + 1) as u32) as usize;
                 bag.swap(i, j);
             }
@@ -169,6 +171,7 @@ impl State {
             .iter()
             .filter(|p| p.mask & occupied == 0 && p.mask & self.active == p.mask)
             .copied()
+            .enumerate().map(|(i,mut p)|{if self.queue[0]>6 {p.face=6+i;}p})
             .collect()
     }
     pub fn release_fragments(&mut self) {
@@ -251,7 +254,7 @@ impl State {
             if let Some(p) = t.placements[piece].iter().find(|p| p.mask & blocked == 0) {
                 return SpawnDecision::Automatic {
                     mask: p.mask,
-                    tier: 0,
+                    tier: if piece < 6 {0} else {1},
                 };
             }
             for &(mask, tier) in &t.fallback[piece] {

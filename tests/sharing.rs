@@ -43,7 +43,7 @@ fn next_piece_changes_only_queue_and_is_undoable() {
     let active = g.state.active;
     let current = g.state.queue[0];
     assert!(!g.set_next_piece(0));
-    assert!(!g.set_next_piece(7));
+    assert!(!g.set_next_piece(10));
     assert!(g.set_next_piece(2));
     assert_eq!(g.state.queue[1], 2);
     assert_eq!(g.state.active, active);

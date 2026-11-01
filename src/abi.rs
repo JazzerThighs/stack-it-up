@@ -88,7 +88,7 @@ impl App {
         v[77] = s.last_clears.len() as u32;
         v[78] = self.game.pending.iter().fold(0, |m, p| m | 1 << p.face);
         for p in &self.game.pending {
-            if v[152 + p.face] == 0 {
+            if p.face < 6 && v[152 + p.face] == 0 {
                 v[152 + p.face] = p.mask;
             }
         }
@@ -371,3 +371,10 @@ pub extern "C" fn game_rules()->u32 {APP.with_borrow(|a|a.game.state.rules.unwra
 pub extern "C" fn game_debug_piece(held:u32,piece:u32)->u32 {
     APP.with_borrow_mut(|a| {let ok=a.game.debug_piece(held!=0,piece);a.sync();ok as u32})
 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn game_piece_pool()->u32 {APP.with_borrow(|a|a.game.state.piece_pool)}
+#[unsafe(no_mangle)]
+pub extern "C" fn game_set_piece_pool(pool:u32,redeal:u32)->u32 {APP.with_borrow_mut(|a|a.game.set_piece_pool(pool,redeal!=0) as u32)}
+#[unsafe(no_mangle)]
+pub extern "C" fn game_choice_mask(choice:u32)->u32 {APP.with_borrow(|a|a.game.pending.iter().find(|p|p.face==choice as usize).map_or(0,|p|p.mask))}

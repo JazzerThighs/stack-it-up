@@ -68,3 +68,23 @@ assert(engine.game_configure_rules(unifiedRules));const unifiedState=engine.expo
 assert(engine.importState(unifiedState));assert.equal(engine.game_rules(),unifiedRules);
 const unifiedForecast=run(engine,unifiedState,1,10000);assert.equal(unifiedForecast.status,'safe');
 console.log('PASS: queue forecast imports and searches unified gameplay rules with transport v4.');
+
+// Spatial pending choices must be enumerated beyond the original six face IDs.
+const {pieceByLetter}=await import('../web/engine/pieces.js');
+engine.game_init(65);assert(engine.game_configure_rules(3));assert(engine.game_set_piece_pool(448,true));
+assert(engine.game_debug_piece(0,7));
+const branch=pieceByLetter('B');let spatialPair;
+for(const a of branch.surfacePlacements)for(const b of branch.surfacePlacements) {
+ if(a===b)continue;const counts=[0,0,0];
+ for(let i=0;i<27;i++)if((a|b)&(1<<i))counts[[Math.floor(i/9),Math.floor(i/3)%3,i%3].filter(v=>v!==1).length-1]++;
+ if(counts.every((n,i)=>n<=branch.surfaceInventory[i]))spatialPair=[a,b];
+}
+assert(spatialPair);
+const spatialState=engine.exportState();spatialState[3]=spatialPair[0]|spatialPair[1];spatialState[19]=1;
+assert.equal(spatialState[1],5);assert(engine.importState(spatialState));
+const spatialForecast=run(engine,spatialState,1,1000);
+assert.equal(spatialForecast.status,'safe');assert.equal(spatialForecast.steps[0].method,'game_choose');
+assert(spatialForecast.steps[0].arg>=6);assert.equal(spatialForecast.finalState.at(-1),448);
+assert(engine.importState(spatialState));for(const step of spatialForecast.steps)assert(engine[step.method](step.arg));
+assert.equal(stateKey(engine.exportState()),stateKey(spatialForecast.finalState));
+console.log('PASS: spatial pending placements, custom pool and transport v5 forecast/replay.');

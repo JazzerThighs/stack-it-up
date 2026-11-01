@@ -20,6 +20,9 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
   $("setupDialog").addEventListener("close", restoreRules);
   $("setupCancel").onclick = () => { $("setupDialog").close(); restoreRules(); update(); };
   $("setupStart").onclick = async () => {
+    if(!Array.from({length:9},(_,i)=>$("poolPiece"+(i+1))).some(el=>el.checked)) {
+      $("piecePoolNote").textContent="Select at least one queue piece.";return;
+    }
     validateGameplay(document);
     $("setupDialog").close(); restoreRules(); started = true;
     await newGame();
@@ -36,7 +39,7 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
     const e = engine(), s = snapshot();
     const hex = v => (v >>> 0).toString(16).padStart(7, "0");
     const masks = {active:hex(s[54]), floating:hex(s[159]), rebuilding:hex(s[169]), stack:[]};
-    for (let color=1;color<=6;color++) masks.stack.push(hex(s.slice(0,27).reduce((m,c,i)=>c===color ? m | (1<<i) : m,0)));
+    for (let color=1;color<=9;color++) masks.stack.push(hex(s.slice(0,27).reduce((m,c,i)=>c===color ? m | (1<<i) : m,0)));
     $("stateText").value = JSON.stringify({format:"StackItUp-state", version:1, dimensions:[3,3,3], masks, words:e.exportState().map(hex), chooseNext:$("chooseNext").checked});
     $("stateStatus").textContent = "Copy this complete state, or paste a shared state to load. Loading can be undone.";
     $("stateDialog").showModal();

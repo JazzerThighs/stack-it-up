@@ -1,3 +1,5 @@
+import {pieces} from './engine/pieces.js';
+import {spatialPreview} from './ui/spatial-preview.js';
 import {initializeGameplay,readGameplay,writeGameplay,refreshGameplay} from './ui/gameplay-settings.js';
 import { createReplay } from './ui/forecast-replay.js';
 import { createForecast } from './ui/forecast.js';
@@ -21,7 +23,7 @@ import {
   layerOrder,
 } from "./ui/settings.js";
 const $ = (id) => document.getElementById(id);
-const names = ["", "O", "T", "L", "J", "S", "Z"];
+const names = ["", ...pieces.map(p=>p.letter)];
 
 const groups = {
   face: [0, 1, 2, 3, 5, 4],
@@ -50,8 +52,12 @@ function shape(el) {
   });
   return (piece) => {
     el.style.color = colors[piece];
+    const spatial=piece>6;
+    el.classList.toggle('spatial-shape',spatial);
+    el.style.backgroundImage=spatial?spatialPreview(pieces[piece-1].cells,colors[piece]):'';
+    el.title=pieces[piece-1]?.name || 'Empty';
     cells.forEach((c, i) =>
-      c.classList.toggle("filled", !!(state[134 + piece - 1] & (1 << i))),
+      c.classList.toggle("filled", piece>0 && piece<=6 && !!(state[134 + piece - 1] & (1 << i))),
     );
   };
 }
@@ -249,17 +255,17 @@ function update(message) {
     b.querySelector("span").textContent = n ? `${n} ✓` : "";
   });
   $("hint").textContent = state[S.PENDING_FACES]
-    ? "Choose a highlighted face, or undo to keep turning."
+    ? state[S.PIECE]>6 ? "Choose a spatial placement, or undo to keep turning." : "Choose a highlighted face, or undo to keep turning."
     : state[S.OVER]
       ? "Top out. Undo a turn or start a new game."
       : wins
         ? `${wins} winning turn${wins === 1 ? "" : "s"} available. Look for ✓ in any tab.`
         : "Keep turning. A ✓ will mark a move that places this piece.";
   $("message").textContent = state[S.PENDING_FACES]
-    ? "This piece fits more than one face. Choose where to place it."
+    ? "This piece has multiple placements. Choose where to place it."
     : state[S.OVER]
-      ? "Top out: no face, surface, or internal placement fits."
-      : message || `Build ${names[p]} on any free face.`;
+      ? state[S.PIECE]>6 ? "Top out: no non-core placement fits." : "Top out: no face, surface, or internal placement fits."
+      : message || (p>6 ? `Build ${names[p]} around the core.` : `Build ${names[p]} on any free face.`);
   for (let f = 0; f < 6; f++)
     for (let c = 0; c < 9; c++) {
       const i = state[80 + f * 9 + c],
@@ -293,6 +299,16 @@ function syncChoices() {
   faceButtons.forEach(
     (b, f) => (b.disabled = busy || !(state[S.PENDING_FACES] & (1 << f))),
   );
+  spatialButtons.forEach((b,i)=>{
+    const id=i+6, mask=engine.game_choice_mask(id);
+    b.hidden=!mask;b.disabled=busy||!mask;
+    if(mask) {
+      const cells=Array.from({length:27},(_,i)=>i).filter(i=>mask&(1<<i)).map(i=>[Math.floor(i/9),Math.floor(i/3)%3,i%3]);
+      b.style.backgroundImage=spatialPreview(cells,colors[state[S.PIECE]]);
+      b.title=`Placement ${i+1}; cells ${cells.map(p=>p.join(',')).join(' / ')}`;
+    }
+  });
+  faceButtons.forEach(b=>b.hidden=state[S.PIECE]>6);
   if (state[S.PENDING_FACES]) selectMode("face");
 }
 const faceButtons = faceLabels.map((label, f) => {
@@ -317,8 +333,19 @@ const faceButtons = faceLabels.map((label, f) => {
   $("faceChoices").append(b);
   return b;
 });
+const spatialButtons=Array.from({length:15},(_,i)=>{
+  const b=document.createElement('button');b.textContent=`${i+1}`;b.className='spatial-choice';b.hidden=true;
+  b.setAttribute('aria-label',`Place spatial piece in position ${i+1}`);
+  b.onclick=()=>choose(i+6);
+  const preview=()=>{renderers[0].preview=engine.game_choice_mask(i+6);renderers[0].setState(state);invalidate();};
+  const clear=()=>{renderers[0].preview=0;renderers[0].setState(state);invalidate();};
+  b.onpointerenter=preview;b.onfocus=preview;b.onpointerleave=clear;b.onblur=clear;
+  $('faceChoices').append(b);return b;
+});
+
 function setBusy(value) {
   busy = value;
+  spatialButtons.forEach(b=>b.disabled=value||b.hidden);
   refreshSettings();
   syncOverlayControls();
   moveButtons.forEach(
@@ -370,7 +397,7 @@ async function play(m, fromT = 0) {
     syncChoices();
     invalidate();
   }
-  if (state[S.PENDING_FACES]) faceButtons.find((b) => !b.disabled)?.focus();
+  if (state[S.PENDING_FACES]) [...faceButtons,...spatialButtons].find((b) => !b.disabled && !b.hidden)?.focus();
 }
 async function lockBand(cell) {
   if (!engine || busy || !context.lockMode || state[S.OVER] || state[S.PENDING_FACES]) return;
@@ -465,6 +492,8 @@ async function newGame() {
     +$("rebuildMode").value,
   );
   engine.game_configure_rules(chosenRules);
+  const chosenPool=pieces.reduce((m,p)=>m|($("poolPiece"+p.id).checked ? 1<<(p.id-1):0),0);
+  engine.game_set_piece_pool(chosenPool,true);
   if(chosenRules&1){if(chosenCurrent)engine.game_debug_piece(0,chosenCurrent);engine.game_debug_piece(1,chosenHeld);}
   update();
   setBusy(true);

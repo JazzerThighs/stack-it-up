@@ -16,7 +16,7 @@ export async function mountExplorer(host) {
     root.replaceChildren(css, layout, app);
     host.textContent = '';
     const { initializeExplorer } = await import('./script.js');
-    await initializeExplorer(root);
+    await initializeExplorer(root,{dataset:new URLSearchParams(globalThis.location?.search || "").get("packings")==="classic"?"classic":"spatial"});
   })().catch(error => {
     host.explorerReady = null;
     if (host.shadowRoot) host.shadowRoot.textContent = error.message + ". Switch back to the game and retry.";

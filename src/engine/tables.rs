@@ -8,12 +8,12 @@ pub struct Placement {
 pub struct Tables {
     /// Connected nonplanar tetracubes: both screws and the branch.
     pub tetracubes: Vec<u32>,
-    pub placements: [Vec<Placement>; 6],
+    pub placements: [Vec<Placement>; 9],
     /// Non-facebound planar placements, ordered surface-only then core-containing.
-    pub fallback: [Vec<(u32, u8)>; 6],
+    pub fallback: [Vec<(u32, u8)>; 9],
     /// All legal inventories, sorted by minimum separation then total separation.
-    pub spawns: [Vec<(u32, u32)>; 6],
-    pub inventory: [(usize, usize); 6],
+    pub spawns: [Vec<(u32, u32)>; 9],
+    pub inventory: [(usize, usize); 9],
     pub faces: [u32; 6],
     pub edges: u32,
     pub corners: u32,
@@ -30,7 +30,11 @@ impl Tables {
         let edges = (0..27).filter(|&i| kind(i) == 2).fold(0, |m, i| m | 1 << i);
         let corners = (0..27).filter(|&i| kind(i) == 3).fold(0, |m, i| m | 1 << i);
         let faces = std::array::from_fn(|f| (0..9).fold(0, |m, i| m | 1 << cell(f, i % 3, i / 3)));
-        let placements = std::array::from_fn(|piece| {
+        let placements: [Vec<Placement>;9] = std::array::from_fn(|piece| {
+            if piece >= 6 {
+                return crate::pieces::PIECES[piece].surface_placements.iter()
+                    .map(|&mask|Placement{face:6,mask,required:mask}).collect();
+            }
             let mut out: Vec<Placement> = Vec::new();
             let mut s = SHAPES[piece];
             for _ in 0..4 {
@@ -78,16 +82,18 @@ impl Tables {
                     .unwrap(),
             )
         });
-        let fallback = std::array::from_fn(|piece| spatial_placements(piece, &faces));
+        let fallback = std::array::from_fn(|piece| if piece < 6 { spatial_placements(piece, &faces) } else { vec![] });
         let spawns = std::array::from_fn(|piece| {
             let (ne, nc) = inventory[piece];
+            let ns = if piece < 6 {1} else {crate::pieces::PIECES[piece].surface_inventory[0]};
+            let center_sets = combinations(centers, ns);
             let es = combinations(edges, ne);
             let cs = combinations(corners, nc);
             let mut all = Vec::new();
             for &e in &es {
                 for &c in &cs {
-                    for center in bits(centers) {
-                        let mask = e | c | (1 << center);
+                    for &center_mask in &center_sets {
+                        let mask = e | c | center_mask;
                         all.push((mask, separation(mask)));
                     }
                 }
@@ -125,15 +131,11 @@ impl Tables {
                 idx(p)
             })
         });
-        // Enumerate once, outside move previews and exact-cover searches.
-        let mut tetracubes = Vec::new();
-        for a in 0..24 { for b in a+1..25 { for c in b+1..26 { for d in c+1..27 {
-            let cells=[a,b,c,d];
-            let mask=cells.iter().fold(0,|m,&i|m|1<<i);
-            if (0..3).all(|axis|cells.iter().any(|&i|xyz(i)[axis]!=xyz(a)[axis])) && State::connected(mask) {
-                tetracubes.push(mask);
-            }
-        }}}}
+        // Shared precomputed spatial catalog; reconstruction accepts all three types.
+        let mut tetracubes: Vec<u32> = crate::pieces::PIECES.iter()
+            .filter(|p| p.spatial).flat_map(|p| p.placements.iter().copied()).collect();
+        tetracubes.sort_unstable();
+        tetracubes.dedup();
         Self {
             tetracubes,
             placements,
@@ -164,7 +166,7 @@ pub enum SpawnDecision {
 }
 
 /// Lexicographic maximin squared Euclidean distance, then sum of pair distances.
-/// At most five active cubies: the pair sum is below 256.
+/// At most six active cubies: the pair sum is below 256.
 pub fn separation(mask: u32) -> u32 {
     let points = bits(mask).map(xyz).collect::<Vec<_>>();
     let mut minimum = 12;
