@@ -36,6 +36,7 @@ jobs:
           node tests/packing-data.mjs
           node tests/packing-performance.mjs
           node tests/explorer-model.mjs
+          node tests/official-presentation.mjs
           node tests/explorer-smoke.mjs
           node tests/family-exploration.mjs
           node tests/version-build.mjs

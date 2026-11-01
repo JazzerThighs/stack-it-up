@@ -208,3 +208,42 @@ button.primary { background:var(--accent);color:#142724; }
 .packing-picker-content small { display:block; }
 #practiceNavigation { padding:.7rem; border-top:1px solid #52646c; }
 .packing-picker-content select,.packing-picker-content input { min-width:0; max-width:100%; }
+
+/* Cube-first workspace: modes live in Settings; tabs belong to the viewport. */
+.app { grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); min-height:0; }
+.app > .toolbar { grid-column:1; grid-row:1; min-height:46px; padding-right:112px; }
+.navigation { align-items:center; }
+.packing-picker > summary { white-space:nowrap; }
+.settings .explorer-modes { flex-shrink:0; }
+.settings .practice-toggle { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0; font-size:14px; }
+.settings .practice-toggle label { display:flex; align-items:center; gap:8px; padding:10px; min-height:44px; border:1px solid var(--border); background:#192a30; }
+.app > #familyExplorePanel,.app > #practicePanel,.app > .cube-layout,.app > .cube-layout[data-views] { grid-row:2; grid-column:1; min-height:0; }
+#practicePanel { overflow:hidden; border:1px solid var(--border); border-radius:16px; background:radial-gradient(ellipse at center,#263e46,#111b20 75%); }
+#practicePanel .practice-cubes { display:grid; height:100%; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:minmax(0,1fr); gap:0; }
+#practicePanel .cube-card { background:none; border:0; border-radius:0; margin:0; }
+#practicePanel .cube-card h2 { top:64px; font-size:12px; }
+.practice-view-tabs,.cube-layout > .view-tabs { position:absolute; top:10px; left:10px; z-index:6; display:flex; gap:5px; margin:0; }
+.practice-view-tabs button,.cube-layout > .view-tabs button { flex:none; min-height:40px; padding:7px 14px; background:#17282dee; font-size:14px; }
+.practice-view-tabs button[aria-pressed="true"],.view-tabs button[aria-pressed="true"] { background:#9ce5cc; color:#142724; border-color:#9ce5cc; }
+#practiceProgress { top:14px; right:12px; max-width:45%; font-size:12px; }
+.cube-layout { position:relative; }
+.cube-layout > .view-tabs { display:none; grid-area:auto; }
+@media(max-width:760px) {
+ .app { grid-template-rows:auto minmax(0,1fr); }
+ #practicePanel .practice-cubes { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+ #practicePanel[data-active="start"] #practiceTargetPanel,
+ #practicePanel[data-active="target"] #practiceStartPanel { display:none!important; }
+ .cube-layout > .view-tabs { display:flex; }
+ .cube-layout .cube-card h2 { top:60px; }
+ .cube-layout .packing-overlay { top:88px; }
+ .cube-layout #playSolution { top:88px; }
+ .cube-layout .scramble-details { top:130px; }
+ .settings .practice-toggle { grid-template-columns:1fr; }
+ .packing-picker > summary { padding:6px; font-size:14px; }
+ #practicePanel .packing-actions { bottom:8px; left:8px; right:8px; }
+}
+@media(max-width:380px) {
+ .app > .toolbar { padding-right:100px; }
+ #practiceProgress { top:58px; max-width:65%; }
+ #practicePanel .cube-card h2 { top:86px; }
+}

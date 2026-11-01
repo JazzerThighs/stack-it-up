@@ -16,7 +16,7 @@
             ><button id="random" class="primary">Random</button
             ><button id="next" aria-label="Next packing">→</button>
           </div>
-          <label id="navigationTargetLabel" hidden>Change cube<select id="navigationTarget"><option value="start">Start</option><option value="target">Target</option></select></label>
+
             <details class="packing-picker">
               <summary>Choose packing</summary>
 <div class="packing-picker-content">
@@ -45,7 +45,7 @@
             ><span id="jumpStatus" role="status"></span>
           </form>
 </div>
-        <div id="practiceNavigation" hidden><form id="practiceLoad" class="practice-controls">
+        <div id="practiceNavigation" hidden>          <label id="navigationTargetLabel" hidden>Change cube<select id="navigationTarget"><option value="start">Start</option><option value="target">Target</option></select></label><form id="practiceLoad" class="practice-controls">
           <label
             >Start source line
             <input id="practiceA" type="number" min="1" required
@@ -159,6 +159,14 @@
             </fieldset>
             </div>
             </details>
+<fieldset class="explorer-modes"><legend>Explorer mode</legend>      <div class="practice-toggle">
+          <label><input id="familyExploreMode" type="checkbox" checked /> Family exploration</label>
+        <label
+          ><input id="practiceMode" type="checkbox" /> Two-packing
+          practice</label
+        ><span>Turn the start cube into the target.</span>
+      </div>
+</fieldset>
             <details class="explorer-setting-section">
               <summary><span>Appearance &amp; views<small>Colors, visible cubes, and transparency</small></span></summary>
               <div class="explorer-section-body"><div class="control-groups">
@@ -229,13 +237,6 @@
         ><textarea id="packingData"></textarea
         ><button id="loadPackings">Load packing list</button>
       </section>
-      <div class="practice-toggle">
-          <label><input id="familyExploreMode" type="checkbox" checked /> Family exploration</label>
-        <label
-          ><input id="practiceMode" type="checkbox" /> Two-packing
-          practice</label
-        ><span>Turn the start cube into the target.</span>
-      </div>
       <section id="familyExplorePanel" class="cube-card" hidden aria-label="Family exploration">
           <h2 id="familyExploreTitle">Family exploration</h2>
           <div id="familyExploreCube" class="cube"></div>
@@ -248,24 +249,25 @@
             </div>
           </details>
         </section>
-        <section id="practicePanel" hidden>
+        <section id="practicePanel" data-active="start" hidden>
+<nav class="practice-view-tabs" aria-label="Practice cube"><button id="practiceViewStart" aria-pressed="true">Start</button><button id="practiceViewTarget" aria-pressed="false">Target</button></nav>
 <div class="practice-cubes">
-          <section class="cube-card">
+          <section class="cube-card" id="practiceStartPanel">
             <h2 id="practiceLeftTitle">Start</h2>
             <div id="practiceLeft" class="cube"></div>
           </section>
-          <section class="cube-card">
+          <section class="cube-card" id="practiceTargetPanel">
             <h2 id="practiceRightTitle">Target</h2>
             <div id="practiceRight" class="cube"></div>
           </section>
         </div>
         <p id="practiceProgress" role="status"></p>
       </section>
-      <nav id="viewTabs" class="view-tabs" aria-label="Cube view">
+      <div id="cubeLayout" class="cube-layout">      <nav id="viewTabs" class="view-tabs" aria-label="Cube view">
         <button id="viewSolved" aria-pressed="true">Target cube</button
         ><button id="viewScrambled" aria-pressed="false">Scrambled cube</button>
       </nav>
-      <div id="cubeLayout" class="cube-layout">
+
         <p id="emptyView" class="empty-view" hidden>
           All cube views are hidden. Enable a view in Display to continue
           exploring.

@@ -55,3 +55,7 @@ Spatial rendering regression tests cover surface/core B/D/F meshes in all six st
 ## Official startup and shared navigation
 
 Family Explorer starts from tetracubes-v2 line 50152, family 562 (the official JZLSOT packing), without replacing it with a random family member. Every explorer mode uses the same Previous / Random / Next toolbar and Choose packing panel for family filtering, skips and source-line jumps. In two-packing mode, Change cube selects whether those controls replace Start or Target. Pair loading, random same-family pairs and swapping are in that same panel. Mode switches retain the current family puzzle unless the selected source packing changes.
+
+## Explorer color modes
+
+All displayed packing modes share one presentation policy. Family 562 is aligned to the official reference and assigns each physical piece its reference color: T purple, F-center owner yellow, R-center owner red, B-center owner orange, L-center owner green, the extra D center black, and the remaining piece blue. Official mode fixes these physical colors through Family Explorer turns, including when a group forms a different valid shape. Outside family 562, Official falls back to canonical shape colors with duplicates allowed. Canonical mode recolors completed shapes; Multicolor retains distinct physical-piece colors. Changing color mode updates family/practice meshes and undo states without resetting moves.

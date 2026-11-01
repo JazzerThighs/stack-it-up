@@ -425,3 +425,35 @@ assert.equal(+$('practiceA').value,50154);assert.equal(+$('practiceB').value,tar
 assert(!html.includes('familyExploreSelect')&&!html.includes('familyExploreRandom'));
 assert(html.indexOf('id="practiceLoad"')<html.indexOf('id="settingsPanel"'));
 console.log('PASS: official startup packing, shared family navigation and independent start/target navigation.');
+
+const practiceStartView=observed.get($('practiceLeft')).view;
+await practiceStartView.play(0);
+const retainedPracticeCells=structuredClone(practiceStartView.cells),retainedPracticeHistory=practiceStartView.history.length;
+await $('practiceViewTarget').onclick();
+assert.equal($('practicePanel').dataset.active,'target');assert.equal($('navigationTarget').value,'target');
+await $('practiceViewStart').onclick();
+assert.equal($('practicePanel').dataset.active,'start');assert.equal($('navigationTarget').value,'start');
+assert(html.indexOf('id="familyExploreMode"')>html.indexOf('id="settingsPanel"'));
+assert(html.indexOf('id="familyExploreMode"')<html.indexOf('id="familyExplorePanel"'));
+assert(html.indexOf('id="practiceViewStart"')>html.indexOf('id="practicePanel"'));
+assert(html.indexOf('id="viewTabs"')>html.indexOf('id="cubeLayout"'));
+assert.equal(observed.get($('practiceLeft')).view.fitScale,5.2);
+console.log('PASS: settings-only mode controls, in-viewport practice switching and larger practice framing.');
+
+assert.deepEqual(practiceStartView.cells,retainedPracticeCells);assert.equal(practiceStartView.history.length,retainedPracticeHistory);
+console.log('PASS: viewport switches preserve the in-progress practice puzzle.');
+
+// Palette changes reach the live family renderer without resetting moves or poses.
+$('familyExploreMode').checked=true;await $('familyExploreMode').onchange();
+$('sourceLine').value='50152';await $('sourceJump').onsubmit({preventDefault(){}});
+$('officialColors').onchange();
+const officialFamilyView=observed.get($('familyExploreCube')).view;
+assert(officialFamilyView.fixedPieceColors);
+await officialFamilyView.play(0);
+const officialOwners=officialFamilyView.cells.map(c=>c.piece),officialHistory=officialFamilyView.history.length;
+$('canonicalColors').onchange();assert(!officialFamilyView.fixedPieceColors);
+$('officialColors').onchange();assert(officialFamilyView.fixedPieceColors);
+assert.deepEqual(officialFamilyView.cells.map(c=>c.piece),officialOwners);
+assert.equal(officialFamilyView.history.length,officialHistory);
+for(const c of officialFamilyView.cells)if(c.piece>=0)assert.equal(c.color,'brogym'[c.piece]);
+console.log('PASS: color-mode changes update live family rendering and preserve turn history.');

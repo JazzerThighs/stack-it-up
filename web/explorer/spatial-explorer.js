@@ -1,3 +1,4 @@
+import {packingPresentation} from './presentation.js';
 import {createPackingClient} from './data-client.js';
 import {createEngine} from '../engine/wasm.js';
 import {createExplorerViews} from './views.js';
@@ -31,6 +32,7 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
     return p;
   }
   const provider={
+    presentation:p=>packingPresentation(p,colorMode()),
     record:async id=>remember(await client.record(id)),lookup:(f,m)=>client.lookup(f,m),
     randomPair:async()=>{const pair=await client.pair(filters());return pair?.map(remember);},
     selectionChanged:async p=>{if(p)await query({line:p.lineNumber},false,false);},
@@ -46,33 +48,8 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
   }
   options($('familyBag'),info.bags.map(b=>[b,b]),'All identity bags');
   $('familyBag').disabled=false;
-  function colors(p) {
-    const result=Array(27).fill('w');if(p.extras&(1<<13))result[13]='l';
-    const center=cellsOf(p.extras).find(i=>[Math.floor(i/9),Math.floor(i/3)%3,i%3].filter(v=>v!==1).length===1);
-    if(center!==undefined)result[center]='k';
-    if($('officialColors').checked&&p.familyId===info.officialFamily) {
-      const extras=((1<<27)-1)^OFFICIAL_MASKS.reduce((a,b)=>a|b,0),pair=practicePair({masks:OFFICIAL_MASKS,extras},p);
-      if(pair.compatible) {
-        // Practice pairing rotates the target. Render its matching physical colors
-        // in that same aligned orientation, not against unrotated catalog masks.
-        return null;
-      }
-    }
-    p.masks.forEach((m,i)=>cellsOf(m).forEach(c=>result[c]=$('positionalColors').checked?'bymogr'[i]:canonicalColor(p.identities[i])));
-    return result;
-  }
-  function displayPacking(p) {
-    let palette=colors(p);if(palette)return [p,palette];
-    const extras=((1<<27)-1)^OFFICIAL_MASKS.reduce((a,b)=>a|b,0),pair=practicePair({masks:OFFICIAL_MASKS,extras},p);
-    const masks=Array(6).fill(0),cellColors=Array(27).fill('w');
-    for(let i=0;i<27;i++) {
-      const cell=pair.right[displayIndex(i)];
-      if(cell.piece>=0){masks[cell.piece]|=1<<i;cellColors[i]='brogym'['bymogr'.indexOf(cell.color)];}
-      else cellColors[i]=i===13?'l':'w';
-    }
-    const ex=((1<<27)-1)^masks.reduce((a,b)=>a|b,0),black=cellsOf(ex).find(i=>[Math.floor(i/9),Math.floor(i/3)%3,i%3].filter(v=>v!==1).length===1);
-    if(black!==undefined)cellColors[black]='k';return [{...p,masks,extras:ex},cellColors];
-  }
+  function colorMode(){return $('officialColors').checked?'official':$('positionalColors').checked?'multicolor':'canonical';}
+  function displayPacking(p) {const shown=packingPresentation(p,colorMode());return [shown.packing,shown.palette];}
   function paint() {
     if(!current)return;
     const [display,palette]=displayPacking(current);
@@ -142,7 +119,7 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
     }catch(e){$('jumpStatus').textContent=e.message;}
   };
   $('exploreFamily').onclick=()=>{if(current){$('familySelect').value=String(current.familyId);return query({line:current.lineNumber},true);}};
-  for(const id of ['canonicalColors','officialColors','positionalColors'])$(id).onchange=()=>{for(const other of ['canonicalColors','officialColors','positionalColors'])$(other).checked=other===id;paint();};
+  for(const id of ['canonicalColors','officialColors','positionalColors'])$(id).onchange=()=>{for(const other of ['canonicalColors','officialColors','positionalColors'])$(other).checked=other===id;paint();views.refreshColors();};
   $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify({dataset:info.dataset,version:info.version,line:current.lineNumber,code:current.code}));$('status').textContent='Packing reference copied.';}catch{$('status').textContent='Select and copy the packing code above.';}};
   for(const [id,value]of [['viewSolved','solved'],['viewScrambled','scrambled']])$(id).onclick=()=>{active=value;paint();};
   for(const id of ['showSolved','showScrambled'])$(id).onchange=paint;

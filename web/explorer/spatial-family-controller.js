@@ -27,12 +27,20 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     ++generation;++lookupGeneration;source=p;family=p.familyId;
     $('familyExploreTitle').textContent=`Family ${family} · Line ${p.lineNumber}`;
     view=get('familyExploreCube',{onChange:changed});view.familyExploration=true;
-    view.explorationSolids=$('familySolidIdentities').checked;view.setCells(familyPackingCells(source));
+    view.explorationSolids=$('familySolidIdentities').checked;const shown=data.presentation(source);view.fixedPieceColors=shown.fixed;view.setCells(shown.cells);
+  }
+  function refreshColors() {
+    if(!view||!source)return;
+    const shown=data.presentation(source),byId=new Map(shown.cells.filter(c=>c.piece>=0).map(c=>[c.piece,c.color]));
+    const recolor=cells=>cells.map(c=>c.piece<0?c:Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(c),color:{value:byId.get(c.piece),writable:true,enumerable:true,configurable:true}}));
+    view.fixedPieceColors=shown.fixed;view.cells=recolor(view.cells);view.initial=recolor(view.initial);
+    for(const h of view.history)h.cells=recolor(h.cells);
+    view.setState(view.cells,view.currentAnimation);
   }
   function enter() {if(!source||source.lineNumber!==getSelected()?.lineNumber)load(getSelected());}
   $('familySolidIdentities').onchange=()=>{
     try{localStorage.setItem('stack-it-up.family-solids',String($('familySolidIdentities').checked));}catch{}
     if(view){view.explorationSolids=$('familySolidIdentities').checked;view.setState(view.cells,view.currentAnimation);changed(view);}
   };
-  return {enter,load,refresh(){if($('familyExploreMode').checked)load(getSelected());}};
+  return {enter,load,refreshColors,refresh(){if($('familyExploreMode').checked)load(getSelected());}};
 }

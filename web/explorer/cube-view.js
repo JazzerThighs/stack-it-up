@@ -124,10 +124,10 @@ export class PackingCube extends Renderer {
     this.currentAnimation = animation;
     const out = [];
     if (this.familyExploration && this.meshGenerator) {
-      const signature=JSON.stringify([cells,cells.map(c=>c?.solidRotation),this.appearance,this.explorationSolids,this.explorationGray,solidStyleKey(),PALETTE]);
+      const signature=JSON.stringify([cells,cells.map(c=>c?.solidRotation),this.appearance,this.explorationSolids,this.explorationGray,this.fixedPieceColors,solidStyleKey(),PALETTE]);
       if(signature!==this.explorationSignature) {
         this.explorationSignature=signature;
-        this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.appearance,this.explorationSolids,this.explorationGray);
+        this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.appearance,this.explorationSolids,this.explorationGray,this.fixedPieceColors);
         const fixed=visualSettings.solidFixed;
         if(fixed) {
           this.fixedSolidBuffers ??= Array.from({length:27},()=>this.buffer());
