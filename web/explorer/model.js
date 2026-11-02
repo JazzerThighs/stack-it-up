@@ -2,8 +2,8 @@ import { CubeStack } from "../engine/coordinates.js";
 
 // Catalog identities are preserved by the proper rotation into renderer space.
 export const displayIdentity = identity => identity;
-export const CANONICAL_COLORS = {J:'b',L:'o',S:'g',Z:'r',O:'y',T:'m'};
-export const canonicalColor = identity => CANONICAL_COLORS[displayIdentity(identity)] || 'd';
+export const CANONICAL_COLORS = {J:'b',L:'o',S:'g',Z:'r',O:'y',T:'m',B:'B',D:'D',F:'F'};
+export const canonicalColor = identity => CANONICAL_COLORS[displayIdentity(identity)?.toUpperCase()] || 'd';
 
 export {packingPalette as PALETTE} from "../render/palette.js";
 export const cellsOf = (mask) =>
@@ -130,7 +130,7 @@ export function practicePair(source, target) {
   sourceGroups.forEach((cells, id) =>
     cells.forEach((i) => (colors[i] = "bymogr"[id])),
   );
-  const left = packingCells(source, colors);
+  const left = packingCells(source, source.cellColors||colors);
   for (const rotation of ROTATIONS) {
     if (descriptor(cellsOf(target.extras).map((i) => rotation[i])) !== extras)
       continue;
@@ -150,11 +150,12 @@ export function practicePair(source, target) {
       color: i === 13 ? "l" : "w",
       piece: -1,
     }));
+    if(target.cellColors)for(let i=0;i<27;i++)right[displayIndex(rotation[i])].color=target.cellColors[i];
     targetGroups.forEach((group, k) =>
       group.forEach(
         (i) =>
           (right[displayIndex(rotation[i])] = {
-            color: "bymogr"[mapping[k]],
+            color: target.cellColors?.[i] || "bymogr"[mapping[k]],
             piece: mapping[k],
           }),
       ),
@@ -166,7 +167,7 @@ export function practicePair(source, target) {
   targetGroups.forEach((cells, id) =>
     cells.forEach((i) => (targetColors[i] = "bymogr"[id])),
   );
-  return { left, right: packingCells(target, targetColors), compatible: false };
+  return { left, right: packingCells(target, target.cellColors||targetColors), compatible: false };
 }
 export function matchesTarget(cells, target) {
   return ROTATIONS.some((rotation) =>

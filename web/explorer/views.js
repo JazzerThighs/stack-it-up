@@ -11,16 +11,13 @@ import {
   turn,
   practicePair,
   matchesTarget,
-  randomFamilyPair,
 } from "./model.js";
 
 
 export function createExplorerViews({
   root = document,
   meshGenerator,
-  getPackings,
-  getChoices,
-  getFamilies,
+  data,
 }) {
   const $ = id => root.getElementById(id);
   const cubes = new Map();
@@ -42,7 +39,7 @@ export function createExplorerViews({
   const get = (id, options = {}) => {
     if (!cubes.has(id)) {
       const view = new PackingCube($(id), options);
-      view.fitScale = 6.0;
+      view.fitScale = id==='practiceLeft'||id==='practiceRight'?5.2:6.0;
       view.appearance = $("pieceAppearance").value || "jelly";
       view.perspective = $("explorerCamera").value !== "orthographic";
       view.meshGenerator = meshGenerator;
@@ -158,13 +155,11 @@ export function createExplorerViews({
     }
     sourcePacking = a;
     targetPacking = b;
-    const pair = practicePair(a, b);
+    const pair = practicePair(data.presentation(a).packing, data.presentation(b).packing);
     targetCells = pair.right;
     $("practiceA").value = a.lineNumber;
     $("practiceB").value = b.lineNumber;
-    const family = getFamilies().get(a.lineNumber)?.family.id,
-      same =
-        family != null && family === getFamilies().get(b.lineNumber)?.family.id;
+    const family=a.familyId, same=family!=null&&family===b.familyId;
     $("practiceStatus").textContent = pair.compatible
       ? `Reachable pair${same ? ` · Family ${family}` : ""}. Colors follow physical pieces; their letter shapes may change.`
       : "Comparison only: these packings do not share the same physical piece and center configuration. A turn sequence is not guaranteed.";
@@ -174,56 +169,78 @@ export function createExplorerViews({
     get("practiceRight", { readOnly: true }).setCells(pair.right);
     updatePractice();
   }
-  $("practiceLoad").onsubmit = (e) => {
+  $("practiceLoad").onsubmit = async e => {
     e.preventDefault();
-    const packings = getPackings();
-    loadPair(
-      packings.find((p) => p.lineNumber === Number($("practiceA").value)),
-      packings.find((p) => p.lineNumber === Number($("practiceB").value)),
-    );
+    try {loadPair(await data.record(+$("practiceA").value),await data.record(+$("practiceB").value));await syncSelection();}
+    catch(e){$('practiceStatus').textContent=e.message;}
   };
-  $("practiceRandom").onclick = () => {
-    const packings = getPackings(),
-      pair = randomFamilyPair(
-        getChoices().map((i) => packings[i]),
-        getFamilies(),
-      );
-    if (pair) loadPair(...pair);
-    else
-      $("practiceStatus").textContent =
-        "No family has two matching packings. Broaden the explorer filters and try again.";
+  $("practiceRandom").onclick = async () => {
+    try {const pair=await data.randomPair();if(pair){loadPair(...pair);await syncSelection();}else $('practiceStatus').textContent='No family has two matching packings. Broaden the filters.';}
+    catch(e){$('practiceStatus').textContent=e.message;}
   };
-  $("practiceUseSelected").onclick = () => {
-    if (selected) $("practiceA").value = selected.lineNumber;
+  $("practiceSwap").onclick = async () => {
+    if (sourcePacking && targetPacking) {loadPair(targetPacking, sourcePacking);await syncSelection();}
   };
-  $("practiceUseTarget").onclick = () => {
-    if (selected) $("practiceB").value = selected.lineNumber;
-  };
-  $("practiceSwap").onclick = () => {
-    if (sourcePacking && targetPacking) loadPair(targetPacking, sourcePacking);
-  };
-  const familyExplorer=createFamilyExplorer({$,get,getPackings,getFamilies,getSelected:()=>selected});
-  function updateMode() {
+  const familyExplorer=createFamilyExplorer({$,get,getSelected:()=>selected,data});
+  async function syncSelection() {return data.selectionChanged?.($('navigationTarget').value==='target'?targetPacking:sourcePacking);}
+  async function selectPracticeView(value) {
+    $('navigationTarget').value=value;
+    $('practicePanel').dataset.active=value;
+    $('practiceViewStart').setAttribute('aria-pressed',String(value==='start'));
+    $('practiceViewTarget').setAttribute('aria-pressed',String(value==='target'));
+    for(const id of ['practiceLeft','practiceRight'])cubes.get(id)?.invalidate();
+    await syncSelection();
+  }
+  $('navigationTarget').onchange=()=>selectPracticeView($('navigationTarget').value);
+  $('practiceViewStart').onclick=()=>selectPracticeView('start');
+  $('practiceViewTarget').onclick=()=>selectPracticeView('target');
+  async function navigate(p) {
+    if($('familyExploreMode').checked)familyExplorer.load(p);
+    else if($('practiceMode').checked) {
+      if($('navigationTarget').value==='target')loadPair(sourcePacking||p,p);
+      else loadPair(p,targetPacking||p);
+    }
+  }
+  async function updateMode() {
     const family=$("familyExploreMode").checked, practice=$("practiceMode").checked;
     $("familyExplorePanel").hidden=!family;
     $("practicePanel").hidden=!practice;
     $("cubeLayout").hidden=family || practice;
-    $("packingNavigation").hidden=family;
+    $('packingNavigation').hidden=false;
+    $('practiceNavigation').hidden=!practice;
+    $('navigationTargetLabel').hidden=!practice;
     $("viewTabs").style.display=family || practice ? "none" : "";
-    if(family) familyExplorer.enter();
+    if(family) await familyExplorer.enter();
     if(practice && !sourcePacking) {
       $("practiceA").value=selected?.lineNumber || "";
-      $("practiceRandom").onclick();
+      loadPair(selected,selected);
     }
+    if(practice)await selectPracticeView($('navigationTarget').value==='target'?'target':'start');
     for(const cube of cubes.values()) cube.invalidate();
   }
   $("familyExploreMode").onchange=()=>{
     if($("familyExploreMode").checked) $("practiceMode").checked=false;
-    updateMode();
+    return updateMode();
   };
   $("practiceMode").onchange=()=>{
     if($("practiceMode").checked) $("familyExploreMode").checked=false;
-    updateMode();
+    return updateMode();
   };
-  return { showCube, showPieces, hide, startMode:updateMode };
+  return { showCube, showPieces, hide, navigate, refreshColors(){
+    familyExplorer.refreshColors();
+    if(sourcePacking&&targetPacking) {
+      const pair=practicePair(data.presentation(sourcePacking).packing,data.presentation(targetPacking).packing);
+      const recolor=(cells,reference)=>{
+        const ids=new Map(reference.filter(c=>c.piece>=0).map(c=>[c.piece,c.color]));
+        return cells.map(c=>c.piece<0?c:Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(c),color:{value:ids.get(c.piece),writable:true,enumerable:true,configurable:true}}));
+      };
+      for(const [id,reference]of [['practiceLeft',pair.left],['practiceRight',pair.right]]) {
+        const cube=cubes.get(id);if(!cube)continue;
+        cube.cells=recolor(cube.cells,reference);cube.initial=recolor(cube.initial,reference);
+        for(const h of cube.history)h.cells=recolor(h.cells,reference);
+        cube.setState(cube.cells,cube.currentAnimation);
+      }
+      targetCells=cubes.get('practiceRight').cells;updatePractice();
+    }
+  }, startMode:updateMode, refreshFamily:()=>familyExplorer.refresh?.() };
 }

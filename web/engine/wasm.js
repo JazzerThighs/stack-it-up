@@ -11,6 +11,7 @@ export async function createEngine(options) {
   return adaptEngine(instance.exports,options);
 }
 export function adaptEngine(w,{trackSolids=true}={}) {
+  if (typeof w.game_set_piece_pool !== "function") throw Error("Incompatible engine: rebuild for spatial pieces.");
   if (typeof w.game_lock_band !== "function" || typeof w.band_mesh_ptr !== "function")
     throw Error("Incompatible game engine: rebuild the complete app for early locking.");
   const words = (ptr, len) =>
@@ -18,6 +19,9 @@ export function adaptEngine(w,{trackSolids=true}={}) {
   let orientations=Array.from({length:27},()=>IDENTITY),orientationHistory=new Map();
   const api = {
     game_init: w.game_init,
+    game_piece_pool: w.game_piece_pool,
+    game_set_piece_pool: w.game_set_piece_pool,
+    game_choice_mask: w.game_choice_mask,
     game_rules: () => w.game_rules() >>> 0,
     game_configure_rules: w.game_configure_rules,
     game_debug_piece: w.game_debug_piece,
@@ -57,7 +61,7 @@ export function adaptEngine(w,{trackSolids=true}={}) {
       if (result.length !== SNAPSHOT_WORDS || result[S.ABI_VERSION] !== 4)
         throw Error("Incompatible game engine: rebuild the complete app.");
       result.gameplayRules=w.game_rules() >>> 0;
-      result.rebuildIds=Uint32Array.from({length:27},(_,i)=>w.rebuild_id_at?.(i)||0);
+      result.rebuildIds=Uint32Array.from({length:27},(_,i)=>w.active_group_at?.(i)||w.rebuild_id_at?.(i)||0);
       Object.defineProperty(result,'solidRotations',{value:orientations.slice(),configurable:true});
       return result;
     },
@@ -104,7 +108,7 @@ export function adaptEngine(w,{trackSolids=true}={}) {
   api.game_init=(...args)=>{orientations=Array.from({length:27},()=>IDENTITY);orientationHistory.clear();return init(...args);};
   const load=api.importState;
   api.importState=data=>{const before=api.snapshot(),old=orientations,ok=load(data);if(ok){orientationHistory.set(before[S.UNDO_COUNT],old);orientations=Array.from({length:27},()=>IDENTITY);}return ok;};
-  for(const name of ['game_configure_rules','game_debug_piece','game_turn','game_choose','game_hold','game_lock_band','game_set_next','game_set_gravity','game_set_gravity_rules','game_set_slice_clears','game_set_modes','game_set_early_lock','game_set_fragments','game_set_release_rules','game_undo']) {
+  for(const name of ['game_set_piece_pool','game_configure_rules','game_debug_piece','game_turn','game_choose','game_hold','game_lock_band','game_set_next','game_set_gravity','game_set_gravity_rules','game_set_slice_clears','game_set_modes','game_set_early_lock','game_set_fragments','game_set_release_rules','game_undo']) {
     const original=api[name];if(!original)continue;
     api[name]=(...args)=>{
       const before=api.snapshot(),old=orientations;

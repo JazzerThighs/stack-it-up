@@ -1,6 +1,7 @@
 //! Stack It Up: native rules, geometry and a dependency-free browser Wasm ABI.
 mod abi;
 pub mod engine;
+pub mod pieces;
 pub mod mesh;
 #[cfg(test)]
 mod tests {

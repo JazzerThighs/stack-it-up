@@ -54,3 +54,22 @@ const fixed=[];activeCubie(fixed,[0,0,0],.438,[1,0,0],0,{...state,solidRotations
 assert.deepEqual(fixed,tetra);
 visualSettings.solidFixed=0;
 console.log('PASS: uniform default color, stable surviving IDs, retained game orientations and undo.');
+
+// Independently released partial groups must have distinct shapes even with identical colors.
+const partialHeader=header.slice();partialHeader[1]=6;partialHeader[15]=0;
+const groupA=(1<<0)|(1<<1),groupB=(1<<18)|(1<<19);
+const partial=[...partialHeader,...Array(54).fill(0),2,1,2,4,0,5,10,1,5,10,18,5,16,19,5,16,0,0,0,0,1,
+  0,1,0,0,0xffffffff,2,groupA,groupB,(1<<23)|2|(1<<14)|(1<<21),9,63];
+assert(engine.importState(partial));
+const fragments=engine.snapshot(),slots=rebuildSlots(fragments);
+assert.notEqual(fragments.rebuildIds[0],fragments.rebuildIds[18]);
+assert.equal(fragments.rebuildIds[0],fragments.rebuildIds[1]);
+const a=[],b=[];
+activeCubie(a,[0,0,0],.438,[1,1,1],0,fragments,{rebuildSolidIdentities:true,rebuildSlots:slots});
+activeCubie(b,[0,0,0],.438,[1,1,1],18,fragments,{rebuildSolidIdentities:true,rebuildSlots:slots});
+assert.notEqual(a.length,b.length);
+const {identitySolid}=await import('../web/render/identity-solids.js');
+const signatures=new Set();
+for(let slot=0;slot<27;slot++){const mesh=[];identitySolid(mesh,[0,0,0],.438,[1,1,1],slot);assert(mesh.every(Number.isFinite));signatures.add(JSON.stringify(mesh));}
+assert.equal(signatures.size,27,'no shape recycling for additional fragment groups');
+console.log('PASS: partial groups get distinct durable IDs and shapes, with no six-shape wraparound.');

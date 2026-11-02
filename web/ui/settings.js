@@ -15,7 +15,7 @@ export function refreshSettings() {
   const pending = !context?.settingUp && context?.state?.[S.PENDING_FACES];
   const busy = !context?.settingUp && context?.busy;
   status.hidden = !pending && !busy;
-  status.textContent = pending ? 'Choose a placement face before changing gameplay rules.' : busy ? 'Gameplay rules are temporarily locked while the move resolves.' : '';
+  status.textContent = pending ? 'Choose a placement before changing gameplay rules.' : busy ? 'Gameplay rules are temporarily locked while the move resolves.' : '';
 }
 const defaultLayers = [
   ["arrows", "Arrow buttons"],

@@ -19,19 +19,29 @@ jobs:
         run: rustup toolchain install 1.91.1 --profile minimal --target wasm32-unknown-unknown
       - name: Select Rust toolchain
         run: rustup default 1.91.1
+      - name: Verify shared piece catalog
+        run: |
+          node tools/generate-pieces.mjs --check
+          node tests/piece-catalog.mjs
       - name: Test rules
         run: cargo test --offline
+      - name: Install local archive extractor
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full
       - name: Build browser app
         run: node tools/build.mjs
       - name: Verify current rules and browser modules
         run: |
           node tests/current-parity.cjs
           node tests/frontend-smoke.mjs
+          node tests/packing-data.mjs
+          node tests/packing-performance.mjs
           node tests/explorer-model.mjs
+          node tests/official-presentation.mjs
           node tests/explorer-smoke.mjs
           node tests/family-exploration.mjs
           node tests/version-build.mjs
           node tests/render-performance.mjs
+          node tests/spatial-rendering.mjs
           node tests/solid-identities.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4

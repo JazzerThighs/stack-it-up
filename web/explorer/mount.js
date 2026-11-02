@@ -1,5 +1,5 @@
 // A scoped DOM subtree, not an iframe: both apps keep their live state.
-export async function mountExplorer(host) {
+export async function mountExplorer(host, onProgress) {
   if (host.explorerReady) return host.explorerReady;
   host.explorerReady = (async () => {
     host.textContent = 'Loading packing explorer…';
@@ -16,7 +16,7 @@ export async function mountExplorer(host) {
     root.replaceChildren(css, layout, app);
     host.textContent = '';
     const { initializeExplorer } = await import('./script.js');
-    await initializeExplorer(root);
+    await initializeExplorer(root,{onProgress,dataset:new URLSearchParams(globalThis.location?.search || "").get("packings")==="classic"?"classic":"spatial"});
   })().catch(error => {
     host.explorerReady = null;
     if (host.shadowRoot) host.shadowRoot.textContent = error.message + ". Switch back to the game and retry.";

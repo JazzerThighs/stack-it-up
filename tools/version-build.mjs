@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {readdir,readFile,writeFile,mkdir,copyFile} from 'node:fs/promises';
+import {readdir,readFile,writeFile,mkdir,copyFile,rename} from 'node:fs/promises';
 import path from 'node:path';
 
 // One immutable URL namespace for an entire release: lazy imports, styles,
@@ -21,7 +21,10 @@ export async function versionBuild(output) {
   for(const name of files) {
     const target=path.join(output,prefix,name);
     await mkdir(path.dirname(target),{recursive:true});
-    await copyFile(path.join(output,name),target);
+    // Large dataset assets exist only in the immutable release namespace.
+    // Entry HTML and small compatibility assets still retain their root copies.
+    if(name.startsWith('explorer/data/'))await rename(path.join(output,name),target);
+    else await copyFile(path.join(output,name),target);
   }
   for(const entry of ['index.html','explorer/index.html']) {
     const file=path.join(output,entry),base=path.posix.dirname(entry);

@@ -8,7 +8,7 @@ import {compositeParts} from '../render/piece-mesh.js';
 import {balloon,box,xyz,rgb,rotateCell} from '../render/geometry.js';
 import {clipMesh} from '../render/slice-mesh.js';
 
-export function explorationMeshes(cells,generate,appearance,solidIdentities=false,gray=true) {
+export function explorationMeshes(cells,generate,appearance,solidIdentities=false,gray=true,fixedColors=false) {
   const detected=new Map(detectPieces(cells).filter(p=>p.letter).map(p=>[p.id,p.letter]));
   const groups=new Map();
   cells.forEach((cell,i)=>{
@@ -20,7 +20,7 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
   return [...groups.values()].map(indices=>{
     if(indices.length===4) {
       const board=Array(27).fill(0),ids=Array(27).fill(1);
-      indices.forEach(i=>board[i]=detectedColor(detected.get(cells[i].piece),cells[i].color));
+      indices.forEach(i=>board[i]=fixedColors?cells[i].color:detectedColor(detected.get(cells[i].piece),cells[i].color));
       return compositeParts(board,ids,PALETTE,generate,appearance)[0];
     }
     const out=[];

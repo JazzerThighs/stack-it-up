@@ -2561,3 +2561,30 @@ main.explorer-active > .topbar { padding:0 14px; }
 #scienceOptions[hidden] { display:none; }
 #scienceOptions label, #scienceOptions p { grid-column:1/-1; }
 #setupDialog .session-actions { position:sticky; bottom:-1px; background:#182128; padding:12px 0; z-index:3; }
+
+.spatial-shape { background-position:center; background-size:contain; background-repeat:no-repeat; }
+.spatial-shape > i { visibility:hidden; }
+.spatial-choice { min-width:5rem; min-height:5rem; background-position:center; background-size:contain; background-repeat:no-repeat; text-align:left; vertical-align:top; }
+#piecePoolOptions label { display:inline-flex; gap:.4em; padding:.4em; }
+
+/* Startup diagnostics and recovery stay outside both application viewports. */
+.startup-screen { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; background:#0c151b; padding:20px; overflow:auto; }
+.startup-screen[hidden] { display:none; }
+.startup-card { width:min(100%,480px); padding:24px; border:1px solid #40545d; border-radius:20px; background:#18272e; }
+.startup-card ul { list-style:none; padding:0; display:grid; gap:16px; }
+.startup-card li::before { content:'○'; margin-right:12px; color:#8aa0ab; }
+.startup-card li[data-state="done"]::before { content:'✓'; color:#9de2ca; }
+.startup-card li[data-state="running"]::before { content:'…'; color:#ebcc83; }
+#startupError { color:#ffb0a8; }
+#resetGraphics { font-size:.8rem; padding:8px; flex-shrink:0; }
+.graphics-status { position:fixed; bottom:8px; left:50%; transform:translateX(-50%); z-index:10001; background:#18272e; border-radius:8px; padding:8px 12px; max-width:90vw; margin:0; pointer-events:none; }
+.graphics-status:empty { display:none; }
+@media(max-width:520px) { .topbar { flex-wrap:wrap; } #resetGraphics { margin-left:auto; } }
+
+@media(max-width:620px) { #resetGraphics { min-width:40px; min-height:40px; font-size:22px; } .graphics-button-label { display:none; } }
+
+.packing-load-progress { margin-top:20px; border-top:1px solid #40545d; padding-top:16px; font-size:14px; }
+.packing-load-progress label { display:block; margin:12px 0 6px; font-weight:600; }
+.packing-load-progress progress { display:block; width:100%; height:12px; accent-color:#9de2ca; }
+.packing-load-progress progress + div { margin-top:5px; font-variant-numeric:tabular-nums; color:#d4e4e8; }
+#packingCacheStatus { color:#a8bfc8; font-size:13px; line-height:1.5; }

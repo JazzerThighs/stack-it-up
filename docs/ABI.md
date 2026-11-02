@@ -74,3 +74,34 @@ on each snapshot; animation copies and turns explicitly preserve that metadata.
 Random release rules retain the 226-word ABI-v4 snapshot. `game_set_release_rules(trigger, bandaged, scattered, selection)` accepts triggers 0=off, 1=per cleared plane, 2=per placement turn; selection 0=uniform eligible group, 1=occupied-cubie weighted, 2=one uniform cell among all 27 (no retry), 3=largest connected group, 4=smallest. `game_release_rules()` returns trigger in bits 0-1, bandaging in bit 2, scattered locking in bit 3, and selection in bits 4-6. Offset 170 includes random groups awaiting reconnection. Offset 199 remains authoritative for actual band membership, independent of the legacy bandage option at 166.
 
 State transport v3 appends random-release options, the last placement-turn counter that received the perk (u32::MAX means none), and the released-group masks after the v2 gravity flags. Default legacy configurations continue to export v2. Imports accept v1/v2/v3. Group masks rotate with floating cubies, survive undo and sharing, and disappear on locking. The forecast uses this same transport and native transitions; the once-per-turn marker is part of its search key.
+
+
+## Spatial piece extension
+
+The scalar snapshot remains 226 words, version 4. Piece IDs now also include 7=B, 8=D, 9=F. A new browser checks for `game_set_piece_pool` before use.
+
+- `game_piece_pool()`: enabled queue types as a nine-bit mask (bit zero is O).
+- `game_set_piece_pool(mask, redeal)`: validates a nonempty subset of 511; redeal is permitted only before any placed pieces. Without redeal, keeps current and held pieces and replaces the future queue. Participates in undo.
+- `game_choice_mask(choice)`: returns the candidate mask or zero. Spatial choices use IDs 6..20; legacy faces use 0..5. Snapshot word 78 is now a choice bitset. The six masks at 152..157 remain face-only.
+- `game_choose(choice)`: accepts either kind of pending choice. Spatial locks leave LAST_FACE zero and carry LAST_MASK as normal.
+
+State transport v5 preserves existing header/variable sections, writes the v3 release extension and v4 rules/plane tail, and then appends `piece_pool`. In v5, rules `0xffffffff` means legacy mode. Classic states with the default classic pool retain legacy transport versions. Import validates v5 IDs, pool, and non-core spatial active inventory. Readers supporting only v1..v4 must reject v5 rather than reinterpret it.
+
+## Reconstruction shape rules
+
+State transport v6 uses the v5 payload layout, including the queue pool. Rules
+bit 23 marks the new reconstruction semantics; bit 21 restricts four-cubie
+reconstructions to queue-enabled shapes, and bit 22 requires their original
+shape. Both restrictions apply when both are set. Bit 14 still requires
+face-to-face connectivity. When it is off, the shape restrictions are ignored.
+With connectivity on, groups smaller than four need only reconnect within their
+own group; four-cubie groups must form a catalog tetracube. Bit 15 no longer
+restricts modern reconstructions to one outer face. Original shape is captured
+from the released geometry, with its prior shape ID preferred where applicable.
+Legacy transports retain their previous reconstruction rules. Older readers
+must reject v6 rather than reinterpret it.
+
+`active_group_at(cell)` provides presentation identity for all freed cubies.
+Partial groups use the high bit plus their group index; whole groups retain
+their physical placement IDs. The browser uses these values in `rebuildIds`
+to assign distinct solids to freed groups, including partial fragments.

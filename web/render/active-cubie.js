@@ -10,7 +10,7 @@ export function rebuildSlots(state,previous=new Map()) {
   return slots;
 }
 export function activeCubie(out,p,h,color,cell,state,renderer) {
-  if(renderer.rebuildSolidIdentities && state[S.REBUILD_COLORS+cell]) {
+  if(renderer.rebuildSolidIdentities && (state.rebuildIds?.[cell] || state[S.REBUILD_COLORS+cell])) {
     const slot=renderer.rebuildSlots?.get(state.rebuildIds?.[cell]) ?? state[S.REBUILD_COLORS+cell]-1;
     const start=out.length;
     identitySolid(out,p,h,solidColor(slot,color),slot,state.solidRotations?.[cell]);

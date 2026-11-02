@@ -1,3 +1,8 @@
+import {startupCheck,startupError,packingProgress} from './ui/startup.js';
+import {installRecovery} from './render/recovery.js';
+import {createLocalGame} from './ui/local-game.js';
+import {pieces} from './engine/pieces.js';
+import {spatialPreview} from './ui/spatial-preview.js';
 import {initializeGameplay,readGameplay,writeGameplay,refreshGameplay} from './ui/gameplay-settings.js';
 import { createReplay } from './ui/forecast-replay.js';
 import { createForecast } from './ui/forecast.js';
@@ -21,7 +26,7 @@ import {
   layerOrder,
 } from "./ui/settings.js";
 const $ = (id) => document.getElementById(id);
-const names = ["", "O", "T", "L", "J", "S", "Z"];
+const names = ["", ...pieces.map(p=>p.letter)];
 
 const groups = {
   face: [0, 1, 2, 3, 5, 4],
@@ -37,6 +42,14 @@ let engine,
   busy = false;
 let lockMode = false;
 let session;
+const localGame = createLocalGame({engine:()=>engine, started:()=>session?.started,
+  chooseNext:()=>$('chooseNext').checked});
+function saveLocalGame() {
+  if (session?.started && !localGame.save())
+    $('graphicsStatus').textContent = 'Local saving is unavailable. Use Copy state in settings to keep your game.';
+}
+globalThis.addEventListener?.('pagehide', saveLocalGame);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveLocalGame(); });
 const animations = $("animations");
 animations.checked = !matchMedia("(prefers-reduced-motion: reduce)").matches;
 const moveButtons = [],
@@ -50,8 +63,12 @@ function shape(el) {
   });
   return (piece) => {
     el.style.color = colors[piece];
+    const spatial=piece>6;
+    el.classList.toggle('spatial-shape',spatial);
+    el.style.backgroundImage=spatial?spatialPreview(pieces[piece===8?8:piece-1].cells,colors[piece],piece===8):'';
+    el.title=pieces[piece-1]?.name || 'Empty';
     cells.forEach((c, i) =>
-      c.classList.toggle("filled", !!(state[134 + piece - 1] & (1 << i))),
+      c.classList.toggle("filled", piece>0 && piece<=6 && !!(state[134 + piece - 1] & (1 << i))),
     );
   };
 }
@@ -161,6 +178,7 @@ function snapshot() {
   return engine.snapshot();
 }
 function update(message) {
+  saveLocalGame();
   state = snapshot();
   writeGameplay(engine.game_rules());
   $("earlyLock").checked = !!engine.game_early_lock();
@@ -249,17 +267,17 @@ function update(message) {
     b.querySelector("span").textContent = n ? `${n} ✓` : "";
   });
   $("hint").textContent = state[S.PENDING_FACES]
-    ? "Choose a highlighted face, or undo to keep turning."
+    ? state[S.PIECE]>6 ? "Choose a spatial placement, or undo to keep turning." : "Choose a highlighted face, or undo to keep turning."
     : state[S.OVER]
       ? "Top out. Undo a turn or start a new game."
       : wins
         ? `${wins} winning turn${wins === 1 ? "" : "s"} available. Look for ✓ in any tab.`
         : "Keep turning. A ✓ will mark a move that places this piece.";
   $("message").textContent = state[S.PENDING_FACES]
-    ? "This piece fits more than one face. Choose where to place it."
+    ? "This piece has multiple placements. Choose where to place it."
     : state[S.OVER]
-      ? "Top out: no face, surface, or internal placement fits."
-      : message || `Build ${names[p]} on any free face.`;
+      ? state[S.PIECE]>6 ? "Top out: no non-core placement fits." : "Top out: no face, surface, or internal placement fits."
+      : message || (p>6 ? `Build ${names[p]} around the core.` : `Build ${names[p]} on any free face.`);
   for (let f = 0; f < 6; f++)
     for (let c = 0; c < 9; c++) {
       const i = state[80 + f * 9 + c],
@@ -293,6 +311,16 @@ function syncChoices() {
   faceButtons.forEach(
     (b, f) => (b.disabled = busy || !(state[S.PENDING_FACES] & (1 << f))),
   );
+  spatialButtons.forEach((b,i)=>{
+    const id=i+6, mask=engine.game_choice_mask(id);
+    b.hidden=!mask;b.disabled=busy||!mask;
+    if(mask) {
+      const cells=Array.from({length:27},(_,i)=>i).filter(i=>mask&(1<<i)).map(i=>[Math.floor(i/9),Math.floor(i/3)%3,i%3]);
+      b.style.backgroundImage=spatialPreview(cells,colors[state[S.PIECE]]);
+      b.title=`Placement ${i+1}; cells ${cells.map(p=>p.join(',')).join(' / ')}`;
+    }
+  });
+  faceButtons.forEach(b=>b.hidden=state[S.PIECE]>6);
   if (state[S.PENDING_FACES]) selectMode("face");
 }
 const faceButtons = faceLabels.map((label, f) => {
@@ -317,8 +345,19 @@ const faceButtons = faceLabels.map((label, f) => {
   $("faceChoices").append(b);
   return b;
 });
+const spatialButtons=Array.from({length:15},(_,i)=>{
+  const b=document.createElement('button');b.textContent=`${i+1}`;b.className='spatial-choice';b.hidden=true;
+  b.setAttribute('aria-label',`Place spatial piece in position ${i+1}`);
+  b.onclick=()=>choose(i+6);
+  const preview=()=>{renderers[0].preview=engine.game_choice_mask(i+6);renderers[0].setState(state);invalidate();};
+  const clear=()=>{renderers[0].preview=0;renderers[0].setState(state);invalidate();};
+  b.onpointerenter=preview;b.onfocus=preview;b.onpointerleave=clear;b.onblur=clear;
+  $('faceChoices').append(b);return b;
+});
+
 function setBusy(value) {
   busy = value;
+  spatialButtons.forEach(b=>b.disabled=value||b.hidden);
   refreshSettings();
   syncOverlayControls();
   moveButtons.forEach(
@@ -370,7 +409,7 @@ async function play(m, fromT = 0) {
     syncChoices();
     invalidate();
   }
-  if (state[S.PENDING_FACES]) faceButtons.find((b) => !b.disabled)?.focus();
+  if (state[S.PENDING_FACES]) [...faceButtons,...spatialButtons].find((b) => !b.disabled && !b.hidden)?.focus();
 }
 async function lockBand(cell) {
   if (!engine || busy || !context.lockMode || state[S.OVER] || state[S.PENDING_FACES]) return;
@@ -465,6 +504,8 @@ async function newGame() {
     +$("rebuildMode").value,
   );
   engine.game_configure_rules(chosenRules);
+  const chosenPool=pieces.reduce((m,p)=>m|($("poolPiece"+p.id).checked ? 1<<(p.id-1):0),0);
+  engine.game_set_piece_pool(chosenPool,true);
   if(chosenRules&1){if(chosenCurrent)engine.game_debug_piece(0,chosenCurrent);engine.game_debug_piece(1,chosenHeld);}
   update();
   setBusy(true);
@@ -794,7 +835,10 @@ initializeGameplay(context);
 selectMode("face");
 async function start() {
   try {
+    startupCheck('engine','Loading and validating the Rust/Wasm engine');
     engine = await createEngine();
+    startupCheck('engine','Rust/Wasm engine ready',true);
+    startupCheck('graphics','Creating WebGL views and compiling shaders');
     const onOrbit = orbitCamera;
     renderers = [
       new Renderer($("control"), $("controlLabels"), {
@@ -803,6 +847,7 @@ async function start() {
       }),
       new Renderer($("stack"), $("stackLabels"), { stack: true, onOrbit }),
     ];
+    startupCheck('graphics','WebGL views and shaders ready',true);
     syncDisplaySettings();
     renderers[0].combined = $("combined").checked;
     refreshSettings();
@@ -819,9 +864,19 @@ async function start() {
     renderers.forEach((r) => observer.observe(r.canvas));
     $("new").disabled = false;
     $("engineStatus").textContent = "Ready";
-    await newGame();
-    if (!$("gamePage").hidden) session.setup();
+    const saved = localGame.restore();
+    if (saved.restored) {
+      session.resume(saved.chooseNext);
+      update('Saved game restored. Undo history begins with this session.');
+      startupCheck('saved','Saved game restored',true);
+    } else {
+      await newGame();
+      startupCheck('saved',saved.error ? 'Saved game could not be restored; ready for a new game' : 'No saved game; ready for a new game',true);
+      if (!$("gamePage").hidden) session.setup();
+    }
+    installRecovery();
   } catch (error) {
+    startupError(error);
     $("message").textContent = error.message;
     $("engineStatus").textContent = "Unable to start";
     console.error(error);
@@ -847,7 +902,7 @@ function selectApplication(explorer) {
     $(id).tabIndex = selected ? 0 : -1;
   }
   if (explorer && !$("explorer").explorerReady)
-    mountExplorer($("explorer")).catch(console.error);
+    mountExplorer($("explorer"),packingProgress).then(() => startupCheck('explorer','Packing data, controls and cube views ready',true)).catch(startupError);
   if (!explorer) {
     invalidate();
     if (engine && !busy && !session.started && !session.starting) session.setup();
@@ -866,4 +921,6 @@ for (const id of ["gameTab", "explorerTab"]) {
   });
 }
 
+if (globalThis.location?.hash === '#game') startupCheck('explorer','Packing explorer loads when opened',true);
+else startupCheck('explorer','Loading packing data, controls and cube views');
 selectApplication(globalThis.location?.hash !== "#game");

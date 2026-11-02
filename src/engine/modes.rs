@@ -2,6 +2,16 @@
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 impl State {
+    pub fn shape_rules(&self) -> bool { self.rules.is_some_and(|r|r&(1<<23)!=0) }
+    fn allowed_rebuild(&self, mask:u32, old:u8) -> Option<u8> {
+        let r=self.rules?;
+        if r&(1<<14)==0 {return Some(old);}
+        std::iter::once(old).chain(1..=9).find(|&color| {
+            (r&(1<<21)==0 || self.piece_pool&(1<<(color-1))!=0)
+                && (r&(1<<22)==0 || color==old)
+                && crate::pieces::PIECES[color as usize-1].placements.contains(&mask)
+        })
+    }
     pub fn reconstruction_facebound(&self) -> bool {
         self.rules.is_some_and(|r| r & (1<<14) != 0 && r & (1<<15) != 0)
     }
@@ -22,12 +32,13 @@ impl State {
         }
         let mask = group.iter().fold(0, |m, f| m | 1 << f.cell);
         let old = group[0].color;
+        if self.shape_rules() { return self.allowed_rebuild(mask,old); }
         std::iter::once(old)
             .chain(1..=6)
             .find(|&color| {
                 t.placements[color as usize - 1]
                     .iter()
-                    .any(|p| p.mask == mask)
+                    .any(|p| p.face < 6 && p.mask == mask)
             })
             .or_else(|| {
                 if self.reconstruction_facebound() { return None; }
@@ -67,6 +78,12 @@ impl State {
             failed.insert(mask);
             false
         }
+        if self.shape_rules() && self.rules.unwrap()&(1<<14)==0 {
+            return Some(self.rebuild_ids.iter().map(|&id| {
+                let group:Vec<_>=self.floating.iter().filter(|f|f.id==id).collect();
+                (id,group.iter().fold(0,|m,f|m|1<<f.cell),group[0].color)
+            }).collect());
+        }
         let mut pools = BTreeMap::<u8, (u32, Vec<u32>)>::new();
         for &id in &self.rebuild_ids {
             let group: Vec<_> = self.floating.iter().filter(|f| f.id == id).collect();
@@ -90,6 +107,15 @@ impl State {
         for (old, (mask, ids)) in pools {
             let mut candidates = vec![];
             let mut seen = BTreeSet::new();
+            if self.shape_rules() {
+                for definition in &crate::pieces::PIECES {
+                    for &m in definition.placements {
+                        if m&mask==m && !seen.contains(&m) {
+                            if let Some(color)=self.allowed_rebuild(m,old) {seen.insert(m);candidates.push((m,color));}
+                        }
+                    }
+                }
+            } else {
             // Prefer facebound shapes and preserve the old color when ambiguous.
             for fallback in [false, true] {
                 if fallback && self.reconstruction_facebound() { continue; }
@@ -102,7 +128,7 @@ impl State {
                     } else {
                         t.placements[color as usize - 1]
                             .iter()
-                            .map(|p| p.mask)
+                            .filter(|p|p.face<6).map(|p| p.mask)
                             .collect()
                     };
                     for m in masks {
@@ -116,6 +142,7 @@ impl State {
                 for &m in &t.tetracubes {
                     if m & mask == m { candidates.push((m, old)); }
                 }
+            }
             }
             let mut pieces = vec![];
             if !cover(mask, &candidates, &mut pieces, &mut BTreeSet::new()) {
@@ -135,7 +162,7 @@ impl State {
     pub fn rebuild_ready(&self, t: &Tables) -> bool {
         if let Some(r) = self.rules {
             return self.rebuild_partition(t).is_some() && self.free_groups.iter().all(|&m| {
-                r & (1<<14) == 0 || (Self::connected(m) && (r & (1<<15) == 0 || t.faces.iter().any(|face| m & face == m)))
+                r & (1<<14) == 0 || (Self::connected(m) && (self.shape_rules() || r & (1<<15) == 0 || t.faces.iter().any(|face| m & face == m)))
             });
         }
         self.release_scattered || (self.free_groups.iter().all(|&m| Self::connected(m)) && self.rebuild_partition(t).is_some())

@@ -1,0 +1,135 @@
+1. Establish shared piece definitions
+Support nine named pieces: O, T, L, J, S, Z, B, D, F.
+- B: branch
+- D: right screw
+- F: left screw
+Keep the existing six numeric IDs unchanged and append the new ones. Replace hardcoded six-piece arrays, bounds, and random-selection logic with catalog-driven definitions.
+
+The catalog should describe geometry, proper rotations, chirality, valid placements, inventory requirements, display names, and default colors. Rust and JavaScript should consume matching generated definitions rather than independently defining shapes.
+
+Lowercase metadata letters remain placement attributes, not additional piece types.
+2. Generalize placement detection and spawning
+I checked the generated placement catalog. These are all the distinct non-core compositions:
+Piece	Possible compositions	Minimum inventory covering every composition
+Branch — B	3 edges + 1 corner; or 2 centers + 1 edge + 1 corner	2 centers, 3 edges, 1 corner: 6 active cubies
+Right screw — D	1 center + 2 edges + 1 corner; or 2 centers + 2 edges	2 centers, 2 edges, 1 corner: 5 active cubies
+Left screw — F	Same compositions as D	2 centers, 2 edges, 1 corner: 5 active cubies
+
+
+Technically, this requires the maximum required count of each cubie type across placements, rather than their intersection. That gives the smallest inventory capable of constructing every allowed composition.
+
+Required changes:
+- Generate separate placement tables for B, D, and F using proper rotations only.
+- Distinguish the two screw handednesses throughout detection.
+- Support multiple active centers; spawning currently assumes exactly one.
+- Let B/D/F complete across faces during ordinary play. They must not be treated as planar fallback placements.
+- Keep their queue-piece placements outside the core, including automatic placements.
+- Preserve maximum-separation spawning and the existing automatic-placement escape when a non-completing spawn is unavailable.
+- Lock the four cubies forming the selected piece; handle unused inventory as the current game does.
+- Ensure extra inventory does not cause a false top-out when a legal four-cell placement can still fit.
+- Replace face-only placement disambiguation with selectable placement masks when several spatial completions are possible.
+Core-containing B/D/F shapes must remain recognizable for explorer data and applicable stack-reconstruction rules. That is separate from permitting them as newly spawned queue-piece placements.
+3. Extend the queue, hold pocket, and game settings
+Add a piece-pool setting with:
+- Classic planar pieces.
+- All nine pieces.
+- Custom enabled pieces.
+Carry this through random generation, hold, manual next-piece selection, debugging controls, restarting, and saved games.
+
+B/D/F need small, consistently oriented 3D previews with letter labels. Flattening them into the existing planar previews would obscure screw handedness.
+
+Also update:
+- Successful-move highlighting.
+- Released-piece reconstruction and compatibility checks.
+- Automatic placement chains.
+- Undo and state sharing.
+- Queue dead-end forecasting.
+Forecasting must use the same new placement rules as actual gameplay, including the prohibition on core placements for queued spatial pieces.
+4. Version the state and engine interface
+The current save validation and browser adapter contain six-piece limits.
+- Extend board, queue, hold, and released-piece validation.
+- Version saved states and the WASM interface wherever their layouts change.
+- Save the enabled piece pool and relevant placement rules.
+- Preserve imports of existing six-piece saves.
+- Migrate existing palette/settings preferences without resetting unrelated choices.
+- Make incompatible engine/frontend combinations fail clearly.
+A piece’s physical ownership ID, current detected shape, and display color should remain separate. Reconstruction can change shape without changing which cubies belong together.
+5. Package the expanded dataset for browser use
+The new dataset has 1,871,891 packings and 2,605 families. Loading all the text files into browser objects at startup would be a major performance regression.
+
+Add a build-time data converter that:
+- Validates the five source files and their cross-references.
+- Produces a versioned manifest, compact indexes, and packing-data chunks.
+- Stores each packing once, with family membership represented by IDs.
+- Includes precomputed composition and placement filters.
+- Loads detailed packing records on demand.
+- Performs substantial filtering/index work in a Web Worker.
+- Supports random selection without constructing millions of JavaScript objects.
+Keep the legacy dataset and official-cube references available during migration. Old source-line IDs must not silently refer to unrelated rows in the new dataset.
+
+The app should consume generated family membership, not recompute families in the browser.
+6. Update every explorer mode and filter menu
+Use one shared filter model across the packing browser, practice comparison, and Family Explorer.
+
+Support filtering by:
+- Presence, absence, or count of each piece type.
+- Planar-only, spatial-only, or mixed compositions.
+- Core occupied by a piece versus extras.
+- Core occupancy by specific piece types.
+- Facebound planar pieces.
+- Non-facebound planar pieces, distinguishing core-containing and surface-only cases.
+- Family and bag composition.
+Important semantics:
+- B/D/F spanning multiple faces is normal.
+- Lowercase b/d/f means core occupancy only.
+- Existing lowercase planar letters retain their established meaning.
+- “All facebound” remains a planar property.
+- “One of each classic piece” stays a specific classic filter.
+Remove assumptions that families require classic six-bag members. Families with none must still be browsable and selectable.
+7. Extend Family Explorer’s live detection and rendering
+After each move:
+- Detect planar pieces, branches, and both screw handednesses.
+- Replace completed groups’ identity solids with the corresponding smooth tetracube mesh.
+- Restore identity solids when a group becomes unassembled.
+- Preserve stable physical IDs and solid assignments.
+- Retain existing sliced-piece turn animations and cached fragment geometry.
+- Match completed packings against the expanded dataset under proper rotations.
+Two mirror packings must remain distinct packing records. They may nevertheless belong to the same family if face turns connect them.
+8. Expand color customization and presentation
+Add B/D/F to all relevant palette controls:
+Piece	Default
+F — left screw	Light grey
+D — right screw	Dark grey
+B — branch	Brown
+
+
+Replace the current hardcoded spatial-color override with the configurable palette.
+
+Apply those colors consistently to queue previews, placed shapes, reconstructed shapes, explorer pieces, legends, and highlights. Preserve identity-solid coloring as a separate visual setting.
+
+Verify all three new shapes with the existing rendering styles, transparency modes, outlines, breathing, and placement/clear animations.
+9. Validate and deploy incrementally
+The main acceptance checks should include:
+- Every catalog placement identifies correctly under all 24 rotations.
+- Reflection exchanges D and F rather than merging them.
+- Every non-core composition is constructible from its supplied inventory.
+- Queue B/D/F placements never use the core.
+- Automatic placement and forecasting agree with gameplay.
+- Existing saves and classic gameplay still work.
+- Every dataset member appears in exactly its recorded family.
+- Browser filtering agrees with generated metadata.
+- Mobile startup remains responsive without loading the entire dataset.
+Suggested milestones: shared catalog → playable B/D/F queue → state/palette updates → compact dataset loader → explorer integration → performance and regression testing.
+
+10. Single-repository data ownership (required)
+- This branch owns all packing data and metadata. No separate dataset repository, external raw GitHub URL, or runtime archive download is required.
+- Commit results.7z and data/source.json with the application. The manifest pins the source archive checksum and required files.
+- Keep the existing classic dataset and official-cube reference data in this repository during migration.
+- Build the v2 browser manifest, compact indexes, and independently loadable chunks from this local archive. Do not rely on sibling workspace folders such as 3dmetadata/results.
+- Use a documented local extraction step/tool and the same process in CI. Pin or verify extraction tooling as appropriate. Avoid committing the large expanded text files.
+- Serve all generated browser assets from relative URLs under the application's own deployment path, including GitHub Pages subdirectory hosting.
+- Include the dataset version/checksum in build fingerprints and shareable packing references to avoid stale data and legacy/new line-ID collisions.
+- Publish browser-ready chunks, not results.7z or the expanded source text, with the app. Ensure release packaging does not duplicate the large dataset unnecessarily.
+- A clean clone must contain everything needed to generate the dataset. No credentials, checkout, or download from another data repository may be required.
+- Validate the required members, schema, metadata counts, and family membership during conversion. Fail builds on missing or inconsistent data; do not silently fall back to remote data.
+- Acceptance check: load and browse generated data with external data hosts blocked; test both localhost and a GitHub Pages-style subdirectory.

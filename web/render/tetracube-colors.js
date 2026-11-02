@@ -1,5 +1,7 @@
+import {pieceByLetter} from '../engine/pieces.js';
+import {colors} from './palette.js';
 // Display colors only: logical colors/IDs still govern reconstruction and sharing.
-export const tetracubeColors = Object.freeze({left:'#c8c8c8',right:'#505050',branch:'#996633'});
+export const tetracubeColors = Object.freeze({get left(){return colors[pieceByLetter('F').id]},get right(){return colors[pieceByLetter('D').id]},get branch(){return colors[pieceByLetter('B').id]}});
 export function placedTetracubeColor(mask) {
   const cells=[];
   for(let i=0;i<27;i++)if(mask&(1<<i))cells.push([Math.floor(i/9),Math.floor(i/3)%3,i%3]);

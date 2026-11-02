@@ -46,6 +46,27 @@ function hull(vertices) {
 const meshes=[tetra,cube,octa,dodeca,ico].map(hull);
 export function identitySolid(out,p,h,color,id,rotation=IDENTITY) {
   const start=out.length;
+  // Extra released fragment groups must not wrap back to an existing solid.
+  // Beyond the six standard identities, use distinct polygonal bipyramids.
+  if(id>=6) {
+    const sides=id===6?3:id-2; // Skip the four-sided bipyramid (the existing octahedron).
+    for(let i=0;i<sides;i++)for(const sign of [-1,1]) {
+      const a=i*2*Math.PI/sides,b=(i+1)*2*Math.PI/sides;
+      const points=sign>0?[[0,1,0],[Math.cos(a),0,Math.sin(a)],[Math.cos(b),0,Math.sin(b)]]:
+        [[0,-1,0],[Math.cos(b),0,Math.sin(b)],[Math.cos(a),0,Math.sin(a)]];
+      // Winding and normals agree with the existing convex meshes.
+      const [p0,p1,p2]=points,u=p1.map((v,k)=>v-p0[k]),v=p2.map((v,k)=>v-p0[k]);
+      let normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+      if(normal[1]*sign<0){points.reverse();normal=normal.map(v=>-v);}
+      const length=Math.hypot(...normal);normal=normal.map(v=>v/length);
+      for(const point of points) {
+        const q=visualSettings.solidFixed?point:transformPoint(point,{rotation});
+        const n=visualSettings.solidFixed?normal:transformPoint(normal,{rotation});
+        out.push(...p.map((v,k)=>v+q[k]*h),...n,...color);
+      }
+    }
+    return;
+  }
   const shape=((id%6)+6)%6;
   if(shape===5){sphere(out,p,h,color);return;}
   const mesh=meshes[shape];

@@ -2,23 +2,19 @@
 //! presentation labels are U D F B R L (the historical x-axis label correction).
 
 pub const FULL: u32 = (1 << 27) - 1;
-pub const SHAPES: [[[i32; 2]; 4]; 6] = [
-    [[0, 0], [1, 0], [0, 1], [1, 1]], // O
-    [[0, 0], [1, 0], [2, 0], [1, 1]], // T
-    [[0, 0], [0, 1], [0, 2], [1, 2]], // L
-    [[1, 0], [1, 1], [1, 2], [0, 2]], // J
-    [[1, 0], [2, 0], [0, 1], [1, 1]], // S
-    [[0, 0], [1, 0], [1, 1], [2, 1]], // Z
-];
+pub use crate::pieces::CLASSIC_SHAPES as SHAPES;
 pub const FACES: [(usize, i32); 6] = [(1, 2), (1, 0), (2, 0), (2, 2), (0, 0), (0, 2)];
 pub const CLEAR_ORDER: [usize; 6] = [1, 2, 4, 3, 5, 0];
-pub const COLORS: [[f32; 3]; 6] = [
+pub const COLORS: [[f32; 3]; 9] = [
     [1., 0.827, 0.361],
     [0.741, 0.549, 1.],
     [1., 0.671, 0.361],
     [0.392, 0.604, 1.],
     [0.384, 0.851, 0.678],
     [1., 0.443, 0.553],
+    [0.6, 0.4, 0.2],
+    [0.314, 0.314, 0.314],
+    [0.784, 0.784, 0.784],
 ];
 pub fn xyz(i: usize) -> [i32; 3] {
     [(i / 9) as i32, (i / 3 % 3) as i32, (i % 3) as i32]
