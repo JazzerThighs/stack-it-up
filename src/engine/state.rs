@@ -20,6 +20,7 @@ pub struct Fragment {
 #[derive(Clone, Debug, PartialEq)]
 pub struct State {
     pub piece_pool: u32,
+    pub free_origins: std::collections::BTreeMap<u32,u8>,
     /// Versioned gameplay configuration; None preserves imported legacy rules.
     pub rules: Option<u32>,
     pub gravity_plane: Option<usize>,
@@ -68,6 +69,7 @@ impl State {
     pub fn empty(seed: u32) -> Self {
         Self {
             piece_pool: 63,
+            free_origins: std::collections::BTreeMap::new(),
             rules: None,
             gravity_plane: None,
             floating: vec![],
@@ -148,7 +150,7 @@ impl State {
     }
     pub(super) fn refill(&mut self) {
         while self.queue.len() < 7 {
-            let mut bag:Vec<u8> = (1..=9).filter(|id|self.piece_pool & (1<<(id-1)) != 0).collect();
+            let mut bag:Vec<u8> = (1..=11).filter(|id|self.piece_pool & (1<<(id-1)) != 0).collect();
             for i in (1..bag.len()).rev() {
                 let j = self.range((i + 1) as u32) as usize;
                 bag.swap(i, j);
@@ -171,7 +173,7 @@ impl State {
             .iter()
             .filter(|p| p.mask & occupied == 0 && p.mask & self.active == p.mask)
             .copied()
-            .enumerate().map(|(i,mut p)|{if self.queue[0]>6 {p.face=6+i;}p})
+            .enumerate().map(|(i,mut p)|{if (7..=9).contains(&self.queue[0]) {p.face=6+i;}p})
             .collect()
     }
     pub fn release_fragments(&mut self) {
@@ -254,7 +256,7 @@ impl State {
             if let Some(p) = t.placements[piece].iter().find(|p| p.mask & blocked == 0) {
                 return SpawnDecision::Automatic {
                     mask: p.mask,
-                    tier: if piece < 6 {0} else {1},
+                    tier: if piece < 6 || piece>=9 {0} else {1},
                 };
             }
             for &(mask, tier) in &t.fallback[piece] {
@@ -265,7 +267,8 @@ impl State {
         }
         SpawnDecision::TopOut
     }
-    pub fn lock_mask(&mut self, mask: u32) -> u8 {
+    pub fn lock_mask(&mut self, mask: u32) -> u8 {self.lock_mask_on(mask,None)}
+    pub fn lock_mask_on(&mut self, mask:u32,face:Option<usize>)->u8 {
         let piece = self.queue.pop_front().unwrap();
         self.hold_used = false;
         self.bands.clear();
@@ -281,16 +284,19 @@ impl State {
         if mask_f != 0 {
             self.record(4, mask_f, 0, std::array::from_fn(|i| i));
         }
+        if piece>=10 {self.free_origins.insert(self.pieces+1,piece);}
+        let color=queue_color_on(piece,mask,face);
         for i in bits(mask) {
-            self.board[i] = piece;
+            self.board[i] = color;
             self.ids[i] = self.pieces + 1;
         }
         self.pieces += 1;
+        self.free_origins.retain(|id,_|self.ids.contains(id));
         if self.rules.is_some_and(|r| (r >> 6) & 3 == 3) { self.gravity = Some(self.range(6) as usize); }
         self.score += 100;
         self.active = 0;
         self.record(1, mask, 0, std::array::from_fn(|i| i));
-        piece
+        color
     }
     /// Resolve forced locks and clears until the player gets an unfinished spawn.
     /// No artificial chain limit: every automatic piece consumes the real queue.

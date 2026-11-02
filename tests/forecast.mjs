@@ -88,3 +88,11 @@ assert(spatialForecast.steps[0].arg>=6);assert.equal(spatialForecast.finalState.
 assert(engine.importState(spatialState));for(const step of spatialForecast.steps)assert(engine[step.method](step.arg));
 assert.equal(stateKey(engine.exportState()),stateKey(spatialForecast.finalState));
 console.log('PASS: spatial pending placements, custom pool and transport v5 forecast/replay.');
+
+engine.game_init(77);assert(engine.game_configure_rules(3|(1<<23)|(1<<24)));
+assert(engine.game_set_piece_pool(1536,true));
+const freeState=engine.exportState();assert.equal(freeState[1],7);
+const freeForecast=run(engine,freeState,1,10000);assert.equal(freeForecast.status,'safe');
+assert(engine.importState(freeState));for(const step of freeForecast.steps)assert(engine[step.method](step.arg));
+assert.equal(stateKey(engine.exportState()),stateKey(freeForecast.finalState));
+console.log('PASS: free queue choices and plane gravity survive v7 forecast/replay.');

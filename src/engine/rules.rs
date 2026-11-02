@@ -2,7 +2,7 @@
 use super::*;
 impl State {
     pub fn valid_rules(r: u32) -> bool {
-        r >> 24 == 0
+        r >> 25 == 0
             && (r & (7<<21) == 0 || r & (1<<23) != 0)
             && r & 30 != 0
             && (r & (1 << 9) == 0 || r & (15 << 10) != 0)
@@ -202,7 +202,7 @@ impl Game {
     }
     pub fn debug_piece(&mut self, held: bool, piece: u32) -> bool {
         if !self.state.rules.is_some_and(|r| r & 1 != 0)
-            || piece > 9
+            || piece > 11
             || (!held && piece == 0)
             || self.state.over
             || !self.pending.is_empty()

@@ -3,13 +3,15 @@ use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 impl State {
     pub fn shape_rules(&self) -> bool { self.rules.is_some_and(|r|r&(1<<23)!=0) }
-    fn allowed_rebuild(&self, mask:u32, old:u8) -> Option<u8> {
+    fn allowed_rebuild(&self, mask:u32, old:u8, origin:u8, t:&Tables) -> Option<u8> {
         let r=self.rules?;
         if r&(1<<14)==0 {return Some(old);}
-        std::iter::once(old).chain(1..=9).find(|&color| {
-            (r&(1<<21)==0 || self.piece_pool&(1<<(color-1))!=0)
-                && (r&(1<<22)==0 || color==old)
-                && crate::pieces::PIECES[color as usize-1].placements.contains(&mask)
+        choices(old).iter().copied().chain(1..=9).find(|&color| {
+            (r&(1<<21)==0 || (1..=11).any(|p|self.piece_pool&(1<<(p-1))!=0 && choices(p).contains(&color)))
+                && (r&(1<<22)==0 || choices(origin).contains(&color))
+                && if t.faces.iter().any(|&face|mask&face==mask) {
+                    t.placements[color as usize-1].iter().any(|p|p.mask==mask)
+                } else {crate::pieces::PIECES[color as usize-1].placements.contains(&mask)}
         })
     }
     pub fn reconstruction_facebound(&self) -> bool {
@@ -32,7 +34,7 @@ impl State {
         }
         let mask = group.iter().fold(0, |m, f| m | 1 << f.cell);
         let old = group[0].color;
-        if self.shape_rules() { return self.allowed_rebuild(mask,old); }
+        if self.shape_rules() { return self.allowed_rebuild(mask,old,self.free_origins.get(&id).copied().unwrap_or(old),t); }
         std::iter::once(old)
             .chain(1..=6)
             .find(|&color| {
@@ -84,7 +86,7 @@ impl State {
                 (id,group.iter().fold(0,|m,f|m|1<<f.cell),group[0].color)
             }).collect());
         }
-        let mut pools = BTreeMap::<u8, (u32, Vec<u32>)>::new();
+        let mut pools = BTreeMap::<(u8,u8), (u32, Vec<u32>)>::new();
         for &id in &self.rebuild_ids {
             let group: Vec<_> = self.floating.iter().filter(|f| f.id == id).collect();
             if group.len() != 4 {
@@ -94,7 +96,7 @@ impl State {
             if group.iter().any(|f| f.color != color) {
                 return None;
             }
-            let (mask, ids) = pools.entry(color).or_default();
+            let (mask, ids) = pools.entry((if self.shape_rules() && self.free_origins.contains_key(&id) {self.free_origins[&id]} else {color},self.free_origins.get(&id).copied().unwrap_or(color))).or_default();
             for f in group {
                 if *mask & (1 << f.cell) != 0 {
                     return None;
@@ -104,14 +106,14 @@ impl State {
             ids.push(id);
         }
         let mut result = vec![];
-        for (old, (mask, ids)) in pools {
+        for ((old,origin), (mask, ids)) in pools {
             let mut candidates = vec![];
             let mut seen = BTreeSet::new();
             if self.shape_rules() {
                 for definition in &crate::pieces::PIECES {
                     for &m in definition.placements {
                         if m&mask==m && !seen.contains(&m) {
-                            if let Some(color)=self.allowed_rebuild(m,old) {seen.insert(m);candidates.push((m,color));}
+                            if let Some(color)=self.allowed_rebuild(m,old,origin,t) {seen.insert(m);candidates.push((m,color));}
                         }
                     }
                 }

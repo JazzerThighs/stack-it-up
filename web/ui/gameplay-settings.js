@@ -1,5 +1,5 @@
 import {S} from '../engine/snapshot.js';
-const checks = {scienceMode:0,clearFullFace:1,clearRingFace:2,clearFullSlice:3,clearRingSlice:4,gravityEnabled:5,freedomEnabled:9,freeSize1:10,freeSize2:11,freeSize3:12,freeSize4:13,fragmentsConnected:14,rebuildQueueShapes:21,rebuildOriginalShape:22,fallOneCell:20};
+const checks = {scienceMode:0,clearFullFace:1,clearRingFace:2,clearFullSlice:3,clearRingSlice:4,gravityEnabled:5,freedomEnabled:9,freeSize1:10,freeSize2:11,freeSize3:12,freeSize4:13,fragmentsConnected:14,rebuildQueueShapes:21,rebuildOriginalShape:22,fallOneCell:20,planeGravity:24};
 const radios = {gravityDirection:[6,4],gravityOccurrence:[8,2],freedomEvent:[16,3],freedomMethod:[18,4]};
 export const gameplayIds = [...Object.keys(checks),...Object.entries(radios).flatMap(([key,[,n]])=>Array.from({length:n},(_,i)=>key+i))];
 export function readGameplay(root=document) {

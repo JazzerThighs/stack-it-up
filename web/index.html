@@ -91,7 +91,7 @@
               </div>
               <div id="forecastReplayBar" class="forecast-replay" hidden><span id="forecastReplayStatus" role="status"></span><button id="forecastStep">Next action</button><button id="forecastRestore">Restore starting puzzle</button><button id="forecastExit">Exit replay</button></div>
 <div class="stage-tools">
-                <span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
+                <span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option><option value="10">J/L - Either shape</option><option value="11">S/Z - Either shape</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
                 <button id="turnWidth" aria-pressed="false" title="Face turns: regular or two layers. Hold Shift while dragging for wide turns.">Regular turns</button>
                 <button id="resetView" title="Reset camera">↺ View</button
                 ><button
@@ -293,8 +293,8 @@
 <fieldset id="piecePoolOptions">
 <legend>Queue pieces</legend>
 <p class="muted">Choose pieces for the next new game. Spatial pieces are assembled around the core, never inside it.</p>
-<div><label><input type="checkbox" id="poolPiece1" checked /> O</label><label><input type="checkbox" id="poolPiece2" checked /> T</label><label><input type="checkbox" id="poolPiece3" checked /> L</label><label><input type="checkbox" id="poolPiece4" checked /> J</label><label><input type="checkbox" id="poolPiece5" checked /> S</label><label><input type="checkbox" id="poolPiece6" checked /> Z</label><label><input type="checkbox" id="poolPiece7" checked /> B — Branch</label><label><input type="checkbox" id="poolPiece8" checked /> D — Right screw</label><label><input type="checkbox" id="poolPiece9" checked /> F — Left screw</label></div>
-<p id="piecePoolNote" class="setting-reason">Confirm in New Game to apply this piece pool.</p>
+<div><label><input type="checkbox" id="poolPiece1" checked /> O</label><label><input type="checkbox" id="poolPiece2" checked /> T</label><label><input type="checkbox" id="poolPiece3" checked /> L</label><label><input type="checkbox" id="poolPiece4" checked /> J</label><label><input type="checkbox" id="poolPiece5" checked /> S</label><label><input type="checkbox" id="poolPiece6" checked /> Z</label><label><input type="checkbox" id="poolPiece7" checked /> B — Branch</label><label><input type="checkbox" id="poolPiece8" checked /> D — Right screw</label><label><input type="checkbox" id="poolPiece9" checked /> F — Left screw</label><label><input type="checkbox" id="poolPiece10" /> J/L - Either shape</label><label><input type="checkbox" id="poolPiece11" /> S/Z - Either shape</label></div>
+<p id="piecePoolNote" class="setting-reason">Confirm in New Game to apply this piece pool. Free J/L and S/Z accept either shape and retain both original reconstruction choices.</p>
 </fieldset>
 <p id="legacyRuleNote" class="muted" hidden>This shared puzzle uses older gameplay rules. Changing a gameplay option adopts the rules shown here and removes movement bandages.</p>
 <p id="gameplayValidation" role="status" class="setting-reason">
@@ -312,7 +312,7 @@
 <option value="3">L</option>
 <option value="4">J</option>
 <option value="5">S</option>
-<option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option>
+<option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option><option value="10">J/L - Either shape</option><option value="11">S/Z - Either shape</option>
 </select>
 <button id="applyCurrent" type="button">Set current piece</button>
 <label for="debugHeld">Hold pocket</label>
@@ -323,7 +323,7 @@
 <option value="3">L</option>
 <option value="4">J</option>
 <option value="5">S</option>
-<option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option>
+<option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option><option value="10">J/L - Either shape</option><option value="11">S/Z - Either shape</option>
 </select>
 <button id="applyHeld" type="button">Set hold pocket</button>
 <p id="debugEditNote" class="muted">
@@ -358,6 +358,8 @@
 </fieldset>
 <fieldset id="gravityDistanceOptions">
 <legend>Fall distance</legend>
+<label><input id="planeGravity" type="checkbox" checked /> Move entire planes together during gravity</label>
+<p class="muted">A layer moves only into a completely empty layer. Cubies keep their positions within the layer, including gaps.</p>
 <label><input id="fallOneCell" type="checkbox" checked /> Fall at most one cell per gravity event</label>
 <p class="muted">Off: pieces settle until blocked. Each cascade clear can trigger another gravity event.</p>
 </fieldset>

@@ -1,3 +1,4 @@
+import {activePieceColor} from '../engine/queue-pieces.js';
 import {registerRenderer,graphicsNotice} from './recovery.js';
 import {vertexCoverage,withCoverage} from './transparency.js';
 import {activeCubie,rebuildSlots} from './active-cubie.js';
@@ -234,7 +235,7 @@ class Renderer {
               ? s[S.REBUILD_COLORS + i]
                 ? rgb(colors[s[S.REBUILD_COLORS + i]])
                 : [1, 1, 1]
-              : rgb(colors[s[S.PIECE]]),
+              : rgb(colors[activePieceColor(s[S.PIECE],s[S.ACTIVE],i)]),
             i,s,this,
           );
           if (occupied) overlapMarks(overlaps, p);
