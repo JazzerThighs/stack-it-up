@@ -153,7 +153,7 @@ context.update();assert.equal($('releaseTrigger').value,'1');assert($('releaseSc
 $('new').onclick();$('freedomEvent1').checked=true;$('freedomEvent1').onchange();
 $('debugCurrent').value='2';$('debugHeld').value='6';
 $('animations').checked=false;await $('setupStart').onclick();flush();
-assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],6);
+assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],7);
 $('debugHeld').value='0';await $('applyHeld').onclick();assert.equal(context.state[164],0);
 $('scienceMode').checked=false;$('scienceMode').onchange();assert($('stageUndo').disabled);assert(!context.engine.game_debug_piece(1,3));
 $('scienceMode').checked=true;$('scienceMode').onchange();assert(!$('stageUndo').disabled);
@@ -228,3 +228,29 @@ $('resetGraphics').onclick();flush();
 assert.equal(recovering.buffers.size,bufferCount);
 assert.deepEqual(context.engine.exportState(),recoveryState);
 console.log('PASS: lost/restored GPU resources and manual graphics reset preserve game, camera, cached buffer references and allocation count.');
+
+$('new').onclick();
+for(let id=1;id<=11;id++)$('poolPiece'+id).checked=id>=10;
+$('debugCurrent').value='10';$('debugHeld').value='11';$('planeGravity').checked=true;
+await $('setupStart').onclick();flush();
+assert.equal(context.engine.game_piece_pool(),1536);
+assert.equal(context.state[55],10);assert.equal(context.state[164],11);
+assert(context.engine.game_rules()&(1<<24));assert.equal(context.engine.exportState()[1],7);
+const {colors:freeColors,rgb:freeRgb}=await import('../dist/render/geometry.js');
+for(const [id,options] of [[10,[4,3]],[11,[5,6]]]) {
+ $('debugCurrent').value=String(id);await $('applyCurrent').onclick();flush();
+ assert.equal(context.state[55],id);
+ const artwork=decodeURIComponent($('target').style.backgroundImage);
+ for(const option of options)assert(artwork.includes(freeColors[option]));
+ assert.equal((artwork.match(/<rect /g)||[]).length,8);assert(artwork.includes('<path '));
+ for(const [,x,y] of artwork.matchAll(/<rect x="([0-9.]+)" y="([0-9.]+)"/g))assert(+x+9<=72&&+y+9<=64,'both previews fit inside the icon');
+ const meshes=[context.renderers[0].activeOnly.data,context.renderers[0].centers.data];
+ for(const option of options)assert(meshes.some(data=>{
+   const color=freeRgb(freeColors[option]);
+   for(let i=6;i<data.length;i+=9)if(color.every((n,j)=>Math.abs(n-data[i+j])<1e-6))return true;
+   return false;
+ }),'both free-choice colors must appear on active spheres');
+}
+$('planeGravity').checked=false;$('planeGravity').onchange();assert(!(context.engine.game_rules()&(1<<24)));
+$('planeGravity').checked=true;$('planeGravity').onchange();assert(context.engine.game_rules()&(1<<24));
+console.log('PASS: free J/L and S/Z setup/hold/current pieces, dual previews, mixed sphere colors and plane-gravity toggle.');

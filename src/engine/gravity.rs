@@ -50,6 +50,9 @@ impl State {
         self.settle_axis(axis, target, event_plane, false);
     }
     pub(super) fn settle_axis(&mut self, axis: usize, target: i32, event_plane: u32, away: bool) {
+        if self.rules.is_some_and(|r|r&(1<<24)!=0) {
+            self.settle_planes(axis,target,event_plane,away);return;
+        }
         let mut groups = self.groups();
         let mut fallen = vec![false; groups.len()];
         loop {
@@ -108,6 +111,34 @@ impl State {
             if !moved {
                 break;
             }
+        }
+    }
+    fn settle_planes(&mut self,axis:usize,target:i32,event_plane:u32,away:bool) {
+        let mut planes:Vec<_>=(0..3).filter_map(|level| {
+            let mask=bits(self.occupied()).filter(|&i|xyz(i)[axis]==level).fold(0,|m,i|m|1<<i);
+            (mask!=0).then_some((level,mask,false))
+        }).collect();
+        planes.sort_by_key(|&(level,_,_)|if away {-(level-target).abs()}else{(level-target).abs()});
+        loop {
+            let mut moved=false;
+            for (level,mask,fallen) in &mut planes {
+                if self.gravity_one_step && *fallen {continue;}
+                let step=(target-*level).signum()*if away {-1}else{1};
+                let next_level=*level+step;
+                if step==0 || !(0..3).contains(&next_level) {continue;}
+                // Any occupant blocks the entire destination plane, including its gaps.
+                if bits(self.occupied()).any(|i|xyz(i)[axis]==next_level) {continue;}
+                let board=self.board;let ids=self.ids;
+                let mut origins=std::array::from_fn(|i|i);let mut next=0;
+                for i in bits(*mask) {self.board[i]=0;self.ids[i]=0;}
+                for i in bits(*mask) {
+                    let mut p=xyz(i);p[axis]+=step;let j=idx(p);
+                    self.board[j]=board[i];self.ids[j]=ids[i];origins[j]=i;next|=1<<j;
+                }
+                *mask=next;*level=next_level;*fallen=true;moved=true;
+                self.record(3,next,event_plane,origins);
+            }
+            if !moved {break;}
         }
     }
     pub fn clear_plane_mask(t: &Tables, plane: usize) -> u32 {

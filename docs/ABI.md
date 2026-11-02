@@ -105,3 +105,24 @@ must reject v6 rather than reinterpret it.
 Partial groups use the high bit plus their group index; whole groups retain
 their physical placement IDs. The browser uses these values in `rebuildIds`
 to assign distinct solids to freed groups, including partial fragments.
+
+## Free queue choices and plane gravity
+
+Queue/hold IDs 10 and 11 represent J/L and S/Z choices. They are queue options,
+not new geometric catalog entries. Queue pools now accept bits 0–10. Placement
+uses the union of both choices, retaining the planar automatic fallback tiers.
+Board and fragment color IDs remain 1–9. The selected face determines the placed
+shape/color. An ID-to-choice map preserves the original free choice through
+release, reconstruction, gravity, undo and state sharing. Reconstruction queue
+constraints accept either constituent when the corresponding free option is enabled.
+
+Rules bit 24 selects plane gravity (enabled in new-game UI defaults). A nonempty
+layer perpendicular to gravity moves only into a completely empty adjacent layer;
+its occupied cells keep their offsets, colors and IDs. The existing one-cell
+limit applies independently to each moving layer. With this bit off, legacy
+fragment gravity remains available.
+
+Transport v7 retains the v6 layout and appends a count followed by (placement ID,
+original queue choice) pairs for surviving free-origin pieces. It supports an
+11-bit pool and queue/hold values up to 11, while stack/floating colors stay bounded
+to nine. Previous transport versions retain their rules and do not gain plane gravity.

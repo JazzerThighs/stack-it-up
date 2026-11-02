@@ -2,7 +2,7 @@ import {turnTransform,composeRotation,movedCell} from '../render/transforms.js';
 import {CubeStack} from "../engine/coordinates.js";
 import { S } from "../engine/snapshot.js";
 const $ = (id) => document.getElementById(id);
-const names = ["", "O", "T", "L", "J", "S", "Z"];
+const names = ["", "O", "T", "L", "J", "S", "Z", "B", "D", "F", "J/L", "S/Z"];
 export const copyState=s=>{const copy=s.slice();if(s.solidRotations)copy.solidRotations=s.solidRotations.slice();if(s.rebuildIds)copy.rebuildIds=s.rebuildIds.slice();return copy;};
 // Carry the visible active cells to the end of the player's completed turn.
 export function landedState(before, move) {

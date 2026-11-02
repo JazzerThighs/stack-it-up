@@ -8,12 +8,12 @@ pub struct Placement {
 pub struct Tables {
     /// Connected nonplanar tetracubes: both screws and the branch.
     pub tetracubes: Vec<u32>,
-    pub placements: [Vec<Placement>; 9],
+    pub placements: [Vec<Placement>; 11],
     /// Non-facebound planar placements, ordered surface-only then core-containing.
-    pub fallback: [Vec<(u32, u8)>; 9],
+    pub fallback: [Vec<(u32, u8)>; 11],
     /// All legal inventories, sorted by minimum separation then total separation.
-    pub spawns: [Vec<(u32, u32)>; 9],
-    pub inventory: [(usize, usize); 9],
+    pub spawns: [Vec<(u32, u32)>; 11],
+    pub inventory: [(usize, usize); 11],
     pub faces: [u32; 6],
     pub edges: u32,
     pub corners: u32,
@@ -30,7 +30,8 @@ impl Tables {
         let edges = (0..27).filter(|&i| kind(i) == 2).fold(0, |m, i| m | 1 << i);
         let corners = (0..27).filter(|&i| kind(i) == 3).fold(0, |m, i| m | 1 << i);
         let faces = std::array::from_fn(|f| (0..9).fold(0, |m, i| m | 1 << cell(f, i % 3, i / 3)));
-        let placements: [Vec<Placement>;9] = std::array::from_fn(|piece| {
+        let mut placements: [Vec<Placement>;11] = std::array::from_fn(|piece| {
+            if piece >= 9 {return vec![];}
             if piece >= 6 {
                 return crate::pieces::PIECES[piece].surface_placements.iter()
                     .map(|&mask|Placement{face:6,mask,required:mask}).collect();
@@ -68,6 +69,9 @@ impl Tables {
             }
             out
         });
+        for (alias,a,b) in [(9,2,3),(10,4,5)] {
+            placements[alias]=placements[a].iter().chain(&placements[b]).copied().collect();
+        }
         let inventory = std::array::from_fn(|i| {
             (
                 placements[i]
@@ -82,10 +86,10 @@ impl Tables {
                     .unwrap(),
             )
         });
-        let fallback = std::array::from_fn(|piece| if piece < 6 { spatial_placements(piece, &faces) } else { vec![] });
+        let fallback = std::array::from_fn(|piece| if piece < 6 { spatial_placements(piece, &faces) } else if piece>=9 {spatial_placements(if piece==9 {2}else{4}, &faces)} else { vec![] });
         let spawns = std::array::from_fn(|piece| {
             let (ne, nc) = inventory[piece];
-            let ns = if piece < 6 {1} else {crate::pieces::PIECES[piece].surface_inventory[0]};
+            let ns = if piece < 6 || piece>=9 {1} else {crate::pieces::PIECES[piece].surface_inventory[0]};
             let center_sets = combinations(centers, ns);
             let es = combinations(edges, ne);
             let cs = combinations(corners, nc);
@@ -248,4 +252,28 @@ pub fn combinations(pool: u32, n: usize) -> Vec<u32> {
     let mut out = Vec::new();
     visit(pool, n, 0, &mut out);
     out
+}
+
+/// Queue-only free choices; catalog and packing IDs remain the original nine.
+pub fn choices(piece:u8)->&'static [u8] {
+    match piece {1=>&[1],2=>&[2],3=>&[3],4=>&[4],5=>&[5],6=>&[6],7=>&[7],8=>&[8],9=>&[9],10=>&[4,3],11=>&[5,6],_=>&[]}
+}
+pub fn queue_color(piece:u8,mask:u32)->u8 { queue_color_on(piece,mask,None) }
+pub fn queue_color_on(piece:u8,mask:u32,face:Option<usize>)->u8 {
+    if piece<10 {return piece;}
+    for &color in choices(piece) {
+        let mut shape=SHAPES[color as usize-1];
+        for _ in 0..4 {
+            let x=shape.iter().map(|p|p[0]).min().unwrap();
+            let y=shape.iter().map(|p|p[1]).min().unwrap();
+            for p in &mut shape {p[0]-=x;p[1]-=y;}
+            let w=shape.iter().map(|p|p[0]).max().unwrap();
+            let h=shape.iter().map(|p|p[1]).max().unwrap();
+            for f in (0..6).filter(|f|face.is_none_or(|chosen|chosen==*f)) {for u in 0..3-w {for v in 0..3-h {
+                if shape.iter().fold(0,|m,p|m|1<<cell(f,u+p[0],v+p[1]))==mask {return color;}
+            }}}
+            for p in &mut shape {*p=[-p[1],p[0]];}
+        }
+    }
+    choices(piece)[0]
 }

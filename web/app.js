@@ -1,7 +1,7 @@
 import {startupCheck,startupError,packingProgress} from './ui/startup.js';
 import {installRecovery} from './render/recovery.js';
 import {createLocalGame} from './ui/local-game.js';
-import {pieces} from './engine/pieces.js';
+import {pieces,isSpatial,choices,freePreview} from './engine/queue-pieces.js';
 import {spatialPreview} from './ui/spatial-preview.js';
 import {initializeGameplay,readGameplay,writeGameplay,refreshGameplay} from './ui/gameplay-settings.js';
 import { createReplay } from './ui/forecast-replay.js';
@@ -62,10 +62,10 @@ function shape(el) {
     return i;
   });
   return (piece) => {
-    el.style.color = colors[piece];
-    const spatial=piece>6;
+    el.style.color = colors[choices(piece)[0]];
+    const spatial=isSpatial(piece) || piece>=10;
     el.classList.toggle('spatial-shape',spatial);
-    el.style.backgroundImage=spatial?spatialPreview(pieces[piece===8?8:piece-1].cells,colors[piece],piece===8):'';
+    el.style.backgroundImage=piece>=10?freePreview(piece,colors):spatial?spatialPreview(pieces[piece===8?8:piece-1].cells,colors[piece],piece===8):'';
     el.title=pieces[piece-1]?.name || 'Empty';
     cells.forEach((c, i) =>
       c.classList.toggle("filled", piece>0 && piece<=6 && !!(state[134 + piece - 1] & (1 << i))),
@@ -222,12 +222,12 @@ function update(message) {
     `Hold / swap: ${names[state[S.HELD]] || "empty"}${state[S.HOLD_USED] ? ", available after placement" : ""}`,
   );
   $("pieceName").textContent = names[p];
-  $("pieceName").style.color = colors[p];
+  $("pieceName").style.color = colors[choices(p)[0]];
   $("target").setAttribute("aria-label", `${names[p]} tetromino`);
-  const edges = state[140 + (p - 1) * 2],
-    corners = state[141 + (p - 1) * 2];
+  const edges = pieces[p-1].surfaceInventory[1],
+    corners = pieces[p-1].surfaceInventory[2];
   $("inventory").textContent =
-    `1 center · ${edges} edge${edges === 1 ? "" : "s"} · ${corners} corner${corners === 1 ? "" : "s"}`;
+    `${p<=6 ? 1 : pieces[p-1].surfaceInventory[0]} center(s), ${edges} edge(s), ${corners} corner(s)`;
   queueShapes.forEach((q, i) => {
     q.update(state[56 + i]);
     q.label.textContent = names[state[56 + i]];
@@ -267,7 +267,7 @@ function update(message) {
     b.querySelector("span").textContent = n ? `${n} ✓` : "";
   });
   $("hint").textContent = state[S.PENDING_FACES]
-    ? state[S.PIECE]>6 ? "Choose a spatial placement, or undo to keep turning." : "Choose a highlighted face, or undo to keep turning."
+    ? isSpatial(state[S.PIECE]) ? "Choose a spatial placement, or undo to keep turning." : "Choose a highlighted face, or undo to keep turning."
     : state[S.OVER]
       ? "Top out. Undo a turn or start a new game."
       : wins
@@ -276,8 +276,8 @@ function update(message) {
   $("message").textContent = state[S.PENDING_FACES]
     ? "This piece has multiple placements. Choose where to place it."
     : state[S.OVER]
-      ? state[S.PIECE]>6 ? "Top out: no non-core placement fits." : "Top out: no face, surface, or internal placement fits."
-      : message || (p>6 ? `Build ${names[p]} around the core.` : `Build ${names[p]} on any free face.`);
+      ? isSpatial(state[S.PIECE]) ? "Top out: no non-core placement fits." : "Top out: no face, surface, or internal placement fits."
+      : message || (isSpatial(p) ? `Build ${names[p]} around the core.` : `Build ${names[p]} on any free face.`);
   for (let f = 0; f < 6; f++)
     for (let c = 0; c < 9; c++) {
       const i = state[80 + f * 9 + c],
@@ -289,7 +289,7 @@ function update(message) {
         : state[i]
           ? colors[state[i]]
           : active
-            ? colors[p]
+            ? colors[choices(p)[0]]
             : "";
       el.classList.toggle("active", active);
       el.classList.toggle("overlap", active && !!state[i]);
@@ -320,7 +320,7 @@ function syncChoices() {
       b.title=`Placement ${i+1}; cells ${cells.map(p=>p.join(',')).join(' / ')}`;
     }
   });
-  faceButtons.forEach(b=>b.hidden=state[S.PIECE]>6);
+  faceButtons.forEach(b=>b.hidden=isSpatial(state[S.PIECE]));
   if (state[S.PENDING_FACES]) selectMode("face");
 }
 const faceButtons = faceLabels.map((label, f) => {

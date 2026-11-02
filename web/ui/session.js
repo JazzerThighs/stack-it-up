@@ -20,7 +20,7 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
   $("setupDialog").addEventListener("close", restoreRules);
   $("setupCancel").onclick = () => { $("setupDialog").close(); restoreRules(); update(); };
   $("setupStart").onclick = async () => {
-    if(!Array.from({length:9},(_,i)=>$("poolPiece"+(i+1))).some(el=>el.checked)) {
+    if(!Array.from({length:11},(_,i)=>$("poolPiece"+(i+1))).some(el=>el.checked)) {
       $("piecePoolNote").textContent="Select at least one queue piece.";return;
     }
     validateGameplay(document);

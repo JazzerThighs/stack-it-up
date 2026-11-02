@@ -36,7 +36,7 @@ impl Game {
         self.revision += 1;
     }
     pub fn set_piece_pool(&mut self, pool:u32, redeal:bool)->bool {
-        if pool==0 || pool & !511 !=0 || !self.pending.is_empty() || self.state.over { return false; }
+        if pool==0 || pool & !2047 !=0 || !self.pending.is_empty() || self.state.over { return false; }
         if redeal && self.state.pieces!=0 {return false;}
         if !redeal && pool==self.state.piece_pool {return true;}
         self.save_history();
@@ -244,7 +244,7 @@ impl Game {
         };
         self.pending.clear();
         self.state.finish_rebuilds(&self.tables);
-        let piece = self.state.lock_mask(hit.mask);
+        let piece = self.state.lock_mask_on(hit.mask,(hit.face<6).then_some(hit.face));
         self.state.last_lock = Some(((hit.face<6).then_some(hit.face), piece, hit.mask));
         self.state.clear(&self.tables);
         self.state.spawn(&self.tables);
