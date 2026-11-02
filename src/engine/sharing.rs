@@ -3,11 +3,11 @@ use super::*;
 impl Game {
     pub fn export_state(&self) -> Vec<u32> {
         let s = &self.state;
-        let spatial=s.piece_pool!=63 || s.board.iter().chain(s.queue.iter()).any(|&p|p>6) || s.held>6 || s.floating.iter().any(|f|f.color>6);
+        let spatial=s.shape_rules() || s.piece_pool!=63 || s.board.iter().chain(s.queue.iter()).any(|&p|p>6) || s.held>6 || s.floating.iter().any(|f|f.color>6);
         let extended=spatial || s.rules.is_some() || s.release_trigger!=0 || !s.release_bandaged || s.release_scattered || s.release_selection!=0 || s.release_started.is_some() || !s.free_groups.is_empty();
         let mut v = vec![
             0x53554931,
-            if spatial {5} else if s.rules.is_some() {4} else if extended {3} else {2},
+            if s.shape_rules() {6} else if spatial {5} else if s.rules.is_some() {4} else if extended {3} else {2},
             s.rng,
             s.active,
             s.pieces,
@@ -62,7 +62,7 @@ impl Game {
                 return None;
             }
             let version=it.next()?;
-            if !(1..=5).contains(&version) { return None; }
+            if !(1..=6).contains(&version) { return None; }
             let max_piece=if version>=5 {9} else {6};
             let mut s = State::empty(it.next()?);
             s.active = it.next()?;
@@ -224,7 +224,7 @@ impl Game {
             }
             if version >= 4 {
                 let rules=it.next()?; let plane=it.next()?;
-                if !(version==5 && rules==u32::MAX) && !State::valid_rules(rules) || plane>9 { return None; }
+                if (version<6 && rules!=u32::MAX && rules&(7<<21)!=0) || !(version==5 && rules==u32::MAX) && !State::valid_rules(rules) || plane>9 { return None; }
                 s.rules=(rules!=u32::MAX).then_some(rules); s.gravity_plane=(plane!=9).then_some(plane as usize);
                 if s.rules.is_some() && !s.bands.is_empty() { return None; }
             }

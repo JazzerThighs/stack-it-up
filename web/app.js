@@ -1,3 +1,6 @@
+import {startupCheck,startupError,packingProgress} from './ui/startup.js';
+import {installRecovery} from './render/recovery.js';
+import {createLocalGame} from './ui/local-game.js';
 import {pieces} from './engine/pieces.js';
 import {spatialPreview} from './ui/spatial-preview.js';
 import {initializeGameplay,readGameplay,writeGameplay,refreshGameplay} from './ui/gameplay-settings.js';
@@ -39,6 +42,14 @@ let engine,
   busy = false;
 let lockMode = false;
 let session;
+const localGame = createLocalGame({engine:()=>engine, started:()=>session?.started,
+  chooseNext:()=>$('chooseNext').checked});
+function saveLocalGame() {
+  if (session?.started && !localGame.save())
+    $('graphicsStatus').textContent = 'Local saving is unavailable. Use Copy state in settings to keep your game.';
+}
+globalThis.addEventListener?.('pagehide', saveLocalGame);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveLocalGame(); });
 const animations = $("animations");
 animations.checked = !matchMedia("(prefers-reduced-motion: reduce)").matches;
 const moveButtons = [],
@@ -167,6 +178,7 @@ function snapshot() {
   return engine.snapshot();
 }
 function update(message) {
+  saveLocalGame();
   state = snapshot();
   writeGameplay(engine.game_rules());
   $("earlyLock").checked = !!engine.game_early_lock();
@@ -823,7 +835,10 @@ initializeGameplay(context);
 selectMode("face");
 async function start() {
   try {
+    startupCheck('engine','Loading and validating the Rust/Wasm engine');
     engine = await createEngine();
+    startupCheck('engine','Rust/Wasm engine ready',true);
+    startupCheck('graphics','Creating WebGL views and compiling shaders');
     const onOrbit = orbitCamera;
     renderers = [
       new Renderer($("control"), $("controlLabels"), {
@@ -832,6 +847,7 @@ async function start() {
       }),
       new Renderer($("stack"), $("stackLabels"), { stack: true, onOrbit }),
     ];
+    startupCheck('graphics','WebGL views and shaders ready',true);
     syncDisplaySettings();
     renderers[0].combined = $("combined").checked;
     refreshSettings();
@@ -848,9 +864,19 @@ async function start() {
     renderers.forEach((r) => observer.observe(r.canvas));
     $("new").disabled = false;
     $("engineStatus").textContent = "Ready";
-    await newGame();
-    if (!$("gamePage").hidden) session.setup();
+    const saved = localGame.restore();
+    if (saved.restored) {
+      session.resume(saved.chooseNext);
+      update('Saved game restored. Undo history begins with this session.');
+      startupCheck('saved','Saved game restored',true);
+    } else {
+      await newGame();
+      startupCheck('saved',saved.error ? 'Saved game could not be restored; ready for a new game' : 'No saved game; ready for a new game',true);
+      if (!$("gamePage").hidden) session.setup();
+    }
+    installRecovery();
   } catch (error) {
+    startupError(error);
     $("message").textContent = error.message;
     $("engineStatus").textContent = "Unable to start";
     console.error(error);
@@ -876,7 +902,7 @@ function selectApplication(explorer) {
     $(id).tabIndex = selected ? 0 : -1;
   }
   if (explorer && !$("explorer").explorerReady)
-    mountExplorer($("explorer")).catch(console.error);
+    mountExplorer($("explorer"),packingProgress).then(() => startupCheck('explorer','Packing data, controls and cube views ready',true)).catch(startupError);
   if (!explorer) {
     invalidate();
     if (engine && !busy && !session.started && !session.starting) session.setup();
@@ -895,4 +921,6 @@ for (const id of ["gameTab", "explorerTab"]) {
   });
 }
 
+if (globalThis.location?.hash === '#game') startupCheck('explorer','Packing explorer loads when opened',true);
+else startupCheck('explorer','Loading packing data, controls and cube views');
 selectApplication(globalThis.location?.hash !== "#game");

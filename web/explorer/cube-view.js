@@ -1,3 +1,4 @@
+import {unregisterRenderer} from '../render/recovery.js';
 import {solidStyleKey} from '../render/identity-solids.js';
 import {visualSettings} from '../render/visual-settings.js';
 import {mergeFragments,joinMeshes,exposedFragment,neighborCell} from '../render/cell-fragments.js';
@@ -106,10 +107,7 @@ export class PackingCube extends Renderer {
         this.play(m + (e.shiftKey ? 15 : 0));
       }
     });
-    canvas.addEventListener("webglcontextlost", () => {
-      this.status.textContent =
-        "Graphics unavailable. Reload to restore the cube.";
-    });
+
   }
   setCells(cells) {
     this.generation++;
@@ -228,6 +226,7 @@ export class PackingCube extends Renderer {
     });
   }
   draw() {
+    if (this.contextLost || this.gl.isContextLost?.()) return;
     if (!this.isVisible()) return;
     const rect = this.canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -272,15 +271,15 @@ export class PackingCube extends Renderer {
     );
   }
   destroy() {
+    unregisterRenderer(this);
     this.generation++;
     this.observer.disconnect();
     if (this.pendingFrame) cancelAnimationFrame(this.pendingFrame);
-    for (const value of Object.values(this))
-      if (value?.vao) {
-        this.gl.deleteBuffer(value.buffer);this.gl.deleteBuffer(value.coverageBuffer);
-        this.gl.deleteVertexArray(value.vao);
-      }
-    for(const buffer of [...(this.explorationLayers || []),...(this.fixedSolidBuffers || [])]) {this.gl.deleteBuffer(buffer.buffer);this.gl.deleteBuffer(buffer.coverageBuffer);this.gl.deleteVertexArray(buffer.vao);}
+    for (const value of this.buffers) {
+      this.gl.deleteBuffer(value.buffer);this.gl.deleteBuffer(value.coverageBuffer);
+      this.gl.deleteVertexArray(value.vao);
+    }
+    this.buffers.clear();
     this.asciiPass?.destroy();
     this.ditherPass?.destroy();
     this.gl.deleteProgram(this.program);

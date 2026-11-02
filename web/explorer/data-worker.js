@@ -1,19 +1,24 @@
+import {loadPackingAsset} from './asset-loader.js';
 import {PackingStore} from './data-store.js';
 const base=new URL('./data/',import.meta.url);
 let store;
+const report = progress => self.postMessage({progress});
 async function init() {
   const response=await fetch(new URL('manifest.json',base));if(!response.ok)throw Error('Local packing manifest unavailable; rebuild the app');
   const manifest=await response.json();
+  report({phase:'manifest',total:manifest.count});
   const load=async name=>{
     const asset=manifest.assets[name];if(!asset)throw Error('Unknown dataset asset');
-    const r=await fetch(new URL(name,base));if(!r.ok)throw Error(`Cannot load local packing asset ${name}`);
-    const bytes=await r.arrayBuffer();
-    const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
-    if(hash!==asset.sha256)throw Error('Packing asset checksum mismatch; reload the app');
-    const decoded=new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
-    if(decoded.byteLength!==asset.bytes)throw Error('Packing asset size mismatch');return decoded;
+    const index=name==='index.bin.gz';
+    return loadPackingAsset(new URL(name,base),asset,event=>report({
+      ...event,asset:index?'index':'family',name,
+      ...(index&&event.phase==='decode'?{packings:Math.floor(event.loaded/20),packingTotal:manifest.count}:{})
+    }));
   };
-  store=new PackingStore(manifest,await load('index.bin.gz'),load);
+  const index=await load('index.bin.gz');
+  report({phase:'metadata',loaded:0,total:manifest.families.length});
+  store=new PackingStore(manifest,index,load,report);
+  report({phase:'metadata',loaded:manifest.families.length,total:manifest.families.length});
   return {dataset:manifest.dataset,version:manifest.version,count:manifest.count,families:manifest.families,bags:manifest.bags,officialFamily:store.officialFamily};
 }
 let chain=Promise.resolve();

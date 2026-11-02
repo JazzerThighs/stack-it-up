@@ -63,7 +63,7 @@ console.log(`PASS: all ${manifest.count} members, ${manifest.families.length} fa
 const pending=new Map();let sequence=0;
 const originalFetch=globalThis.fetch;
 globalThis.fetch=async url=>new Response(await readFile(new URL(new URL(url).pathname.split('/').pop(),base)));
-globalThis.self={postMessage:message=>{const resolve=pending.get(message.id);pending.delete(message.id);resolve(message);}};
+globalThis.self={postMessage:message=>{if(message.progress)return;const resolve=pending.get(message.id);pending.delete(message.id);resolve(message);}};
 await import('../web/explorer/data-worker.js');
 const call=(method,...args)=>new Promise(resolve=>{const id=++sequence;pending.set(id,resolve);self.onmessage({data:{id,method,args}});});
 const initialized=await call('init');assert.equal(initialized.value.count,manifest.count);

@@ -9,6 +9,29 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
+    <section id="startupScreen" class="startup-screen" aria-label="Startup checks">
+      <div class="startup-card">
+        <h1>Stack It Up</h1><p>Preparing your cubes…</p>
+        <ul aria-live="polite">
+          <li id="startup-engine">Waiting for the Rust game engine</li>
+          <li id="startup-graphics">Waiting for WebGL and shaders</li>
+          <li id="startup-saved">Checking for a saved game</li>
+          <li id="startup-explorer">Waiting for the packing explorer</li>
+        </ul>
+        <div id="packingLoadProgress" class="packing-load-progress" hidden>
+          <label for="packingLoadBar">Packing metadata loaded</label>
+          <progress id="packingLoadBar" max="1" value="0"></progress>
+          <div id="packingLoadCount">Reading packing total…</div>
+          <label id="packingWorkLabel" for="packingWorkBar">Preparing packing data</label>
+          <progress id="packingWorkBar" max="1" value="0"></progress>
+          <div id="packingWorkCount"></div>
+          <p id="packingCacheStatus">Family cube data is loaded on demand and cached in memory.</p>
+        </div>
+        <p id="startupError" role="alert"></p>
+        <div id="startupActions" hidden><button onclick="location.reload()">Retry startup</button>
+          <button onclick="document.getElementById('startupScreen').hidden=true">Dismiss</button></div>
+      </div>
+    </section>
     <main class="explorer-active">
       <header class="topbar">
         <a class="brand" href="#" aria-label="Stack It Up home"
@@ -33,6 +56,7 @@
             Packing
           </button>
         </nav>
+        <button id="resetGraphics" type="button" aria-label="Reset graphics without changing the puzzle" title="Rebuild graphics without changing the puzzle"><span aria-hidden="true">↻</span><span class="graphics-button-label"> Reset graphics</span></button>
       </header>
 
       <div id="gamePage" hidden role="tabpanel" aria-labelledby="gameTab">
@@ -354,8 +378,11 @@
 <legend>Reconstruction</legend>
 <label><input id="fragmentsConnected" type="checkbox" checked /> Fragments must be face-to-face connected when locking</label>
 <div class="setting-dependency">
-<label><input id="fragmentsFacebound" type="checkbox" checked /> Each reconstructed piece must lie on one outer face</label>
-<p id="faceboundDependency" class="setting-reason">Requires connected fragments.</p>
+<div id="reconstructionShapeRules">
+<label><input id="rebuildQueueShapes" type="checkbox" checked /> Reconstructed tetracubes must be shapes enabled in the queue</label>
+<label><input id="rebuildOriginalShape" type="checkbox" /> Reconstructed tetracubes must match their original shape</label>
+<p class="setting-reason">Applies to four-cubie pieces. Smaller fragments only need to reconnect within their own group. When both options are enabled, both must be satisfied.</p>
+</div>
 </div>
 <p class="muted">Connection applies to each released fragment separately, including single cubies. The same-face requirement also applies to whole-piece reconstruction. Each piece may use a different face. They lock with the successful sphere piece. Stack overlap always blocks placement.</p>
 </fieldset>
@@ -656,9 +683,9 @@
               fragments</label
             >
 <div class="setting-dependency">
-<p class="setting-reason" id="rebuildShapeOptionsReason">Enable whole-piece reconstruction, or have rebuilding pieces in play.</p>
+<p class="setting-reason" id="rebuildShapeOptionsReason">Enable stack-piece release, or have freed pieces in play.</p>
 <fieldset id="rebuildShapeOptions" aria-describedby="rebuildShapeOptionsReason">
-<label><input id="rebuildSolidIdentities" type="checkbox" checked /> Distinguish freed whole-piece IDs with solid shapes</label>
+<label><input id="rebuildSolidIdentities" type="checkbox" checked /> Distinguish freed groups with solid shapes</label>
 </fieldset>
 </div>
 <div class="setting-dependency">
@@ -962,7 +989,8 @@
         ><button id="confirmNew" value="new" class="primary">New game</button>
       </form>
     </dialog>
+    <p id="graphicsStatus" class="graphics-status" role="status"></p>
     <noscript>This game requires JavaScript and WebGL 2.</noscript>
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./boot.js"></script>
   </body>
 </html>

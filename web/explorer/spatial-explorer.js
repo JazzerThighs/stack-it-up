@@ -8,7 +8,7 @@ import {OFFICIAL_MASKS} from './data-store.js';
 export async function initializeSpatialExplorer(root=document,dependencies={}) {
   const $=id=>root.getElementById(id);
   $('status').textContent='Loading local tetracube index…';
-  const client=await (dependencies.client||createPackingClient());
+  const client=await (dependencies.client||createPackingClient({onProgress:dependencies.onProgress}));
   const engine=await (dependencies.engine||createEngine());
   $('positionalColors').closest('label').title='Assign a distinct color to each physical piece ID.';
   $('datasetSelect').value=dependencies.dataset==='classic'?'classic':'spatial';

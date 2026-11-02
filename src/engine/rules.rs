@@ -2,7 +2,8 @@
 use super::*;
 impl State {
     pub fn valid_rules(r: u32) -> bool {
-        r >> 21 == 0
+        r >> 24 == 0
+            && (r & (7<<21) == 0 || r & (1<<23) != 0)
             && r & 30 != 0
             && (r & (1 << 9) == 0 || r & (15 << 10) != 0)
             && (r >> 16) & 3 < 3
@@ -55,6 +56,12 @@ impl State {
             };
             let g = candidates.remove(index);
             if g.mask.count_ones() == 4 {
+                if self.shape_rules() {
+                    let old=self.board[g.mask.trailing_zeros() as usize];
+                    let color=std::iter::once(old).chain(1..=9).find(|&c|
+                        crate::pieces::PIECES[c as usize-1].placements.contains(&g.mask)).unwrap_or(old);
+                    for i in bits(g.mask) {self.board[i]=color;}
+                }
                 self.rebuild_ids.push(g.id);
             } else {
                 self.free_groups.push(g.mask);

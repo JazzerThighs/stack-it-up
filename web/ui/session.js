@@ -63,5 +63,5 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
       $("stateDialog").close();
     } catch (e) { $("stateStatus").textContent = e.message; }
   };
-  return {setup, get starting() {return starting;}, get started() {return started;}, syncTheory};
+  return {setup, resume(chooseNext=false) { started=true; $('chooseNext').checked=chooseNext; syncTheory(); }, get starting() {return starting;}, get started() {return started;}, syncTheory};
 }

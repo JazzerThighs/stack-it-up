@@ -86,3 +86,22 @@ The scalar snapshot remains 226 words, version 4. Piece IDs now also include 7=B
 - `game_choose(choice)`: accepts either kind of pending choice. Spatial locks leave LAST_FACE zero and carry LAST_MASK as normal.
 
 State transport v5 preserves existing header/variable sections, writes the v3 release extension and v4 rules/plane tail, and then appends `piece_pool`. In v5, rules `0xffffffff` means legacy mode. Classic states with the default classic pool retain legacy transport versions. Import validates v5 IDs, pool, and non-core spatial active inventory. Readers supporting only v1..v4 must reject v5 rather than reinterpret it.
+
+## Reconstruction shape rules
+
+State transport v6 uses the v5 payload layout, including the queue pool. Rules
+bit 23 marks the new reconstruction semantics; bit 21 restricts four-cubie
+reconstructions to queue-enabled shapes, and bit 22 requires their original
+shape. Both restrictions apply when both are set. Bit 14 still requires
+face-to-face connectivity. When it is off, the shape restrictions are ignored.
+With connectivity on, groups smaller than four need only reconnect within their
+own group; four-cubie groups must form a catalog tetracube. Bit 15 no longer
+restricts modern reconstructions to one outer face. Original shape is captured
+from the released geometry, with its prior shape ID preferred where applicable.
+Legacy transports retain their previous reconstruction rules. Older readers
+must reject v6 rather than reinterpret it.
+
+`active_group_at(cell)` provides presentation identity for all freed cubies.
+Partial groups use the high bit plus their group index; whole groups retain
+their physical placement IDs. The browser uses these values in `rebuildIds`
+to assign distinct solids to freed groups, including partial fragments.

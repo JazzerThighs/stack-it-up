@@ -1,3 +1,4 @@
+import {registerRenderer,graphicsNotice} from './recovery.js';
 import {vertexCoverage,withCoverage} from './transparency.js';
 import {activeCubie,rebuildSlots} from './active-cubie.js';
 import {mergeFragments,joinMeshes,exposedFragment,neighborCell} from './cell-fragments.js';
@@ -67,6 +68,43 @@ class Renderer {
       throw new Error(
         "WebGL 2 is unavailable. Please enable hardware acceleration or try a current browser.",
       );
+    this.buffers = new Set();
+    this.initializeProgram();
+    this.activeLines = this.buffer();
+    this.centers = this.buffer();
+    this.overlaps = this.buffer();
+    this.grid = this.buffer();
+    this.solid = this.buffer();
+    this.lines = this.buffer();
+    this.empty = this.buffer();
+    this.stackMesh = this.buffer();
+    this.ghostSolid = this.buffer();
+    this.ghostLines = this.buffer();
+    this.previewLines = this.buffer();
+    this.combined = false;
+    this.ghost = null;
+    this.preview = 0;
+    this.activeOnly = this.buffer();
+    this.floatingMesh = this.buffer();
+    this.bandMesh = this.buffer();
+    this.bandCache = new Map();
+    this.decorBuffers = {};
+    this.transparentBuffer = this.buffer();
+    installCubeDrag(this, onOrbit, inputContext);
+    this.requestDraw = () => (inputContext?.invalidate || (() => this.draw()))();
+    registerRenderer(this);
+    canvas.addEventListener("webglcontextlost", e => {
+      e.preventDefault();
+      this.contextLost = true;
+      graphicsNotice("Graphics paused. Waiting for browser recovery; your puzzle is unchanged.");
+    });
+    canvas.addEventListener("webglcontextrestored", () => {
+      try { this.restoreGraphics(); graphicsNotice("Graphics restored. Your puzzle is unchanged.", 3500); }
+      catch (error) { graphicsNotice("Graphics recovery failed. Try Reset graphics."); console.error(error); }
+    });
+  }
+  initializeProgram() {
+    const gl = this.gl;
     this.program = gl.createProgram();
     for (const [type, source] of [
       [gl.VERTEX_SHADER, VS],
@@ -89,35 +127,34 @@ class Renderer {
         gl.getUniformLocation(this.program, n),
       ]),
     );
-    this.activeLines = this.buffer();
-    this.centers = this.buffer();
-    this.overlaps = this.buffer();
-    this.grid = this.buffer();
-    this.solid = this.buffer();
-    this.lines = this.buffer();
-    this.empty = this.buffer();
-    this.stackMesh = this.buffer();
-    this.ghostSolid = this.buffer();
-    this.ghostLines = this.buffer();
-    this.previewLines = this.buffer();
-    this.combined = false;
-    this.ghost = null;
-    this.preview = 0;
-    this.activeOnly = this.buffer();
-    this.floatingMesh = this.buffer();
-    this.bandMesh = this.buffer();
-    this.bandCache = new Map();
-    this.decorBuffers = {};
-    this.transparentBuffer = this.buffer();
-    installCubeDrag(this, onOrbit, inputContext);
-    canvas.addEventListener("webglcontextlost", (e) => {
-      e.preventDefault();
-      const message = document.getElementById("message");
-      if (message)
-        message.textContent =
-          "Graphics context lost. Reload the page to restart the renderer.";
-    });
   }
+  restoreGraphics() {
+    const gl = this.gl;
+    if (gl.isContextLost?.()) {
+      gl.getExtension('WEBGL_lose_context')?.restoreContext();
+      return false;
+    }
+    const buffers = [...this.buffers];
+    this.asciiPass?.destroy(); this.ditherPass?.destroy();
+    this.asciiPass = this.ditherPass = null;
+    gl.deleteProgram(this.program);
+    this.initializeProgram();
+    this.buffers.clear();
+    this.contextLost = false;
+    for (const target of buffers) {
+      gl.deleteBuffer(target.buffer); gl.deleteBuffer(target.coverageBuffer);
+      gl.deleteVertexArray(target.vao);
+      const replacement = this.buffer();
+      this.buffers.delete(replacement);
+      Object.assign(target, replacement);
+      this.buffers.add(target);
+      if (target.data) this.upload(target, target.data);
+    }
+    this.contextLost = false;
+    this.requestDraw();
+    return true;
+  }
+
   buffer() {
     let gl = this.gl;
     const vao = gl.createVertexArray(),
@@ -132,10 +169,13 @@ class Renderer {
     const coverageBuffer=gl.createBuffer(),loc=gl.getAttribLocation(this.program,'coveragePosition');
     gl.bindBuffer(gl.ARRAY_BUFFER,coverageBuffer);gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc,3,gl.FLOAT,false,12,0);
-    return { vao, buffer, coverageBuffer, count: 0 };
+    const target = { vao, buffer, coverageBuffer, count: 0 };
+    this.buffers?.add(target);
+    return target;
   }
   upload(target, data) {
     target.data = data;
+    if (this.contextLost) return;
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, target.buffer);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
@@ -295,6 +335,7 @@ class Renderer {
   }
 
   draw() {
+    if (this.contextLost || this.gl.isContextLost?.()) return;
     const gl = this.gl,
       rect = this.canvas.getBoundingClientRect(),
       dpr = Math.min(devicePixelRatio || 1, 2);

@@ -14,7 +14,8 @@ export function invariant(masks,extras) {
 }
 const maskKey=masks=>masks.slice().sort((a,b)=>a-b).join(',');
 export class PackingStore {
-  constructor(manifest,index,loadAsset) {
+  constructor(manifest,index,loadAsset,report=()=>{}) {
+    this.report=report;
     if(manifest.format!==1||index.byteLength!==manifest.count*20)throw Error('Invalid packing index');
     this.manifest=manifest;this.index=new DataView(index.buffer,index.byteOffset,index.byteLength);
     this.loadAsset=loadAsset;this.cache=new Map();this.cacheBytes=0;this.selectionBuffer=new Uint32Array(manifest.count);this.selected=this.selectionBuffer.subarray(0,0);
@@ -31,7 +32,8 @@ export class PackingStore {
     while(this.cache.size&&(this.cache.size>=8||this.cacheBytes+entry.bytes>24*1024*1024)) {
       const key=this.cache.keys().next().value;this.cacheBytes-=this.cache.get(key).bytes;this.cache.delete(key);
     }
-    this.cache.set(+id,entry);this.cacheBytes+=entry.bytes;return entry;
+    this.cache.set(+id,entry);this.cacheBytes+=entry.bytes;
+    this.report({phase:"cache",loaded:count,total:count,family:+id,cacheBytes:this.cacheBytes});return entry;
   }
   decode(id,view,offset) {
     const at=(id-1)*20,m=this.manifest,indices=Array.from({length:6},(_,i)=>view.getUint16(offset+4+i*2,true));
@@ -71,6 +73,7 @@ export class PackingStore {
       if(filters[name]==='no')excludeExtras|=1<<k;
     }
     for(let i=0;i<this.manifest.count;i++) {
+      if(i%32768===0)this.report({phase:"filter",loaded:i,total:this.manifest.count});
       const a=i*20,f=v.getUint16(a,true),flags=v.getUint8(a+4),sp=v.getUint8(a+5),core=v.getUint8(a+6),span=v.getUint8(a+7);
       if(filters.surfaceOnly&&!(flags&1)||filters.nonSurfaceOnly&&(flags&1)||filters.allSurfaceIdentities&&!(flags&2)||filters.oneOfEach&&!(flags&4))continue;
       if(filters.officialOnly&&f!==this.officialFamily)continue;
@@ -90,6 +93,7 @@ export class PackingStore {
       counts[f]++;
       if(!filters.family||f===+filters.family)output[n++]=i+1;
     }
+    this.report({phase:"filter",loaded:this.manifest.count,total:this.manifest.count});
     this.selected=output.subarray(0,n);this.familyCounts=counts;this.queryKey=key;
   }
   async query({filters={},position=0,random=false,line,offset=0}={}) {
@@ -117,12 +121,15 @@ export class PackingStore {
     const entry=await this.family(+family);
     if(!entry.lookup) {
       entry.lookup=new Map();
+      this.report({phase:"lookup",loaded:0,total:entry.bytes/16});
       for(let at=0;at<entry.bytes;at+=16) {
+        if(at%65536===0)this.report({phase:"lookup",loaded:at/16,total:entry.bytes/16});
         const id=entry.view.getUint32(at,true);
         const masks=Array.from({length:6},(_,i)=>this.manifest.catalog[entry.view.getUint16(at+4+i*2,true)].mask),key=maskKey(masks);
         entry.lookup.set(key,id);
       }
     }
+    this.report({phase:"lookup",loaded:entry.bytes/16,total:entry.bytes/16});
     const found=new Set();
     for(const rotation of ROTATIONS) {
       const key=maskKey(masks.map(m=>cellsOf(m).reduce((n,i)=>n|(1<<rotation[i]),0)));

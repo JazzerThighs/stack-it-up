@@ -61,7 +61,7 @@ export function adaptEngine(w,{trackSolids=true}={}) {
       if (result.length !== SNAPSHOT_WORDS || result[S.ABI_VERSION] !== 4)
         throw Error("Incompatible game engine: rebuild the complete app.");
       result.gameplayRules=w.game_rules() >>> 0;
-      result.rebuildIds=Uint32Array.from({length:27},(_,i)=>w.rebuild_id_at?.(i)||0);
+      result.rebuildIds=Uint32Array.from({length:27},(_,i)=>w.active_group_at?.(i)||w.rebuild_id_at?.(i)||0);
       Object.defineProperty(result,'solidRotations',{value:orientations.slice(),configurable:true});
       return result;
     },

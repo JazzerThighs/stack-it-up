@@ -153,7 +153,7 @@ context.update();assert.equal($('releaseTrigger').value,'1');assert($('releaseSc
 $('new').onclick();$('freedomEvent1').checked=true;$('freedomEvent1').onchange();
 $('debugCurrent').value='2';$('debugHeld').value='6';
 $('animations').checked=false;await $('setupStart').onclick();flush();
-assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],5);
+assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],6);
 $('debugHeld').value='0';await $('applyHeld').onclick();assert.equal(context.state[164],0);
 $('scienceMode').checked=false;$('scienceMode').onchange();assert($('stageUndo').disabled);assert(!context.engine.game_debug_piece(1,3));
 $('scienceMode').checked=true;$('scienceMode').onchange();assert(!$('stageUndo').disabled);
@@ -205,3 +205,26 @@ choices[0].onfocus();flush();assert(context.renderers[0].preview);
 await choices[1].onclick();flush();assert.equal(context.state[62],1);
 assert(context.engine.mesh().every(Number.isFinite));
 console.log('PASS: spatial pool setup, multi-center spawn, hold preview, nine-color controls, v5 state and spatial placement choices.');
+
+// Context recovery must replace GPU handles without resetting live gameplay,
+// buffer references held by cached animation packets, or the player's camera.
+const recoveryState=context.engine.exportState();
+const recovering=context.renderers[0], retained=recovering.stackMesh;
+const priorProgram=recovering.program, priorBuffer=retained.buffer;
+const geometry=retained.data, orientation=JSON.stringify(recovering.orientation);
+const bufferCount=recovering.buffers.size;
+recovering.asciiPass={destroy(){this.destroyed=true;}};
+const oldPass=recovering.asciiPass;
+let prevented=false;
+$('control').listeners.webglcontextlost({preventDefault(){prevented=true;}});
+assert(prevented);assert(recovering.contextLost);
+$('control').listeners.webglcontextrestored();flush();
+assert(!recovering.contextLost);assert.notEqual(recovering.program,priorProgram);
+assert.equal(recovering.stackMesh,retained);assert.notEqual(retained.buffer,priorBuffer);
+assert.equal(retained.data,geometry);assert.equal(retained.count,geometry.length/9);
+assert(oldPass.destroyed);assert.equal(JSON.stringify(recovering.orientation),orientation);
+assert.deepEqual(context.engine.exportState(),recoveryState);
+$('resetGraphics').onclick();flush();
+assert.equal(recovering.buffers.size,bufferCount);
+assert.deepEqual(context.engine.exportState(),recoveryState);
+console.log('PASS: lost/restored GPU resources and manual graphics reset preserve game, camera, cached buffer references and allocation count.');

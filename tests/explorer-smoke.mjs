@@ -457,3 +457,18 @@ assert.deepEqual(officialFamilyView.cells.map(c=>c.piece),officialOwners);
 assert.equal(officialFamilyView.history.length,officialHistory);
 for(const c of officialFamilyView.cells)if(c.piece>=0)assert.equal(c.color,'brogym'[c.piece]);
 console.log('PASS: color-mode changes update live family rendering and preserve turn history.');
+
+const beforeRecovery=structuredClone(officialFamilyView.cells),historyBeforeRecovery=officialFamilyView.history.length;
+const retainedLayers=officialFamilyView.explorationLayers.slice();
+const oldLayerBuffers=retainedLayers.map(layer=>layer.buffer);
+const oldProgram=officialFamilyView.program;
+assert(officialFamilyView.restoreGraphics());
+assert.notEqual(officialFamilyView.program,oldProgram);
+assert.deepEqual(officialFamilyView.cells,beforeRecovery);
+assert.equal(officialFamilyView.history.length,historyBeforeRecovery);
+retainedLayers.forEach((layer,i)=>{
+  assert.equal(officialFamilyView.explorationLayers[i],layer);
+  assert.notEqual(layer.buffer,oldLayerBuffers[i]);
+  assert.equal(layer.count,layer.data.length/9);
+});
+console.log('PASS: family-explorer GPU recovery preserves cut-piece layers, packing identity and move history.');
