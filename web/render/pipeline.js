@@ -1,3 +1,4 @@
+import {voxelMesh} from './voxel-mesh.js';
 import {categorySeed} from './transparency.js';
 import {IDENTITY,transformPoint} from './transforms.js';
 import {appearanceIndex} from "./appearance.js";
@@ -9,6 +10,19 @@ export function renderPackets(packets, context) {
   const { layerOrder } = context;
   const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
+  // Keep original buffers intact: changing style never changes game geometry.
+  if(this.appearance==='voxel') {
+    this.voxelTargets ??= new Map();
+    packets=packets.map(p=>{
+      let entry=this.voxelTargets.get(p.target);
+      if(!entry){entry={target:this.buffer()};this.voxelTargets.set(p.target,entry);}
+      if(entry.source!==p.target.data || entry.type!==p.type) {
+        entry.source=p.target.data;entry.type=p.type;
+        this.upload(entry.target,voxelMesh(p.target.data,p.type===gl.LINES));
+      }
+      return {...p,target:entry.target,type:gl.TRIANGLES};
+    });
+  }
   const pixelRatio=Math.min(globalThis.devicePixelRatio || 1,2);
   const ascii=this.appearance === 'ascii';
   if(this.canvas?.dataset && this.canvas.dataset.appearance !== this.appearance)

@@ -156,7 +156,7 @@ export class PackingCube extends Renderer {
     cells.forEach((cell, i) => {
       if (!cell) return;
       const start = out.length;
-      (this.appearance === "voxel" ? box : balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d));
+      balloon(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d));
       if (animation?.kind === "turn") rotateCell(out, start, i, animation.move, animation.t);
     });
     this.upload(this.solid, new Float32Array(out));

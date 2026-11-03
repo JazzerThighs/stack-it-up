@@ -16,16 +16,12 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly',spa
     const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+(appearance==='voxel');
     if(colored.has(key))return colored.get(key);
     const out=[],c=rgb(hex);
-    if(appearance==='voxel') {
-      for(let i=0;i<27;i++)if(mask&(1<<i))box(out,xyz(i),.485,c);
-    } else {
-      if(!cache.has(mask)) {
-        if(cache.size>=192)cache.delete(cache.keys().next().value);
-        cache.set(mask,generate(mask));
-      }
-      const mesh=cache.get(mask);
-      for(let i=0;i<mesh.length;i+=9)out.push(...mesh.subarray(i,i+6),...c);
+    if(!cache.has(mask)) {
+      if(cache.size>=192)cache.delete(cache.keys().next().value);
+      cache.set(mask,generate(mask));
     }
+    const source=cache.get(mask);
+    for(let i=0;i<source.length;i+=9)out.push(...source.subarray(i,i+6),...c);
     const mesh=tagCoverage(new Float32Array(out),xyz(31-Math.clz32(mask&-mask)));
     while(coloredBytes+mesh.byteLength>16*1024*1024 && colored.size) {
       const first=colored.keys().next().value;coloredBytes-=colored.get(first).byteLength;colored.delete(first);
