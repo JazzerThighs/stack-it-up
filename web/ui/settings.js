@@ -1,3 +1,4 @@
+import {initializeSettingsPages,openSettingsPage,refreshSettingsPages} from './settings-pages.js';
 import {refreshGameplay} from './gameplay-settings.js';
 import {S} from '../engine/snapshot.js';
 import {refreshSettingsAvailability} from './settings-availability.js';
@@ -15,7 +16,8 @@ export function refreshSettings() {
   const pending = !context?.settingUp && context?.state?.[S.PENDING_FACES];
   const busy = !context?.settingUp && context?.busy;
   status.hidden = !pending && !busy;
-  status.textContent = pending ? 'Choose a placement before changing gameplay rules.' : busy ? 'Gameplay rules are temporarily locked while the move resolves.' : '';
+  status.textContent = pending ? 'Choose a placement to edit rules.' : busy ? 'Finish the move to edit rules.' : '';
+  refreshSettingsPages();
 }
 const defaultLayers = [
   ["arrows", "Arrow buttons"],
@@ -85,9 +87,7 @@ export function initializeSettings(value) {
   }
   for (const id of ['gameplaySettings','controlSettings','hintSettings','appearanceSettings','visibilitySettings','infoSettings']) {
     $('nav' + id).onclick = () => {
-      $(id).open = true;
-      $(id).scrollIntoView?.({block:'start', behavior:'smooth'});
-      $(id).querySelector?.('summary')?.focus();
+      openSettingsPage(id);
     };
   }
   initializePaletteControls();
@@ -121,6 +121,7 @@ export function initializeSettings(value) {
     context.invalidate();
   };
   renderLayerSettings();
+  initializeSettingsPages();
   for (const id of [
     "pieceAppearance",
     "perspectiveCamera",

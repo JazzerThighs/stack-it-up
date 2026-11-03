@@ -2588,3 +2588,57 @@ main.explorer-active > .topbar { padding:0 14px; }
 .packing-load-progress progress { display:block; width:100%; height:12px; accent-color:#9de2ca; }
 .packing-load-progress progress + div { margin-top:5px; font-variant-numeric:tabular-nums; color:#d4e4e8; }
 #packingCacheStatus { color:#a8bfc8; font-size:13px; line-height:1.5; }
+
+/* Paged Game settings: only the current route and fitting controls participate in layout. */
+.settings-paged { box-sizing:border-box; width:min(680px,calc(100vw - 16px)); height:min(780px,calc(100dvh - 16px)); max-height:calc(100dvh - 16px); padding:16px; overflow:hidden; }
+.settings-paged[open] { display:flex; flex-direction:column; gap:10px; }
+.settings-paged > * { flex-shrink:0; }
+.settings-paged .settings-title { position:static; padding:0; border:0; margin:0; }
+.settings-paged h2 { font-size:21px; margin:0; }
+.settings-paged > p { font-size:14px; margin:0; }
+.settings-paged .settings-actions { padding:0; margin:0; }
+.settings-page-toolbar { display:flex; align-items:center; gap:8px; }
+.settings-page-toolbar h3 { font-size:16px; margin:0; flex:1; line-height:1.2; outline:none; }
+.settings-page-body { flex:1 1 auto; min-height:0; overflow:hidden; padding:2px; }
+.settings-page-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; border-top:1px solid #344750; padding-top:8px; font-size:13px; }
+.settings-paged .pager-container { display:none !important; }
+.settings-paged .pager-container.pager-route:not([hidden]) { display:contents !important; }
+.settings-paged legend,.settings-paged summary { display:none !important; }
+.settings-paged .pager-hidden { display:none !important; }
+.settings-paged .settings-page-unit { margin:0 0 10px; padding:0; max-width:100%; }
+.settings-paged .settings-page-unit > :first-child { margin-top:0; }
+.settings-paged label { display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:16px; line-height:1.35; margin:0; }
+.settings-paged p { font-size:14px; line-height:1.4; margin:4px 0; }
+.settings-paged button,.settings-paged select { font-size:15px; min-height:40px; padding:7px 10px; }
+.settings-paged input[type="range"] { display:block; width:100%; min-height:30px; margin:4px 0 0; }
+.settings-paged select { max-width:100%; }
+.settings-paged output { margin-left:auto; font-size:14px; }
+.settings-page-link { width:100%; text-align:left; }
+.settings-paged .pager-home { display:grid; grid-template-columns:1fr 1fr; gap:10px; position:static; margin:0; padding:0; overflow:hidden; }
+.settings-paged .pager-home[hidden],.settings-paged [hidden] { display:none !important; }
+.settings-paged .session-actions { margin:0; padding:0; display:flex; justify-content:flex-end; gap:8px; }
+.settings-paged li.settings-page-unit { display:flex; align-items:center; gap:8px; list-style:none; }
+.settings-paged li.settings-page-unit > span { flex:1; font-size:15px; }
+.settings-paged .face-grid { width:104px; height:104px; }
+@media(max-height:450px) {
+ .settings-paged { padding:8px; gap:5px; }
+ .settings-paged h2 { font-size:17px; }
+ .settings-paged button,.settings-paged select { min-height:32px; padding:4px 8px; }
+ .settings-paged .pager-home { grid-template-columns:repeat(3,1fr); }
+ .settings-paged .settings-page-unit { margin-bottom:5px; }
+ .settings-paged .settings-page-toolbar h3 { font-size:14px; }
+}
+
+.settings-paged .pager-source { display:none !important; }
+
+/* One route per page; long controls scroll locally rather than splitting pages. */
+.settings-paged .settings-page-body { overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.settings-paged .queue-piece-columns { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.settings-paged .queue-piece-column h4 { font-size:13px; margin:0 0 10px; }
+.settings-paged .queue-piece-column label { font-size:14px; margin-bottom:12px; align-items:flex-start; flex-wrap:nowrap; }
+.settings-paged .queue-piece-column input { flex-shrink:0; }
+@media(max-width:480px) {
+ .settings-paged .queue-piece-columns { gap:6px; }
+ .settings-paged .queue-piece-column label { font-size:12px; gap:4px; }
+ .settings-paged .queue-piece-column h4 { font-size:11px; }
+}

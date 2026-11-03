@@ -1,3 +1,4 @@
+import {openSettingsPage} from './settings-pages.js';
 import {refreshGameplay,validateGameplay} from './gameplay-settings.js';
 import {refreshSettingsAvailability} from './settings-availability.js';
 export function initializeSession({engine, snapshot, update, newGame, clearAnimations, isBusy}) {
@@ -15,13 +16,14 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
     $("debugCurrent").value="0";$("debugHeld").value="0";
     refreshGameplay(document,{starting:true});
     $("setupDialog").showModal();
+    openSettingsPage("gameplaySettings",true);
   }
   $("setupDialog").addEventListener("cancel", e => { e.preventDefault(); if(started) $("setupCancel").onclick(); });
   $("setupDialog").addEventListener("close", restoreRules);
   $("setupCancel").onclick = () => { $("setupDialog").close(); restoreRules(); update(); };
   $("setupStart").onclick = async () => {
     if(!Array.from({length:11},(_,i)=>$("poolPiece"+(i+1))).some(el=>el.checked)) {
-      $("piecePoolNote").textContent="Select at least one queue piece.";return;
+      $("piecePoolNote").textContent="Select at least one queue piece.";openSettingsPage("piecePoolOptions",true);return;
     }
     validateGameplay(document);
     $("setupDialog").close(); restoreRules(); started = true;
