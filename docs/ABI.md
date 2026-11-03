@@ -126,3 +126,12 @@ Transport v7 retains the v6 layout and appends a count followed by (placement ID
 original queue choice) pairs for surviving free-origin pieces. It supports an
 11-bit pool and queue/hold values up to 11, while stack/floating colors stay bounded
 to nine. Previous transport versions retain their rules and do not gain plane gravity.
+
+
+### Fragment shape origins (transport v8)
+
+Version 8 appends one original mask per `free_groups` entry after the v7 free-choice origins. The original masks remain fixed while current group masks turn. One-, two-, and three-cell fragment shapes are compared by sorted squared pairwise distances, so V and bar differ but translated/rotated copies match. Versions 1–7 still load; their fragment origins are captured from the loaded arrangement before the next move.
+
+`game_can_undo()` reports whether the last history entry is available under the current rules. Non-debug undo cannot cross a placement-count boundary; history depth stays unchanged for renderer orientation tracking.
+
+`group_requirement_at(cell)` returns allowed tetromino bits 0–8, or one of bits 16 (connected), 17 (scattered), 18 (single), 19 (domino), 20 (bar), 21 (V). Zero means no group or no permitted four-cell shape. The frontend combines this with `active_group_at` to distinguish those cases.

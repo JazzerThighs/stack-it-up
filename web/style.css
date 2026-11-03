@@ -2642,3 +2642,19 @@ main.explorer-active > .topbar { padding:0 14px; }
  .settings-paged .queue-piece-column label { font-size:12px; gap:4px; }
  .settings-paged .queue-piece-column h4 { font-size:11px; }
 }
+.setting-row { display:flex; flex-direction:column; gap:5px; }
+.settings-paged .setting-row label { margin-bottom:0; display:flex; align-items:flex-start; gap:10px; }
+.settings-paged .setting-row .setting-reason { margin:0 0 8px 36px; font-size:14px; line-height:1.45; }
+.status-strip { flex-wrap:wrap; }
+#groupRequirements { display:block; width:100%; font-size:13px; color:#c4d7d6; line-height:1.4; }
+#stageFaceMapPanel { display:none; }
+@media(min-width:900px) {
+ .views.show-face-map:not(.combined) .stack-viewport > canvas,
+ .views.show-face-map:not(.combined) .stack-viewport > .view-title,
+ .views.show-face-map:not(.combined) .stack-viewport > .empty-stack { display:none!important; }
+ .views.show-face-map:not(.combined) #stageFaceMapPanel { display:flex; position:absolute; inset:70px 20px 60px; flex-direction:column; align-items:center; justify-content:center; overflow:auto; }
+ #stageNet { width:min(100%,480px); margin:0; gap:14px; }
+ #stageNet .face-label { font-size:18px; }
+ #stageFaceMapPanel h3 { margin:0 0 10px; }
+ #stageFaceMapPanel p { font-size:13px; }
+}

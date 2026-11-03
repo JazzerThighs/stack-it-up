@@ -64,7 +64,7 @@ impl State {
                 }
                 self.rebuild_ids.push(g.id);
             } else {
-                self.free_groups.push(g.mask);
+                self.add_free_group(g.mask);
             }
             self.free_mask(g.mask);
         }
@@ -196,7 +196,7 @@ impl Game {
                 *ids.entry(f.id).or_default() |= 1 << f.cell;
             }
         }
-        s.free_groups.extend(ids.into_values());
+        for mask in ids.into_values() {s.add_free_group(mask);}
         if !self.pending.is_empty() {
             self.pending = s.matches(&self.tables);
         }

@@ -25,6 +25,8 @@ $('activeSpheres').checked=true;$('activeSpheres').listeners.input();flush();ass
 $('hoverOutline').checked=true;$('hoverOutline').listeners.input();const canvas=$('control');canvas.listeners.pointermove({pointerId:1,pointerType:'mouse',clientX:600,clientY:400});flush();assert(context.renderers[0].hover);
 const previous=context.state[54];await context.play(6);flush();assert(context.engine.snapshot()[68]>0);$('stageUndo').onclick();flush();assert.equal(context.state[54],previous);
 $('customLayers').checked=true;$('customLayers').onchange();flush();assert($('renderLayers').children.length>=17);$('resetLayers').onclick();flush();assert(!$('customLayers').checked);
+assert.equal($('stageNet').children.length,6);
+assert($('groupRequirements').textContent.includes('Current spheres:'));
 console.log('PASS: actual ES modules + real Wasm startup, hold, undo, sphere/hover rendering, custom layers and defaults (mock WebGL).');
 
 const savedState=Array.from(context.state);
@@ -156,7 +158,7 @@ $('debugCurrent').value='2';$('debugHeld').value='6';
 $('animations').checked=false;await $('setupStart').onclick();flush();
 assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],7);
 $('debugHeld').value='0';await $('applyHeld').onclick();assert.equal(context.state[164],0);
-$('scienceMode').checked=false;$('scienceMode').onchange();assert($('stageUndo').disabled);assert(!context.engine.game_debug_piece(1,3));
+$('scienceMode').checked=false;$('scienceMode').onchange();assert(!$('stageUndo').disabled);assert(!context.engine.game_debug_piece(1,3));
 $('scienceMode').checked=true;$('scienceMode').onchange();assert(!$('stageUndo').disabled);
 console.log('PASS: new gameplay defaults, setup choices, current/empty hold editing, and debug Undo policy reach real Wasm.');
 

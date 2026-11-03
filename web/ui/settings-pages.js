@@ -31,7 +31,7 @@ export function initializeSettingsPages() {
       for(let i=0;i<children.length;i++) {
         const child=children[i];
         if(child.matches('legend,summary')||child.id==='legacyGameplay'||child.matches('input[hidden]'))continue;
-        if(child.classList.contains('queue-piece-columns')) {node.items.push({element:unit([child])});}
+        if((child.classList.contains('queue-piece-columns')||child.classList.contains('setting-row'))) {node.items.push({element:unit([child])});}
         else if(child.matches('fieldset,details')||child.id==='scienceOptions'||child.id==='renderLayers') {
           const titles={scienceOptions:'Choose current / held piece',renderLayers:'Layer order',arrowOptions:'Arrow guides',ringOptions:'Ring labels',rebuildShapeOptions:'Group identities',solidOptions:'Solid appearance',solidColorOptions:'Solid color',solidGrayOptions:'Gray shades',splitGridOptions:'Split-view grids',combinedGridOptions:'Combined-view grid',rearGridOptions:'Rear faces',layerOptions:'Customize layers',transparencyStyle:'Transparency method',ditherTuning:'Dither controls',asciiTuning:'ASCII controls'};
           const sub=build(child,node,titles[child.id]||labelOf(child));

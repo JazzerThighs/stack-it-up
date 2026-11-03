@@ -168,8 +168,7 @@ fn state_roundtrip_validation_debug_and_undo_policy() {
     assert!(!g.configure_rules(DEFAULT | (3 << 16)));
     assert!(g.configure_rules(DEFAULT & !1));
     assert!(!g.debug_piece(true, 4));
-    assert!(!g.undo());
-    g.state.over = true;
+    assert!(g.can_undo());
     assert!(g.undo());
     let mut corrupt = data.clone();
     let n = corrupt.len();

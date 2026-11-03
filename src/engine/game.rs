@@ -78,6 +78,7 @@ impl Game {
         s.auto_placements = 0;
         s.auto_tiers = 0;
         s.active = self.tables.rotated(s.active, m);
+        while s.free_shapes.len()<s.free_groups.len(){s.free_shapes.push(s.free_groups[s.free_shapes.len()]);}
         for group in &mut s.free_groups { *group=self.tables.rotated(*group,m); }
         for band in &mut s.bands {
             *band = self.tables.rotated(*band, m);
@@ -170,6 +171,9 @@ impl Game {
         if !self.state.bandaged && !(self.state.release_bandaged && self.state.free_groups.iter().any(|group| group & mask == mask)) {
             return false;
         }
+        if self.state.shape_rules() && self.state.rules.unwrap()&(1<<22)!=0 &&
+            self.state.free_groups.iter().enumerate().any(|(i,&group)|group&mask!=0 &&
+                (group&mask!=group || !self.state.fragment_ready(i))) {return false;}
         if mask & self.state.occupied() != 0 {
             return false;
         }
@@ -188,8 +192,10 @@ impl Game {
         }
         s.floating.retain(|f| mask & (1 << f.cell) == 0);
         s.bands.retain(|band| band & mask == 0);
-        for group in &mut s.free_groups {*group &= !mask;}
-        s.free_groups.retain(|&group|group!=0);
+        let remaining:Vec<_>=s.free_groups.iter().enumerate().filter_map(|(i,&group)| {
+            let rest=group&!mask;(rest!=0).then_some((rest,if rest==group {*s.free_shapes.get(i).unwrap_or(&group)}else{rest}))
+        }).collect();
+        s.free_groups=remaining.iter().map(|p|p.0).collect();s.free_shapes=remaining.iter().map(|p|p.1).collect();
         s.record(4, mask, 0, std::array::from_fn(|i| i));
         self.lock = None;
         self.lock_mask = 0;
@@ -261,8 +267,11 @@ impl Game {
         self.revision += 1;
         true
     }
+    pub fn can_undo(&self)->bool {
+        self.history.back().is_some_and(|previous|self.state.rules.is_none_or(|r|r&1!=0) || previous.pieces==self.state.pieces)
+    }
     pub fn undo(&mut self) -> bool {
-        if self.state.rules.is_some_and(|r| r & 1 == 0) && !self.state.over { return false; }
+        if !self.can_undo() {return false;}
         if let Some(s) = self.history.pop_back() {
             self.state = s;
             self.pending.clear();

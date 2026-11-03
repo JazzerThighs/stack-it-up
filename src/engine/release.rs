@@ -103,7 +103,7 @@ impl State {
                 continue;
             };
             let mask = candidates[index];
-            self.free_groups.push(mask);
+            self.add_free_group(mask);
             self.free_mask(mask);
         }
     }

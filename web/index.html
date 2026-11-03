@@ -163,7 +163,7 @@
                   aria-hidden="true"
                 ></canvas>
               </div>
-              <div class="viewport stack-viewport">
+              <div class="viewport stack-viewport"><div id="stageFaceMapPanel"><h3>Face map</h3><div class="net" id="stageNet"></div><p>Filled: stack · ring: active · pink: overlap</p></div>
                 <div class="view-title">
                   <span class="dot stack-dot"></span> Your stack
                   <span class="view-caption">Stays fixed</span>
@@ -232,11 +232,10 @@
                 Winning turns are marked with a check.
               </p>
               <p class="shortcut">
-                U D F B L R · M E S for slices · Shift for prime · Alt + face
-                for wide · Ctrl/⌘ Z to undo
+                U D F B L R · M E S for slices · Shift for prime · wide-turn button for wide moves · Ctrl/⌘ Z to undo
               </p>
             </section>
-            <div class="status-strip">
+            <div class="status-strip"><span id="groupRequirements" role="status"></span>
               <span id="message" role="status" aria-live="polite"
                 >Loading game…</span
               >
@@ -302,7 +301,7 @@
 <fieldset>
 <legend>Debug mode</legend>
 <label><input id="scienceMode" type="checkbox" checked /> For Science (Cheating)!</label>
-<p class="muted">Allows piece selection and Undo during play. Otherwise, Undo requires top out.</p>
+<p class="muted">Allows piece selection and undoing completed placements. Undo within the current turn is always available.</p>
 <div id="scienceOptions"><label><input id="chooseNext" type="checkbox" /> Choose the next queued tetromino</label>
 <label for="debugCurrent">Current piece</label>
 <select id="debugCurrent">
@@ -381,15 +380,14 @@
 </fieldset>
 <fieldset id="freedomReconstructionOptions">
 <legend>Reconstruction</legend>
-<label><input id="fragmentsConnected" type="checkbox" checked /> Require connected groups at lock</label>
-<div class="setting-dependency">
-<div id="reconstructionShapeRules">
-<label><input id="rebuildQueueShapes" type="checkbox" checked /> Use queue-enabled shapes</label>
-<label><input id="rebuildOriginalShape" type="checkbox" /> Keep original shape choices</label>
-<p class="setting-reason">Applies to groups of four. Smaller groups only need to reconnect. Both checked: both restrictions apply.</p>
-</div>
-</div>
-<p class="muted">Off: freed groups may lock scattered. All freed cubies lock with the current piece and must avoid the stack.</p>
+<div class="setting-row"><label><input id="fragmentsConnected" type="checkbox" checked /><span>Require connected groups at lock</span></label>
+<p class="setting-reason">Off: groups may lock scattered. Freed cubies lock with the sphere piece and must avoid the stack.</p></div>
+<div class="setting-dependency"><div id="reconstructionShapeRules">
+<div class="setting-row"><label><input id="rebuildQueueShapes" type="checkbox" checked /><span>Use queue-enabled shapes</span></label>
+<p class="setting-reason">Four-cubie groups must form a shape enabled in the queue.</p></div>
+<div class="setting-row"><label><input id="rebuildOriginalShape" type="checkbox" /><span>Keep original shape choices</span></label>
+<p class="setting-reason">Whole pieces keep their original choices. Fragments keep their shape when freed, including V or bar. Both checked: both restrictions apply.</p></div>
+</div></div>
 </fieldset>
 <fieldset id="freedomEventOptions">
 <legend>When to free pieces</legend>
@@ -917,7 +915,7 @@
           <details class="face-card" open>
             <summary>Face map <span>Outside views</span>
 </summary>
-            <div class="net" id="net">
+            <label><input id="stageFaceMap" type="checkbox" /> Show face map instead of split stack on desktop</label><p class="muted">Shown in split view on screens at least 900px wide. Smaller screens keep the stack.</p><div class="net" id="net">
 </div>
             <p class="map-note">
               Filled = stack · ring = active<br />Pink ring = overlap; keep
@@ -939,7 +937,7 @@
               </div>
               <div>
                 <h2>Keyboard</h2>
-                <p>Face keys: U D F B L R. Slices: M E S. Shift reverses a key turn; Alt makes a face key wide. C holds; Ctrl/Cmd+Z undoes when allowed.</p>
+                <p>Face keys: U D F B L R. Slices: M E S. Shift reverses a key turn; The wide-turn button selects wide moves. C holds; Ctrl/Cmd+Z undoes when allowed.</p>
               </div>
               <div>
                 <h2>Spawning and top out</h2>

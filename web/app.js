@@ -1,3 +1,4 @@
+import {groupRequirementsText} from './ui/group-requirements.js';
 import {openSettingsPage} from './ui/settings-pages.js';
 import {startupCheck,startupError,packingProgress} from './ui/startup.js';
 import {installRecovery} from './render/recovery.js';
@@ -54,7 +55,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveL
 const animations = $("animations");
 animations.checked = !matchMedia("(prefers-reduced-motion: reduce)").matches;
 const moveButtons = [],
-  faceCells = [],
+  faceCells = [],stageFaceCells=[],
   queueShapes = [];
 function shape(el) {
   const cells = Array.from({ length: 9 }, () => {
@@ -99,7 +100,7 @@ const forecastReplay = createReplay({engine:()=>engine, refresh:()=>update(), is
 const queueForecast = createForecast({enabled:$("queueForecast"), status:$("forecastStatus"),
   onWitness:forecastReplay.setWitness, targets:[$("target"), ...queueShapes.map(q=>q.item)]});
 $("queueForecast").onchange = () => { if (engine) queueForecast.update(engine); };
-for (let f = 0; f < 6; f++) {
+for(const [host,list] of [["net",faceCells],["stageNet",stageFaceCells]]) for (let f = 0; f < 6; f++) {
   const el = document.createElement("div"),
     label = document.createElement("span"),
     grid = document.createElement("div");
@@ -112,8 +113,8 @@ for (let f = 0; f < 6; f++) {
     return c;
   });
   el.append(label, grid);
-  $("net").append(el);
-  faceCells.push(cells);
+  $(host).append(el);
+  list.push(cells);
 }
 for (let m = 0; m < 30; m++) {
   const b = document.createElement("button");
@@ -279,12 +280,13 @@ function update(message) {
     : state[S.OVER]
       ? isSpatial(state[S.PIECE]) ? "Top out: no non-core placement fits." : "Top out: no face, surface, or internal placement fits."
       : message || (isSpatial(p) ? `Build ${names[p]} around the core.` : `Build ${names[p]} on any free face.`);
+  $("groupRequirements").textContent=groupRequirementsText(state,renderers[0]);
   for (let f = 0; f < 6; f++)
     for (let c = 0; c < 9; c++) {
       const i = state[80 + f * 9 + c],
         active = !!((state[S.ACTIVE] | state[S.FLOATING]) & (1 << i)),
-        floating = !!(state[S.FLOATING] & (1 << i)),
-        el = faceCells[f][c];
+        floating = !!(state[S.FLOATING] & (1 << i));
+      for(const el of [faceCells[f][c],stageFaceCells[f][c]]) {
       el.style.background = floating
         ? "#ffffff"
         : state[i]
@@ -296,6 +298,7 @@ function update(message) {
       el.classList.toggle("overlap", active && !!state[i]);
       el.title = `${faceLabels[f]} ${c + 1}: ${state[i] ? `${names[state[i]]} stack` : "empty"}${active ? ", active" : ""}`;
     }
+  }
   syncOverlayControls();
   syncChoices();
   renderers.forEach((r) => r.setState(state));
@@ -367,7 +370,7 @@ function setBusy(value) {
   faceButtons.forEach(
     (b, f) => (b.disabled = value || !(state[S.PENDING_FACES] & (1 << f))),
   );
-  $("undo").disabled = value || !state[S.UNDO_COUNT] || (state.gameplayRules!==0xffffffff && !(state.gameplayRules&1) && !state[S.OVER]);
+  $("undo").disabled = value || !state[S.UNDO_COUNT] || !state.canUndo;
   $("new").disabled = value;
   $("gravityMode").disabled = value || !!state[S.PENDING_FACES];
   for (const id of ["bandagedFragments", "randomCubies", "rebuildMode", "releaseTrigger", "releaseBandaged", "releaseScattered", "releaseSelection"])
@@ -594,7 +597,8 @@ document.addEventListener("keydown", (e) => {
     }
     return;
   }
-  const label = e.altKey ? e.key.toLowerCase() : e.key.toUpperCase();
+  if(e.altKey)return;
+  const label = e.key.toUpperCase();
   let m = moveLabels.indexOf(label);
   if (m >= 0) {
     e.preventDefault();
@@ -721,7 +725,7 @@ function syncOverlayControls() {
       `${moveLabels[m % 15]}${m >= 15 ? " prime" : ""}${win ? " — places the current piece" : ""}`,
     );
   }
-  const canUndo = !busy && !!state[S.UNDO_COUNT] && (state.gameplayRules===0xffffffff || !!(state.gameplayRules&1) || !!state[S.OVER]);
+  const canUndo = !busy && !!state[S.UNDO_COUNT] && state.canUndo;
   $("undo").disabled=!canUndo;
   $("stageUndo").disabled = !canUndo;
   $("overUndo").disabled = !canUndo;
@@ -925,3 +929,9 @@ for (const id of ["gameTab", "explorerTab"]) {
 if (globalThis.location?.hash === '#game') startupCheck('explorer','Packing explorer loads when opened',true);
 else startupCheck('explorer','Loading packing data, controls and cube views');
 selectApplication(globalThis.location?.hash !== "#game");
+
+$("stageFaceMap").onchange=()=>{
+  document.querySelector('.views').classList.toggle('show-face-map',$("stageFaceMap").checked);
+  if($("stageFaceMap").checked && $("combined").checked)$("viewMode").onclick();
+  invalidate();
+};

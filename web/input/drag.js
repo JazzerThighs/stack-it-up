@@ -62,7 +62,7 @@ function installCubeDrag(r, onOrbit, context) {
             hit,
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
-            wide: !!(r.wideTurns || e.shiftKey || e.altKey),
+            wide: !!(r.wideTurns || e.shiftKey),
           }
         : null;
     context.invalidate();
@@ -74,8 +74,8 @@ function installCubeDrag(r, onOrbit, context) {
   });
   r.refreshTurnHover = () => { if (!drag && lastHover) hover(lastHover); };
   for (const type of ["keydown", "keyup"]) document.addEventListener(type, (e) => {
-    if ((e.key === "Shift" || e.key === "Alt") && lastHover && !drag) {
-      hover({clientX: lastHover.clientX, clientY: lastHover.clientY, shiftKey: e.shiftKey, altKey: e.altKey});
+    if (e.key === "Shift" && lastHover && !drag) {
+      hover({clientX: lastHover.clientX, clientY: lastHover.clientY, shiftKey: e.shiftKey});
     }
   });
   const hitAt = (e) => {
@@ -139,7 +139,7 @@ function installCubeDrag(r, onOrbit, context) {
       lastX: e.clientX,
       lastY: e.clientY,
       hit: e.button !== 2 && !r.orbitOnly ? hitAt(e) : null,
-      wide: !!(r.wideTurns || e.shiftKey || e.altKey),
+      wide: !!(r.wideTurns || e.shiftKey),
     };
     if (e.button !== 2 && !r.isStack && context.lockMode && drag.hit) {
       drag.lockClick = true;
@@ -167,7 +167,7 @@ function installCubeDrag(r, onOrbit, context) {
         return;
       if (Math.hypot(dx, dy) < 12) return;
       let best = null;
-      d.wide = !!(r.wideTurns || e.shiftKey || e.altKey);
+      d.wide = !!(r.wideTurns || e.shiftKey);
       for (const c of (r.sliceCandidates ? r.sliceCandidates(d.hit, d.wide) : sliceCandidates(r, d.hit, d.wide))) {
         const dot = dx * c.vx + dy * c.vy,
           alignment = Math.abs(dot) / Math.hypot(dx, dy);
