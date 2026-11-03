@@ -25,6 +25,8 @@ $('activeSpheres').checked=true;$('activeSpheres').listeners.input();flush();ass
 $('hoverOutline').checked=true;$('hoverOutline').listeners.input();const canvas=$('control');canvas.listeners.pointermove({pointerId:1,pointerType:'mouse',clientX:600,clientY:400});flush();assert(context.renderers[0].hover);
 const previous=context.state[54];await context.play(6);flush();assert(context.engine.snapshot()[68]>0);$('stageUndo').onclick();flush();assert.equal(context.state[54],previous);
 $('customLayers').checked=true;$('customLayers').onchange();flush();assert($('renderLayers').children.length>=17);$('resetLayers').onclick();flush();assert(!$('customLayers').checked);
+assert.equal($('stageNet').children.length,6);
+assert($('groupRequirements').textContent.includes('Current spheres:'));
 console.log('PASS: actual ES modules + real Wasm startup, hold, undo, sphere/hover rendering, custom layers and defaults (mock WebGL).');
 
 const savedState=Array.from(context.state);
@@ -156,7 +158,7 @@ $('debugCurrent').value='2';$('debugHeld').value='6';
 $('animations').checked=false;await $('setupStart').onclick();flush();
 assert.equal((context.engine.game_rules()>>16)&3,1);assert.equal(context.state[55],2);assert.equal(context.state[164],6);assert.equal(context.engine.exportState()[1],7);
 $('debugHeld').value='0';await $('applyHeld').onclick();assert.equal(context.state[164],0);
-$('scienceMode').checked=false;$('scienceMode').onchange();assert($('stageUndo').disabled);assert(!context.engine.game_debug_piece(1,3));
+$('scienceMode').checked=false;$('scienceMode').onchange();assert(!$('stageUndo').disabled);assert(!context.engine.game_debug_piece(1,3));
 $('scienceMode').checked=true;$('scienceMode').onchange();assert(!$('stageUndo').disabled);
 console.log('PASS: new gameplay defaults, setup choices, current/empty hold editing, and debug Undo policy reach real Wasm.');
 
@@ -255,3 +257,14 @@ for(const [id,options] of [[10,[4,3]],[11,[5,6]]]) {
 $('planeGravity').checked=false;$('planeGravity').onchange();assert(!(context.engine.game_rules()&(1<<24)));
 $('planeGravity').checked=true;$('planeGravity').onchange();assert(context.engine.game_rules()&(1<<24));
 console.log('PASS: free J/L and S/Z setup/hold/current pieces, dual previews, mixed sphere colors and plane-gravity toggle.');
+
+$('stageFaceMap').checked=true;$('stageFaceMap').onchange();flush();
+assert(context.renderers[0].combined,'face-map layout keeps active field and stack together');
+assert.equal($('viewMode').textContent,'Hide face map');
+const mapBefore=context.state;
+context.renderers[0].setState(mapBefore,{kind:'turn',move:4,t:.5});
+assert($('stageNet').children[0].children[1].children.some(c=>c.style.backgroundImage),'map shows live active fill');
+context.renderers[0].setState(mapBefore);
+$('viewMode').onclick();flush();assert(!$('stageFaceMap').checked);
+assert.equal(context.renderers[0].combined,$('combined').checked);
+console.log('PASS: combined cube plus face maps, live turn updates, and return to previous cube layout.');

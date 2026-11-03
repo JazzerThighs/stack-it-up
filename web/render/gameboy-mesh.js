@@ -2,19 +2,24 @@
 // Height, not baked white highlights: live lighting follows every relief wall.
 import {xyz} from './geometry.js';
 const cache=new Map();
+// Tetris 2 bomb: colored tile, dark round body, colored center and short fuse.
+const bombRows=['........','....##..','..####..','.##..##.','.##..##.','..####..','...##...','........'];
 export function gameboyPattern(letter='O') {
   if(letter==='J/L')letter='J';if(letter==='S/Z')letter='S';
   const size=8,heights=[];
   for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
     const edge=Math.min(x,y,7-x,7-y);let h=0;
     if(edge>0) {
-      if(letter==='L')h=.018;
+      if(letter==='bomb')h=bombRows[y][x]==='#'?.008:.032;
+      else if(letter==='L')h=.018;
       else if(letter==='Z')h=(x>=3&&x<=4&&y>=3&&y<=4)?0:.028;
       else if(letter==='O')h=edge===1?.032:0;
       else if(letter==='B')h=(x===3||x===4||y===3||y===4)?.035:.008;
       else if(letter==='D'||letter==='F') {
         const u=letter==='F'?7-x:x;
-        h=((y===2&&u>=2&&u<=5)||(u===5&&y>=2&&y<=5)||(y===5&&u>=3&&u<=5)||(u===3&&y===4))?.035:.006;
+        // From the center: up, right, down, left = clockwise (D).
+        const spiral=(y===2&&u>=2&&u<=5)||(u===5&&y>=2&&y<=5)||(y===5&&u>=3&&u<=5)||(u===3&&y===4);
+        h=(letter==='D'?!spiral:spiral)?.035:.006;
       } else h=edge===1?.032:edge===2?.004:.024;
     }
     heights.push(h);
@@ -23,28 +28,24 @@ export function gameboyPattern(letter='O') {
 }
 function unitMesh(letter) {
   if(cache.has(letter))return cache.get(letter);
-  // Reflect the entire right-screw mesh, not each face in its local frame.
-  // Reverse each triangle to preserve outward winding after reflection.
-  if(letter==='F') {
-    const right=unitMesh('D'),left=new Float32Array(right.length);
-    for(let i=0;i<right.length;i+=27)for(const [dest,src] of [[0,0],[9,18],[18,9]])
-      for(let a=0;a<9;a++)left[i+dest+a]=right[i+src+a]*(a===0||a===3?-1:1);
-    cache.set(letter,left);return left;
-  }
   const heights=gameboyPattern(letter),out=[],base=.455,step=base*2/8;
   const quad=(points,n,tone)=>{for(const i of [0,1,2,0,2,3])out.push(...points[i],...n,tone,tone,tone);};
   for(let axis=0;axis<3;axis++)for(const sign of [-1,1]) {
     const a=(axis+1)%3,b=(axis+2)%3;
+    const screw=letter==='D'||letter==='F';
+    // Each outward-facing local frame must have the same handedness.
+    const height=(x,y)=>heights[y*8+(screw&&sign<0?7-x:x)];
     const point=(u,v,h)=>{const q=[0,0,0];q[axis]=sign*(base+h);q[a]=-base+u*step;q[b]=-base+v*step;return q;};
     for(let y=0;y<8;y++)for(let x=0;x<8;x++) {
-      const h=heights[y*8+x],n=[0,0,0];n[axis]=sign;
+      const h=height(x,y),n=[0,0,0];n[axis]=sign;
       const edge=Math.min(x,y,7-x,7-y);
       const framed=letter==='J'||letter==='S'||letter==='J/L'||letter==='S/Z';
-      const tone=framed?(edge===0?.12:edge===1?1:edge===2?.12:1.65):(h===0?.24:1);
+      const whiteCenter=letter==='S'||letter==='S/Z';
+      const tone=screw?(h>.02?1:.24):letter==='bomb'?(edge===0?.12:bombRows[y][x]==='#'?.08:1):framed?(edge===0?.12:edge===1?1:edge===2?.12:whiteCenter?2:1):(h===0?.24:1);
       const points=[[x,y],[x+1,y],[x+1,y+1],[x,y+1]].map(([u,v])=>point(u,v,h));
       quad(sign===1?points:points.reverse(),n,tone);
       for(const [dx,dy]of [[-1,0],[1,0],[0,-1],[0,1]]) {
-        const nx=x+dx,ny=y+dy,other=nx<0||ny<0||nx>=8||ny>=8?0:heights[ny*8+nx];
+        const nx=x+dx,ny=y+dy,other=nx<0||ny<0||nx>=8||ny>=8?0:height(nx,ny);
         if(h<=other)continue;
         const u=x+(dx>0?1:0),v=y+(dy>0?1:0),end=[u+(dy!==0?1:0),v+(dx!==0?1:0)];
         const normal=[0,0,0];normal[a]=dx;normal[b]=dy;

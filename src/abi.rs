@@ -391,3 +391,25 @@ pub extern "C" fn game_piece_pool()->u32 {APP.with_borrow(|a|a.game.state.piece_
 pub extern "C" fn game_set_piece_pool(pool:u32,redeal:u32)->u32 {APP.with_borrow_mut(|a|a.game.set_piece_pool(pool,redeal!=0) as u32)}
 #[unsafe(no_mangle)]
 pub extern "C" fn game_choice_mask(choice:u32)->u32 {APP.with_borrow(|a|a.game.pending.iter().find(|p|p.face==choice as usize).map_or(0,|p|p.mask))}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn game_can_undo()->u32 {APP.with_borrow(|a|a.game.can_undo() as u32)}
+#[unsafe(no_mangle)]
+pub extern "C" fn group_requirement_at(cell:u32)->u32 {
+    APP.with_borrow(|a| {
+        let s=&a.game.state;if cell>=27{return 0;}
+        let Some(f)=s.floating.iter().find(|f|f.cell==cell as usize) else{return 0;};
+        let r=s.rules.unwrap_or(1<<14);
+        if r&(1<<14)==0{return 1<<17;}
+        if let Some(i)=s.free_groups.iter().position(|m|m&(1<<cell)!=0) {
+            if r&(1<<22)==0{return 1<<16;}
+            let mask=*s.free_shapes.get(i).unwrap_or(&s.free_groups[i]);
+            return match mask.count_ones(){1=>1<<18,2=>1<<19,3=>if crate::engine::State::fragment_shape(mask)==vec![1,1,4]{1<<20}else{1<<21},_=>1<<16};
+        }
+        if !s.rebuild_ids.contains(&f.id) {return 1<<16;}
+        let origin=s.free_origins.get(&f.id).copied().unwrap_or(f.color);
+        (1..=9).filter(|&color| (r&(1<<22)==0 || crate::engine::choices(origin).contains(&color)) &&
+            (r&(1<<21)==0 || (1..=11).any(|p|s.piece_pool&(1<<(p-1))!=0 && crate::engine::choices(p).contains(&color))))
+            .fold(0,|mask,color|mask|1<<(color-1))
+    })
+}

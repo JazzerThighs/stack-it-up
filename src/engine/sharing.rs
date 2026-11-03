@@ -3,12 +3,12 @@ use super::*;
 impl Game {
     pub fn export_state(&self) -> Vec<u32> {
         let s = &self.state;
-        let modern=s.piece_pool>511 || !s.free_origins.is_empty() || s.queue.iter().any(|&p|p>9) || s.held>9 || s.rules.is_some_and(|r|r&(1<<24)!=0);
+        let modern=!s.free_shapes.is_empty() || s.piece_pool>511 || !s.free_origins.is_empty() || s.queue.iter().any(|&p|p>9) || s.held>9 || s.rules.is_some_and(|r|r&(1<<24)!=0);
         let spatial=modern || s.shape_rules() || s.piece_pool!=63 || s.board.iter().chain(s.queue.iter()).any(|&p|p>6) || s.held>6 || s.floating.iter().any(|f|f.color>6);
         let extended=spatial || s.rules.is_some() || s.release_trigger!=0 || !s.release_bandaged || s.release_scattered || s.release_selection!=0 || s.release_started.is_some() || !s.free_groups.is_empty();
         let mut v = vec![
             0x53554931,
-            if modern {7} else if s.shape_rules() {6} else if spatial {5} else if s.rules.is_some() {4} else if extended {3} else {2},
+            if !s.free_shapes.is_empty() {8} else if modern {7} else if s.shape_rules() {6} else if spatial {5} else if s.rules.is_some() {4} else if extended {3} else {2},
             s.rng,
             s.active,
             s.pieces,
@@ -59,6 +59,7 @@ impl Game {
             v.push(origins.len() as u32);
             for (&id,&piece) in origins {v.extend([id,piece as u32]);}
         }
+        if !s.free_shapes.is_empty() {v.extend(&s.free_shapes);}
         v
     }
     pub fn import_state(&mut self, data: &[u32]) -> bool {
@@ -68,7 +69,7 @@ impl Game {
                 return None;
             }
             let version=it.next()?;
-            if !(1..=7).contains(&version) { return None; }
+            if !(1..=8).contains(&version) { return None; }
             let max_piece=if version>=7 {11} else if version>=5 {9} else {6};
             let mut s = State::empty(it.next()?);
             s.active = it.next()?;
@@ -230,7 +231,7 @@ impl Game {
             }
             if version >= 4 {
                 let rules=it.next()?; let plane=it.next()?;
-                if (version<7 && rules!=u32::MAX && rules&(1<<24)!=0) || (version<6 && rules!=u32::MAX && rules&(7<<21)!=0) || !((version==5 || version==7) && rules==u32::MAX) && !State::valid_rules(rules) || plane>9 { return None; }
+                if (version<7 && rules!=u32::MAX && rules&(1<<24)!=0) || (version<6 && rules!=u32::MAX && rules&(7<<21)!=0) || !((version==5 || version>=7) && rules==u32::MAX) && !State::valid_rules(rules) || plane>9 { return None; }
                 s.rules=(rules!=u32::MAX).then_some(rules); s.gravity_plane=(plane!=9).then_some(plane as usize);
                 if s.rules.is_some() && !s.bands.is_empty() { return None; }
             }
@@ -240,6 +241,13 @@ impl Game {
                 for _ in 0..count {
                     let id=it.next()?;let piece=it.next()?;
                     if id==0 || id>s.pieces || !(10..=11).contains(&piece) || (!s.ids.contains(&id)&&!s.floating.iter().any(|f|f.id==id)) || s.free_origins.insert(id,piece as u8).is_some() {return None;}
+                }
+            }
+            if version>=8 {
+                for &group in &s.free_groups {
+                    let original=it.next()?;
+                    if original&!FULL!=0 || original.count_ones()!=group.count_ones() {return None;}
+                    s.free_shapes.push(original);
                 }
             }
             if !s.bandaged && s.bands.iter().any(|band|!s.release_bandaged || !s.free_groups.iter().any(|group|band&group==*band)) {return None;}

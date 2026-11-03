@@ -1,3 +1,7 @@
+import {controlSettings,subscribeControls,setControlSetting} from '../input/control-settings.js';
+import {sceneDecorations} from '../render/decorations.js';
+import {createMoveButtons} from '../ui/move-buttons.js';
+import {S} from '../engine/snapshot.js';
 import {gameboyCell} from '../render/gameboy-mesh.js';
 import {unregisterRenderer} from '../render/recovery.js';
 import {solidStyleKey} from '../render/identity-solids.js';
@@ -46,7 +50,8 @@ export class PackingCube extends Renderer {
     };
     super(canvas, labels, {
       onOrbit: (dx, dy) => {
-        view.orbit(dx, dy);
+        if(controlSettings.freeOrbit)view.orbit(dx,dy);
+        else {view.yaw=Math.atan2(Math.sin(view.yaw+dx),Math.cos(view.yaw+dx));view.pitch=Math.max(-1.4,Math.min(1.4,view.pitch+dy));view.resetOrientation();}
         view.invalidate();
       },
       inputContext: context,
@@ -54,6 +59,7 @@ export class PackingCube extends Renderer {
     view = this;
     this.host = host;
     this.orbitOnly = readOnly;
+    this.skipGameLocks = true;
     this.onChange = onChange;
     this.cells = [];
     this.history = [];
@@ -94,6 +100,20 @@ export class PackingCube extends Renderer {
     });
     toolbar.append(this.status);
     host.append(toolbar);
+    this.arrowHost=document.createElement('div');this.arrowHost.className='packing-arrow-controls';host.append(this.arrowHost);
+    this.classicGrid=document.createElement('div');this.classicGrid.className='packing-classic-controls';host.append(this.classicGrid);
+    this.attachedNodes=[];
+    if(!readOnly){
+      const arrows=createMoveButtons({renderers:[this],get state(){return null;},get busy(){return view.busy;},play:m=>this.play(m),invalidate:()=>this.invalidate(),
+        getElementById:id=>id==='cubeMoves'?this.arrowHost:{checked:controlSettings[id]}});
+      this.attachedNodes=arrows.attachedNodes;this.layoutArrows=arrows.layoutCubeControls;
+      for(let m=0;m<30;m++){
+        const b=document.createElement('button');b.type='button';b.textContent=NOTATION[m%15]+(m>=15?"'":'');
+        b.onclick=()=>this.play(m);this.classicGrid.append(b);
+      }
+      this.widthButton=button('Regular turns',()=>setControlSetting('wideTurns',!controlSettings.wideTurns));
+    }
+    this.stopControls=subscribeControls(()=>this.syncControls());this.syncControls();
     this.observer = new ResizeObserver(() => this.invalidate());
     this.observer.observe(host);
     canvas.addEventListener("keydown", (e) => {
@@ -103,12 +123,23 @@ export class PackingCube extends Renderer {
         e.preventDefault();
       }
       const m = NOTATION.indexOf(e.key.toUpperCase());
-      if (!readOnly && m >= 0 && m < 9 && !e.ctrlKey && !e.metaKey) {
+      if (!readOnly && m >= 0 && m < 9 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         this.play(m + (e.shiftKey ? 15 : 0));
       }
     });
 
+  }
+  syncControls() {
+    this.wideTurns=controlSettings.wideTurns;this.perspective=controlSettings.perspectiveCamera;
+    if(!controlSettings.freeOrbit){this.pitch=Math.max(-1.4,Math.min(1.4,this.pitch));this.resetOrientation();}
+    this.arrowHost.hidden=this.orbitOnly || !controlSettings.showArrows;
+    this.classicGrid.hidden=this.orbitOnly || !controlSettings.classicControls;
+    if(this.widthButton){this.widthButton.textContent=this.wideTurns?'Wide turns':'Regular turns';this.widthButton.setAttribute('aria-pressed',String(this.wideTurns));}
+    this.refreshTurnHover?.();this.invalidate();
+  }
+  hoverCellGeometry(i) {
+    const out=[];(this.modelShape==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,[1,1,1],this.cells[i]?.piece<0?'bomb':'O');return out;
   }
   setCells(cells) {
     this.generation++;
@@ -150,14 +181,14 @@ export class PackingCube extends Renderer {
       this.invalidate();this.onFrame?.(cells,animation);return;
     }
     if (this.connected && this.meshGenerator && !animation) {
-      const parts=compositeParts(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.modelShape);
+      const parts=compositeParts(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.modelShape,false,cells.reduce((mask,c,i)=>c && c.piece<0?mask|(1<<i):mask,0));
       const mesh=joinMeshes(parts);
       this.upload(this.solid,mesh); this.invalidate(); this.onFrame?.(cells,animation); return;
     }
     cells.forEach((cell, i) => {
       if (!cell) return;
       const start = out.length;
-      (this.modelShape==='gameboy'?gameboyCell:balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d));
+      (this.modelShape==='gameboy'?gameboyCell:balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d),cell.piece<0?'bomb':'O');
       if (animation?.kind === "turn") rotateCell(out, start, i, animation.move, animation.t);
     });
     this.upload(this.solid, new Float32Array(out));
@@ -265,6 +296,13 @@ export class PackingCube extends Renderer {
       packets.push({id:'packing',target,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1,lightingClass:'Solids',fixedShape:!!visualSettings.solidFixed,
         rotation:animation?.kind==='turn' && movedCell(cell,animation.move)?turnTransform(animation.move,animation.t):undefined});
     }
+    if(controlSettings.showArrows && !this.orbitOnly)this.layoutArrows?.(rect.width,rect.height,this.unit,p=>this.project(p));
+    const feedback=new Uint32Array(300);
+    for(let i=0;i<27;i++)if(this.cells[i])feedback[S.ACTIVE]|=1<<i;
+    if(!this.busy && !this.orbitOnly && !this.currentAnimation && !this.orbitDragging && (this.hover || controlSettings.showArrows))sceneDecorations.call(this,(id,target,type,opacity,unlit)=>packets.push({id,target,type,opacity,unlit,breathe:1}),this.unit,{
+      hideLabels:true,state:feedback,busy:this.busy || this.orbitOnly,attachedNodes:this.orbitOnly?[]:this.attachedNodes,
+      getControl:id=>({checked:id==='placementGlow'?false:!!controlSettings[id]}),
+    });
     renderPackets.call(
       this,
       packets, /* retained cell fragments, moved entirely by GPU uniforms */
@@ -272,6 +310,7 @@ export class PackingCube extends Renderer {
     );
   }
   destroy() {
+    this.stopControls?.();
     unregisterRenderer(this);
     this.generation++;
     this.observer.disconnect();

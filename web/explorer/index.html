@@ -199,7 +199,20 @@
                   Official</label
                 >
               </fieldset>
-              <fieldset class="window-controls">
+              <fieldset id="explorerInputSettings"><legend>Input</legend>
+<label><input id="classicControls" type="checkbox"> Classic button grid</label>
+<label><input id="showArrows" type="checkbox"> Arrow buttons</label>
+<label><input id="arrowGuides" type="checkbox"> Arrow guide lines</label>
+<label><input id="wideTurns" type="checkbox"> Wide turns</label>
+<p>Drag a sticker to turn. Shift-drag for wide turns. Right-drag or drag outside to orbit.</p>
+</fieldset>
+<fieldset id="explorerHoverSettings"><legend>Hover feedback</legend>
+<label><input id="hoverRings" type="checkbox" checked> Slice rings</label>
+<label><input id="ringLabels" type="checkbox"> Move letters on rings</label>
+<label><input id="hoverOutline" type="checkbox"> Outline hovered cubies</label>
+</fieldset>
+<label><input id="freeOrbit" type="checkbox" checked> Unrestricted orbit</label>
+<fieldset class="window-controls">
                 <legend>Visible cubes</legend>
                 <label
                   ><input type="checkbox" id="showSolved" checked />

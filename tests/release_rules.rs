@@ -189,7 +189,7 @@ fn new_rules_roundtrip_with_old_formats_supported_and_undo_deterministic() {
     g.state.release_random_groups(1);
     g.state.refresh_bands();
     let words = g.export_state();
-    assert_eq!(words[1], 3);
+    assert_eq!(words[1], 8);
     let mut h = Game::new(2);
     assert!(h.import_state(&words));
     assert_eq!(h.export_state(), words);

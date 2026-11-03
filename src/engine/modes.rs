@@ -2,6 +2,23 @@
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 impl State {
+    pub fn add_free_group(&mut self, mask:u32) {
+        while self.free_shapes.len()<self.free_groups.len(){self.free_shapes.push(self.free_groups[self.free_shapes.len()]);}
+        self.free_groups.push(mask);self.free_shapes.push(mask);
+    }
+    /// Distances determine all one-, two- and three-cube shapes up to rotation.
+    pub fn fragment_shape(mask:u32)->Vec<i32> {
+        let cells:Vec<_>=bits(mask).map(xyz).collect();let mut distances=vec![];
+        for i in 0..cells.len() {for j in i+1..cells.len() {
+            distances.push((0..3).map(|a|{let d=cells[i][a] as i32-cells[j][a] as i32;d*d}).sum());
+        }}distances.sort();distances
+    }
+    pub fn fragment_ready(&self,index:usize)->bool {
+        let mask=self.free_groups[index];let r=self.rules.unwrap_or(0);
+        if r&(1<<14)==0 {return true;}
+        Self::connected(mask) && (!self.shape_rules() || r&(1<<22)==0 ||
+            Self::fragment_shape(mask)==Self::fragment_shape(*self.free_shapes.get(index).unwrap_or(&mask)))
+    }
     pub fn shape_rules(&self) -> bool { self.rules.is_some_and(|r|r&(1<<23)!=0) }
     fn allowed_rebuild(&self, mask:u32, old:u8, origin:u8, t:&Tables) -> Option<u8> {
         let r=self.rules?;
@@ -163,8 +180,8 @@ impl State {
     }
     pub fn rebuild_ready(&self, t: &Tables) -> bool {
         if let Some(r) = self.rules {
-            return self.rebuild_partition(t).is_some() && self.free_groups.iter().all(|&m| {
-                r & (1<<14) == 0 || (Self::connected(m) && (self.shape_rules() || r & (1<<15) == 0 || t.faces.iter().any(|face| m & face == m)))
+            return self.rebuild_partition(t).is_some() && self.free_groups.iter().enumerate().all(|(index,&m)| {
+                self.fragment_ready(index) && (r & (1<<14) == 0 || (Self::connected(m) && (self.shape_rules() || r & (1<<15) == 0 || t.faces.iter().any(|face| m & face == m))))
             });
         }
         self.release_scattered || (self.free_groups.iter().all(|&m| Self::connected(m)) && self.rebuild_partition(t).is_some())

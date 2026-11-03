@@ -1,3 +1,6 @@
+import {bindControlSettings,controlSettings,setControlSetting} from './input/control-settings.js';
+import {createFaceMap} from './ui/face-map.js';
+import {groupRequirementsText} from './ui/group-requirements.js';
 import {openSettingsPage} from './ui/settings-pages.js';
 import {startupCheck,startupError,packingProgress} from './ui/startup.js';
 import {installRecovery} from './render/recovery.js';
@@ -54,7 +57,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveL
 const animations = $("animations");
 animations.checked = !matchMedia("(prefers-reduced-motion: reduce)").matches;
 const moveButtons = [],
-  faceCells = [],
+  faceCells = [],stageFaceCells=[],
   queueShapes = [];
 function shape(el) {
   const cells = Array.from({ length: 9 }, () => {
@@ -99,7 +102,7 @@ const forecastReplay = createReplay({engine:()=>engine, refresh:()=>update(), is
 const queueForecast = createForecast({enabled:$("queueForecast"), status:$("forecastStatus"),
   onWitness:forecastReplay.setWitness, targets:[$("target"), ...queueShapes.map(q=>q.item)]});
 $("queueForecast").onchange = () => { if (engine) queueForecast.update(engine); };
-for (let f = 0; f < 6; f++) {
+for(const [host,list] of [["net",faceCells],["stageNet",stageFaceCells]]) for (let f = 0; f < 6; f++) {
   const el = document.createElement("div"),
     label = document.createElement("span"),
     grid = document.createElement("div");
@@ -112,9 +115,10 @@ for (let f = 0; f < 6; f++) {
     return c;
   });
   el.append(label, grid);
-  $("net").append(el);
-  faceCells.push(cells);
+  $(host).append(el);
+  list.push(cells);
 }
+const updateFaceMaps=createFaceMap([faceCells,stageFaceCells],colors,names,faceLabels);
 for (let m = 0; m < 30; m++) {
   const b = document.createElement("button");
   b.className = "move" + (m >= 15 ? " prime" : "");
@@ -279,23 +283,8 @@ function update(message) {
     : state[S.OVER]
       ? isSpatial(state[S.PIECE]) ? "Top out: no non-core placement fits." : "Top out: no face, surface, or internal placement fits."
       : message || (isSpatial(p) ? `Build ${names[p]} around the core.` : `Build ${names[p]} on any free face.`);
-  for (let f = 0; f < 6; f++)
-    for (let c = 0; c < 9; c++) {
-      const i = state[80 + f * 9 + c],
-        active = !!((state[S.ACTIVE] | state[S.FLOATING]) & (1 << i)),
-        floating = !!(state[S.FLOATING] & (1 << i)),
-        el = faceCells[f][c];
-      el.style.background = floating
-        ? "#ffffff"
-        : state[i]
-          ? colors[state[i]]
-          : active
-            ? colors[choices(p)[0]]
-            : "";
-      el.classList.toggle("active", active);
-      el.classList.toggle("overlap", active && !!state[i]);
-      el.title = `${faceLabels[f]} ${c + 1}: ${state[i] ? `${names[state[i]]} stack` : "empty"}${active ? ", active" : ""}`;
-    }
+  $("groupRequirements").textContent=groupRequirementsText(state,renderers[0]);
+  updateFaceMaps(state);
   syncOverlayControls();
   syncChoices();
   renderers.forEach((r) => r.setState(state));
@@ -367,7 +356,7 @@ function setBusy(value) {
   faceButtons.forEach(
     (b, f) => (b.disabled = value || !(state[S.PENDING_FACES] & (1 << f))),
   );
-  $("undo").disabled = value || !state[S.UNDO_COUNT] || (state.gameplayRules!==0xffffffff && !(state.gameplayRules&1) && !state[S.OVER]);
+  $("undo").disabled = value || !state[S.UNDO_COUNT] || !state.canUndo;
   $("new").disabled = value;
   $("gravityMode").disabled = value || !!state[S.PENDING_FACES];
   for (const id of ["bandagedFragments", "randomCubies", "rebuildMode", "releaseTrigger", "releaseBandaged", "releaseScattered", "releaseSelection"])
@@ -548,6 +537,7 @@ $("earlyLock").onchange = () => {
 };
 $("turnWidth").onclick = () => {
   const wide = !renderers[0]?.wideTurns;
+  setControlSetting("wideTurns",wide);
   $("turnWidth").textContent = wide ? "Wide turns" : "Regular turns";
   $("turnWidth").setAttribute("aria-pressed", String(wide));
   renderers.forEach(r => { r.wideTurns = wide; r.refreshTurnHover?.(); });
@@ -594,7 +584,8 @@ document.addEventListener("keydown", (e) => {
     }
     return;
   }
-  const label = e.altKey ? e.key.toLowerCase() : e.key.toUpperCase();
+  if(e.altKey)return;
+  const label = e.key.toUpperCase();
   let m = moveLabels.indexOf(label);
   if (m >= 0) {
     e.preventDefault();
@@ -604,6 +595,7 @@ document.addEventListener("keydown", (e) => {
 let viewTransition = 0;
 $("viewMode").onclick = () => {
   if (viewTransition) return;
+  if ($("stageFaceMap").checked) { $("stageFaceMap").checked=false; syncFaceMapLayout(); return; }
   const views = document.querySelector(".views"),
     control = renderers[0],
     split = $("combined").checked;
@@ -626,7 +618,7 @@ $("viewMode").onclick = () => {
     !animations.checked ||
     matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finish = () => {
-    control.combined = !split;
+    control.combined = $("stageFaceMap").checked || !split;
     control.setState(control.state, control.animation);
     views.classList.remove("view-moving");
     viewTransition = 0;
@@ -721,7 +713,7 @@ function syncOverlayControls() {
       `${moveLabels[m % 15]}${m >= 15 ? " prime" : ""}${win ? " — places the current piece" : ""}`,
     );
   }
-  const canUndo = !busy && !!state[S.UNDO_COUNT] && (state.gameplayRules===0xffffffff || !!(state.gameplayRules&1) || !!state[S.OVER]);
+  const canUndo = !busy && !!state[S.UNDO_COUNT] && state.canUndo;
   $("undo").disabled=!canUndo;
   $("stageUndo").disabled = !canUndo;
   $("overUndo").disabled = !canUndo;
@@ -850,7 +842,9 @@ async function start() {
     ];
     startupCheck('graphics','WebGL views and shaders ready',true);
     syncDisplaySettings();
-    renderers[0].combined = $("combined").checked;
+    for(const r of renderers)r.wideTurns=controlSettings.wideTurns;
+    renderers[0].onState=updateFaceMaps;
+    syncFaceMapLayout();
     refreshSettings();
     const stage = document.querySelector(".views");
     const resizeStage = () => {
@@ -925,3 +919,28 @@ for (const id of ["gameTab", "explorerTab"]) {
 if (globalThis.location?.hash === '#game') startupCheck('explorer','Packing explorer loads when opened',true);
 else startupCheck('explorer','Loading packing data, controls and cube views');
 selectApplication(globalThis.location?.hash !== "#game");
+
+function syncFaceMapLayout() {
+  const enabled=$("stageFaceMap").checked,combined=$("combined").checked;
+  const views=document.querySelector('.views');
+  views.classList.toggle('show-face-map',enabled);
+  views.classList.toggle('combined',!enabled && combined);
+  const control=renderers[0];
+  if(control){control.combined=enabled || combined;if(control.state)control.setState(control.state,control.animation);}
+  $("viewMode").textContent=enabled?'Hide face map':combined?'Split cubes':'Combine cubes';
+  $("viewMode").setAttribute('aria-label',enabled?'Hide face map':combined?'Separate active cube and stack':'Combine active cube and stack');
+  $("viewMode").setAttribute('aria-pressed',String(enabled || !combined));
+  invalidate();
+}
+$("stageFaceMap").onchange=syncFaceMapLayout;
+
+bindControlSettings(document,()=>{
+  for(const r of renderers){
+    r.wideTurns=controlSettings.wideTurns;r.refreshTurnHover?.();
+    if(!controlSettings.freeOrbit){r.pitch=Math.max(-1.4,Math.min(1.4,wrapOrbitAngle(r.pitch)));r.resetOrientation();}
+  }
+  $("turnWidth").textContent=controlSettings.wideTurns?'Wide turns':'Regular turns';
+  $("turnWidth").setAttribute('aria-pressed',String(controlSettings.wideTurns));
+  $("legacyControls").hidden=!controlSettings.classicControls;
+  syncDisplaySettings();if(state)syncOverlayControls();
+});

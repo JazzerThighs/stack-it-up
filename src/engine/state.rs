@@ -38,6 +38,7 @@ pub struct State {
     pub release_selection: u32,
     pub release_started: Option<u32>,
     pub free_groups: Vec<u32>,
+    pub free_shapes: Vec<u32>,
     pub bands: Vec<u32>,
     pub fragment_enabled: bool,
     pub fragment_turns: u32,
@@ -84,6 +85,7 @@ impl State {
             release_selection: 0,
             release_started: None,
             free_groups: vec![],
+            free_shapes: vec![],
             bands: vec![],
             fragment_enabled: true,
             fragment_turns: 0,
@@ -272,7 +274,7 @@ impl State {
         let piece = self.queue.pop_front().unwrap();
         self.hold_used = false;
         self.bands.clear();
-        self.free_groups.clear();
+        self.free_groups.clear();self.free_shapes.clear();
         let fragments = std::mem::take(&mut self.floating);
         let mut mask_f = 0;
         for f in &fragments {
