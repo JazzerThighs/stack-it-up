@@ -44,7 +44,7 @@ export function initializeExplorerSettings(root) {
   add(views,$('explorerCamera').closest('label'));unpack(views,find('.window-controls'));
   add(views,$('targetComposite').closest('label'));
   help(views,'Visible-cube switches apply to standard browsing. Family and practice modes use their own views.');
-  const appearance=page('Appearance',home);add(appearance,$('pieceAppearance').closest('label'));
+  const appearance=page('Appearance',home);add(appearance,$('modelShape').closest('label'),$('pieceAppearance').closest('label'));
   const colors=page('Colors',appearance);unpack(colors,find('.color-controls'));
   help(colors,'Official colors apply to family 562; other families use canonical colors. Multicolor distinguishes piece IDs.');
   const palette=page('Tetromino palette',colors);unpack(palette,find('.piece-colors'));

@@ -79,11 +79,12 @@ console.log('PASS: setup confirmation, conditional band locking, state sharing/l
 // Display controls may change rendering, never the exported puzzle state.
 const visualState=Array.from(context.engine.exportState());
 $('animations').checked=true;
-for(const style of ['jelly','dither','matte','voxel','cel','ascii','jelly']) {
+for(const shape of ['jelly','voxel','gameboy']) for(const style of ['jelly','dither','matte','cel','ascii']) {
+  $('modelShape').value=shape;
   $('pieceAppearance').value=style;
   $('pieceAppearance').listeners.input();flush();
   for(const r of context.renderers) {
-    assert.equal(r.appearance,style);assert(r.breathing);
+    assert.equal(r.appearance,style);assert.equal(r.modelShape,shape);assert(r.breathing);
     if(r.canvas.dataset.appearance) assert.equal(r.canvas.dataset.appearance,style);
     assert(r.stackMesh.data.every(Number.isFinite));
   }
@@ -101,7 +102,7 @@ context.renderers[0].setState(colorState);
 assert(context.renderers[0].activeOnly.count>0);assert.equal(context.renderers[0].floatingMesh.count,0);
 $('resetPieceColors').onclick();flush();
 assert.deepEqual(palette.colors,palette.defaultColors);
-console.log('PASS: explorer-first startup, six styles, breathing, shared palettes, white-piece identity and unchanged puzzle state.');
+console.log('PASS: explorer-first startup, all 15 shape/effect combinations, breathing, shared palettes, white-piece identity and unchanged puzzle state.');
 
 const settingsState=Array.from(context.engine.exportState());
 const retainedMesh=context.renderers[0].stackMesh.data;

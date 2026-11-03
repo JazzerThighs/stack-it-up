@@ -11,7 +11,7 @@ export function renderPackets(packets, context) {
   const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
   // Keep original buffers intact: changing style never changes game geometry.
-  if(this.appearance==='voxel') {
+  if(this.modelShape==='voxel' || this.appearance==='voxel') {
     this.voxelTargets ??= new Map();
     packets=packets.map(p=>{
       let entry=this.voxelTargets.get(p.target);
@@ -33,6 +33,7 @@ export function renderPackets(packets, context) {
   if(screenPass) screenPass.begin(this.canvas.width,this.canvas.height);
   gl.useProgram(this.program);
   gl.uniform1i(this.uniforms.appearance,appearanceIndex(this.appearance));
+  gl.uniform1i(this.uniforms.gameboyLighting,this.modelShape==='gameboy'?1:0);
   gl.uniform1f(this.uniforms.pixelRatio,pixelRatio);
   gl.uniform3fv(this.uniforms.lightDirection,lightDirection());
   for(const key of ['lightIntensity','lightAmbient','ditherLevels','ditherSize','ditherContrast','ditherMidpoint'])

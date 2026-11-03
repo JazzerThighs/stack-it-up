@@ -250,9 +250,10 @@ for(const camera of ['orthographic','perspective']) {
   $('explorerCamera').value=camera;$('explorerCamera').listeners.change();flush();
   assert.equal(source.perspective,camera==='perspective');assert.equal(target.perspective,source.perspective);
 }
-for(const style of ['jelly','dither','matte','voxel','cel','ascii','dither']) {
+for(const shape of ['jelly','voxel','gameboy']) for(const style of ['jelly','dither','matte','cel','ascii']) {
+  $('modelShape').value=shape;
   $('pieceAppearance').value=style;$('pieceAppearance').listeners.change();flush();
-  assert.equal(target.appearance,style);assert.equal(source.appearance,style);
+  assert.equal(target.modelShape,shape);assert.equal(source.modelShape,shape);assert.equal(target.appearance,style);assert.equal(source.appearance,style);
   assert.equal(target.canvas.dataset.appearance,style);assert.equal(source.canvas.dataset.appearance,style);
   assert.deepEqual([source.cells,target.cells],explorerState);
 }
@@ -262,7 +263,7 @@ assert.equal(palette.colors[1],'#123456');assert.equal(palette.packingPalette.y,
 assert(target.solid.data.some((value,i)=>i%9===6 && Math.abs(value-0x12/255)<1e-6));
 assert.deepEqual([source.cells,target.cells],explorerState);
 $('resetPieceColors').onclick();assert.deepEqual(palette.colors,palette.defaultColors);
-console.log('PASS: explorer cameras, six styles and custom colors preserve packings and practice state.');
+console.log('PASS: explorer cameras, all 15 shape/effect combinations and custom colors preserve packings and practice state.');
 
 const retainedSurface=target.solid.data;
 $('asciiSize').value='1.5';$('asciiSize').listeners.input();
