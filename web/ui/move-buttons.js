@@ -1,6 +1,7 @@
 import { moveLabels } from "../engine/coordinates.js";
 const $ = (id) => document.getElementById(id);
 export function createMoveButtons(context) {
+  const $ = context.getElementById || ((id) => document.getElementById(id));
   const overlayButtons = [];
   const attachedNodes = [];
   const auraFaces = [
@@ -64,7 +65,7 @@ export function createMoveButtons(context) {
             });
             button.onclick = (e) => {
               let m = +button.dataset.move;
-              if (!slice && (e.shiftKey || e.altKey || context.renderers[0]?.wideTurns) && m % 15 < 6) m += 9;
+              if (!slice && (e.shiftKey || context.renderers[0]?.wideTurns) && m % 15 < 6) m += 9;
               context.play(m);
             };
             $("cubeMoves").append(stem, button);
@@ -178,7 +179,7 @@ export function createMoveButtons(context) {
       stem.style.opacity = opacity;
       const label = moveLabels[move % 15] + (move >= 15 ? "′" : "");
       button.querySelector("small").textContent = label;
-      button.title = label + (slice ? " — slice" : " — Alt-click for wide");
+      button.title = label + (slice ? " — slice" : " — Shift-click for wide");
       button.setAttribute(
         "aria-label",
         label +

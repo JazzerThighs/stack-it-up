@@ -473,3 +473,19 @@ retainedLayers.forEach((layer,i)=>{
   assert.equal(layer.count,layer.data.length/9);
 });
 console.log('PASS: family-explorer GPU recovery preserves cut-piece layers, packing identity and move history.');
+
+const controls=await import(new URL('input/control-settings.js',assetRoot));
+const hoverView=familyView;
+controls.setControlSetting('hoverRings',true);controls.setControlSetting('ringLabels',true);
+hoverView.hover={hit:{axis:2,p:[1,1,1.5]},wide:false};hoverView.busy=false;hoverView.orbitDragging=false;
+const uploaded=[];const hoverOriginalUpload=hoverView.upload.bind(hoverView);
+hoverView.upload=(target,data)=>{uploaded.push(target);hoverOriginalUpload(target,data);};
+hoverView.draw();assert(hoverView.decorBuffers['slices:0']?.count>0);assert(hoverView.decorBuffers['dragArrows:0']?.count>0);
+assert(uploaded.includes(hoverView.decorBuffers['slices:0']));uploaded.length=0;
+hoverView.orbitDragging=true;hoverView.draw();assert(!uploaded.includes(hoverView.decorBuffers['slices:0']));
+hoverView.orbitDragging=false;controls.setControlSetting('hoverRings',false);uploaded.length=0;hoverView.draw();assert(!uploaded.includes(hoverView.decorBuffers['slices:0']));
+controls.setControlSetting('wideTurns',true);assert(hoverView.wideTurns);assert(source.wideTurns);
+controls.setControlSetting('classicControls',true);assert(!hoverView.classicGrid.hidden);assert(target.classicGrid.hidden);
+controls.setControlSetting('showArrows',true);assert(!hoverView.arrowHost.hidden);hoverView.draw();assert(hoverView.attachedNodes.some(n=>n.layout));
+hoverView.upload=hoverOriginalUpload;
+console.log('PASS: explorer rings/labels, suppressed orbit feedback, shared wide turns, classic controls and clickable arrows.');

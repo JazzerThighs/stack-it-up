@@ -19,6 +19,7 @@ import { CubeStack, moveLabels } from "../engine/coordinates.js";
 import { stickerCenter, sliceCandidates } from "../input/drag.js";
 const $ = (id) => document.getElementById(id);
 export function sceneDecorations(add, unit, context) {
+  const $ = context.getControl || ((id) => document.getElementById(id));
   const { state, busy, engine, animations, layerOrder, attachedNodes } =
     context;
   const gl = this.gl,
@@ -110,7 +111,7 @@ export function sceneDecorations(add, unit, context) {
   };
   const labels = [];
   const faceLabelSize = Math.min(26, Math.max(12, unit * 0.65));
-  for (let f = 0; f < 6; f++) {
+  for (let f = 0; !context.hideLabels && f < 6; f++) {
     const [axis, side] = faces[f],
       p = [0, 0, 0];
     p[axis] = (side - 1) * 1.85;
@@ -331,7 +332,8 @@ export function sceneDecorations(add, unit, context) {
             : this.activeOpacity;
         if (opacity <= 0) continue;
         const geometry = [];
-        activeCubie(
+        if(this.hoverCellGeometry) geometry.push(...this.hoverCellGeometry(i));
+        else activeCubie(
           geometry,
           p,
           0.438 * breath,

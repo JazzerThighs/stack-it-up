@@ -40,8 +40,13 @@ export function initializeExplorerSettings(root) {
   add(filters,$('familySummary'));
   // Keep the legacy container reachable for collection setup code, now empty.
   const spatial=$('spatialFilters');spatial.replaceChildren();spatial.hidden=true;add(filters,spatial);
-  const views=page('Views & camera',home);
-  add(views,$('explorerCamera').closest('label'));unpack(views,find('.window-controls'));
+  const controls=page('Controls',home);
+  help(controls,'Shared with the game. Changes apply to both apps.');
+  const input=page('Input',controls);unpack(input,$('explorerInputSettings'));
+  const hover=page('Hover feedback',controls);unpack(hover,$('explorerHoverSettings'));
+  const camera=page('Camera',controls);add(camera,$('explorerCamera').closest('label'),$('freeOrbit').closest('label'));
+  const views=page('Views',home);
+  unpack(views,find('.window-controls'));
   add(views,$('targetComposite').closest('label'));
   help(views,'Visible-cube switches apply to standard browsing. Family and practice modes use their own views.');
   const appearance=page('Appearance',home);add(appearance,$('modelShape').closest('label'),$('pieceAppearance').closest('label'));

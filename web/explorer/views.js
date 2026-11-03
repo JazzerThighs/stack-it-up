@@ -1,3 +1,4 @@
+import {bindControlSettings} from '../input/control-settings.js';
 import {solidStyleKey} from '../render/identity-solids.js';
 import {visualSettings} from '../render/visual-settings.js';
 import {createFamilyExplorer} from "./family-controller.js";
@@ -99,12 +100,7 @@ export function createExplorerViews({
       cube.setState(cube.cells,cube.currentAnimation);
     }
   });
-  $("explorerCamera").addEventListener("change", () => {
-    for (const cube of cubes.values()) {
-      cube.perspective = $("explorerCamera").value !== "orthographic";
-      cube.invalidate();
-    }
-  });
+  bindControlSettings(root,()=>{for(const cube of cubes.values())cube.syncControls();},{explorer:true});
   $("targetComposite").addEventListener("change", refreshPieces);
   $("targetTransparency").addEventListener("input", refreshTransparency);
   $("playSolution").onclick = async () => {

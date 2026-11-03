@@ -2648,13 +2648,13 @@ main.explorer-active > .topbar { padding:0 14px; }
 .status-strip { flex-wrap:wrap; }
 #groupRequirements { display:block; width:100%; font-size:13px; color:#c4d7d6; line-height:1.4; }
 #stageFaceMapPanel { display:none; }
-@media(min-width:900px) {
- .views.show-face-map:not(.combined) .stack-viewport > canvas,
- .views.show-face-map:not(.combined) .stack-viewport > .view-title,
- .views.show-face-map:not(.combined) .stack-viewport > .empty-stack { display:none!important; }
- .views.show-face-map:not(.combined) #stageFaceMapPanel { display:flex; position:absolute; inset:70px 20px 60px; flex-direction:column; align-items:center; justify-content:center; overflow:auto; }
- #stageNet { width:min(100%,480px); margin:0; gap:14px; }
- #stageNet .face-label { font-size:18px; }
- #stageFaceMapPanel h3 { margin:0 0 10px; }
- #stageFaceMapPanel p { font-size:13px; }
-}
+ .views.show-face-map .stack-viewport > canvas,
+ .views.show-face-map .stack-viewport > .view-title,
+ .views.show-face-map .stack-viewport > .empty-stack { display:none!important; }
+ .views.show-face-map #stageFaceMapPanel { display:flex; position:absolute; inset:8px 16px; flex-direction:column; align-items:center; justify-content:safe center; overflow:auto; }
+ #stageNet { width:min(100%,420px); margin:0; gap:12px; }
+ #stageNet .face-label { font-size:16px; }
+ #stageFaceMapPanel h3 { margin:0 0 8px; }
+ #stageFaceMapPanel p { font-size:12px; text-align:center; }
+ .views.vertical.show-face-map #stageNet { width:min(100%,460px); grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; }
+ .views.vertical.show-face-map #stageFaceMapPanel h3 { font-size:15px; }

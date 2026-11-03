@@ -257,3 +257,14 @@ for(const [id,options] of [[10,[4,3]],[11,[5,6]]]) {
 $('planeGravity').checked=false;$('planeGravity').onchange();assert(!(context.engine.game_rules()&(1<<24)));
 $('planeGravity').checked=true;$('planeGravity').onchange();assert(context.engine.game_rules()&(1<<24));
 console.log('PASS: free J/L and S/Z setup/hold/current pieces, dual previews, mixed sphere colors and plane-gravity toggle.');
+
+$('stageFaceMap').checked=true;$('stageFaceMap').onchange();flush();
+assert(context.renderers[0].combined,'face-map layout keeps active field and stack together');
+assert.equal($('viewMode').textContent,'Hide face map');
+const mapBefore=context.state;
+context.renderers[0].setState(mapBefore,{kind:'turn',move:4,t:.5});
+assert($('stageNet').children[0].children[1].children.some(c=>c.style.backgroundImage),'map shows live active fill');
+context.renderers[0].setState(mapBefore);
+$('viewMode').onclick();flush();assert(!$('stageFaceMap').checked);
+assert.equal(context.renderers[0].combined,$('combined').checked);
+console.log('PASS: combined cube plus face maps, live turn updates, and return to previous cube layout.');

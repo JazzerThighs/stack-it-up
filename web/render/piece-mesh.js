@@ -8,18 +8,19 @@ import {joinMeshes} from './cell-fragments.js';
 import {rgb, xyz} from './geometry.js';
 const cache=new Map(),colored=new Map();
 let coloredBytes=0;
-export function compositeParts(board,ids,palette,generate,appearance='jelly',spatialColors=false) {
+export function compositeParts(board,ids,palette,generate,appearance='jelly',spatialColors=false,extrasMask=0) {
   const groups=new Map();
   for(let i=0;i<27;i++)if(board[i]) {
     const key=ids[i]+':'+board[i],g=groups.get(key)||{mask:0,color:board[i]};
     g.mask|=1<<i;groups.set(key,g);
   }
   return [...groups.values()].map(({mask,color})=>{
-    const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+appearance;
+    const bomb=!!(mask&extrasMask);
+    const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+appearance+':'+bomb;
     if(colored.has(key))return colored.get(key);
     const out=[],c=rgb(hex);
     if(appearance==='gameboy') {
-      const letter=identifyMask(mask)||'O';
+      const letter=bomb?'bomb':identifyMask(mask)||'O';
       for(const v of gameboyPiece(mask,c,letter))out.push(v);
     } else {
       if(!cache.has(mask)) {

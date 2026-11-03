@@ -199,6 +199,7 @@ class Renderer {
     this.state = s;
     this.rebuildSlots=rebuildSlots(s,this.rebuildSlots);
     this.animation = animation;
+    this.onState?.(s,animation);
     this.gravity = s[S.GRAVITY];
     const activeGeometry = [], floatingGeometry = [],identityGeometry=[];
     const grid = [],
