@@ -1,6 +1,7 @@
+import {initializeExplorerSettings} from './settings-pages.js';
 import {initializeSpatialExplorer} from './spatial-explorer.js';
 export async function initializeExplorer(root=document, options={}) {
-  try {return await initializeSpatialExplorer(root,options);}
+  try {const explorer=await initializeSpatialExplorer(root,options);initializeExplorerSettings(root);return explorer;}
   catch(e){root.getElementById('status').textContent=`Could not load local tetracube data: ${e.message}`;throw e;}
 }
 export const ready=document.getElementById('cubeLayout')

@@ -1,3 +1,4 @@
+import {isSomaBag} from './puzzle-shapes.js';
 import {ROTATIONS,cellsOf} from './model.js';
 const FULL=(1<<27)-1;
 export const OFFICIAL_MASKS=[0xf,0xf0,0x40e00,0x780000,0x3018000,0x4024100];
@@ -66,6 +67,7 @@ export class PackingStore {
       let count=0;for(const id of b.toUpperCase())if(matches(id,type))count++;
       return count>=min&&count<=max;
     })):null;
+    const somaBags=filters.somaSetOnly?this.manifest.bags.map(isSomaBag):null;
     const coreLetters=filters.coreType?new Set([...filters.coreType].map(c=>c.charCodeAt(0))):null;
     let requireExtras=0,excludeExtras=0;
     for(const [name,k]of [['extraCenters',1],['extraEdges',2],['extraCorners',3]]) {
@@ -77,7 +79,11 @@ export class PackingStore {
       const a=i*20,f=v.getUint16(a,true),flags=v.getUint8(a+4),sp=v.getUint8(a+5),core=v.getUint8(a+6),span=v.getUint8(a+7);
       if(filters.surfaceOnly&&!(flags&1)||filters.nonSurfaceOnly&&(flags&1)||filters.allSurfaceIdentities&&!(flags&2)||filters.oneOfEach&&!(flags&4))continue;
       if(filters.officialOnly&&f!==this.officialFamily)continue;
-      if(filters.iTunnelOnly&&!v.getUint8(a+9))continue;
+      const gaps=v.getUint8(a+9);
+      if(filters.iTunnelOnly&&!(gaps&1))continue;
+      if((filters.somaVOnly||filters.somaSetOnly)&&!(gaps&2))continue;
+      if(filters.dominoGapOnly&&!(gaps&4))continue;
+      if(somaBags&&!somaBags[v.getUint16(a+2,true)])continue;
       if(filters.nonFaceboundSurface&&(!(flags&1)||!span))continue;
       if(filters.bag&&(bag<0||v.getUint16(a+2,true)!==bag))continue;
       if(filters.spatial==='none'&&sp||filters.spatial==='only'&&sp!==63||filters.spatial==='mixed'&&(!sp||sp===63))continue;

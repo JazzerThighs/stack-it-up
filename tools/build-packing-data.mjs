@@ -1,3 +1,4 @@
+import {extraShapeFlags} from '../web/explorer/puzzle-shapes.js';
 import {createHash} from 'node:crypto';
 import {createReadStream} from 'node:fs';
 import {readFile,writeFile,mkdir,cp,stat} from 'node:fs/promises';
@@ -11,7 +12,7 @@ const source=JSON.parse(await readFile(path.join(root,'data/source.json'),'utf8'
 const archive=path.join(root,source.archive),hash=createHash('sha256');
 for await(const chunk of createReadStream(archive))hash.update(chunk);
 if(hash.digest('hex')!==source.sha256)throw Error('Packing archive checksum mismatch');
-const compiler=createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).digest('hex').slice(0,12);
+const compiler=createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).update(await readFile(path.join(root,'web/explorer/puzzle-shapes.js'))).digest('hex').slice(0,12);
 const version=`${source.sha256.slice(0,12)}-${compiler}`;
 const cache=path.join(root,'.packing-cache',version),raw=path.join(cache,'source'),built=path.join(cache,'built');
 const output=path.resolve(root,process.argv[2]||'dist/explorer/data');
@@ -71,7 +72,7 @@ if(!await exists(path.join(built,'manifest.json'))) {
     }
     const cells=Array.from({length:27},(_,j)=>j).filter(j=>extras&(1<<j)).map(j=>[Math.floor(j/9),Math.floor(j/3)%3,j%3]);
     for(const p of cells)index[at+8]|=1<<p.filter(v=>v!==1).length;
-    index[at+9]=+([0,1,2].some(a=>[0,1,2].every(b=>a===b||cells.every(p=>p[b]===cells[0][b]))));
+    index[at+9]=extraShapeFlags(extras);
     index.writeUInt32LE(members.get(family).length,at+16);members.get(family).push(id);total++;
   }
   if(total!==source.packingCount||seen.some(n=>n!==1))throw Error('Missing packing rows');
@@ -96,7 +97,7 @@ if(!await exists(path.join(built,'manifest.json'))) {
     ids.forEach((id,j)=>{bytes.writeUInt32LE(id,j*16);for(let k=0;k<6;k++)bytes.writeUInt16LE(records[(id-1)*6+k],j*16+4+k*2);});
     await save(`family-${f.id}.bin.gz`,bytes);
   }
-  const manifest={format:1,dataset:'tetracubes-v2',version,sourceSha256:source.sha256,count:total,indexStride:20,recordStride:16,catalog,bags,families,schema,assets};
+  const manifest={format:1,extraShapeFlags:1,dataset:'tetracubes-v2',version,sourceSha256:source.sha256,count:total,indexStride:20,recordStride:16,catalog,bags,families,schema,assets};
   await writeFile(path.join(built,'manifest.json'),JSON.stringify(manifest));
   console.log(`Converted ${total} packings in ${families.length} families`);
 }
