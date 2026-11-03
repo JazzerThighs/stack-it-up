@@ -2,12 +2,15 @@
 // Height, not baked white highlights: live lighting follows every relief wall.
 import {xyz} from './geometry.js';
 const cache=new Map();
+// Every dark motif and perimeter uses the same palette-relative shade.
+const DARK_TONE=.12;
 // Tetris 2 bomb: colored tile, dark round body, colored center and short fuse.
 const bombRows=['........','....##..','..####..','.##..##.','.##..##.','..####..','...##...','........'];
 export function gameboyPattern(letter='O') {
   if(letter==='J/L')letter='J';if(letter==='S/Z')letter='S';
   const size=8,heights=[];
   for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
+    // All perimeters meet on the same base cube; only the motif rises above it.
     const edge=Math.min(x,y,7-x,7-y);let h=0;
     if(edge>0) {
       if(letter==='bomb')h=bombRows[y][x]==='#'?.008:.032;
@@ -19,7 +22,7 @@ export function gameboyPattern(letter='O') {
         const u=letter==='F'?7-x:x;
         // From the center: up, right, down, left = clockwise (D).
         const spiral=(y===2&&u>=2&&u<=5)||(u===5&&y>=2&&y<=5)||(y===5&&u>=3&&u<=5)||(u===3&&y===4);
-        h=(letter==='D'?!spiral:spiral)?.035:.006;
+        h=letter==='F'?(spiral?.035:0):(spiral?.006:.035);
       } else h=edge===1?.032:edge===2?.004:.024;
     }
     heights.push(h);
@@ -40,8 +43,9 @@ function unitMesh(letter) {
       const h=height(x,y),n=[0,0,0];n[axis]=sign;
       const edge=Math.min(x,y,7-x,7-y);
       const framed=letter==='J'||letter==='S'||letter==='J/L'||letter==='S/Z';
-      const whiteCenter=letter==='S'||letter==='S/Z';
-      const tone=screw?(h>.02?1:.24):letter==='bomb'?(edge===0?.12:bombRows[y][x]==='#'?.08:1):framed?(edge===0?.12:edge===1?1:edge===2?.12:whiteCenter?2:1):(h===0?.24:1);
+      const whiteCenter=letter==='J'||letter==='J/L';
+      const whiteInset=(letter==='T'&&edge===2)||(letter==='B'&&edge>0&&h===.008);
+      const tone=whiteInset?2:screw?(h>.02?1:DARK_TONE):letter==='bomb'?(edge===0||bombRows[y][x]==='#'?DARK_TONE:1):framed?(edge===0?DARK_TONE:edge===1?1:edge===2?DARK_TONE:whiteCenter?2:1):(h===0?DARK_TONE:1);
       const points=[[x,y],[x+1,y],[x+1,y+1],[x,y+1]].map(([u,v])=>point(u,v,h));
       quad(sign===1?points:points.reverse(),n,tone);
       for(const [dx,dy]of [[-1,0],[1,0],[0,-1],[0,1]]) {
