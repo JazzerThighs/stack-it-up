@@ -128,11 +128,11 @@ export class PackingCube extends Renderer {
         this.explorationSignature=signature;
         this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors);
         const fixed=visualSettings.solidFixed;
-        if(fixed) {
+        {
           this.fixedSolidBuffers ??= Array.from({length:27},()=>this.buffer());
           for(let cell=0;cell<27;cell++)this.upload(this.fixedSolidBuffers[cell],joinMeshes(this.explorationGeometry.filter(m=>m.identityCell===cell)));
         }
-        const turningGeometry=this.explorationGeometry.filter(m=>!fixed || m.identityCell===undefined);
+        const turningGeometry=this.explorationGeometry.filter(m=>m.identityCell===undefined);
         const fragments=mergeFragments(turningGeometry);
         this.explorationLayers ??= Array.from({length:45},()=>this.buffer());
         // Five motion partitions per axis: three single slices and two wide turns.
@@ -259,10 +259,10 @@ export class PackingCube extends Renderer {
       packets=[0,1,2].map(i=>({id:'packing',target:this.explorationLayers[(axis*5+(layer==='wide'?(side===0?3:4):layer))*3+i],type:gl.TRIANGLES,
         opacity:this.opacity,unlit:false,breathe:1,rotation:(layer==='wide'?i!==2-side:i===layer)?rotation:undefined}));
     }
-    if(this.familyExploration && visualSettings.solidFixed)for(let cell=0;cell<27;cell++) {
+    if(this.familyExploration)for(let cell=0;cell<27;cell++) {
       const target=this.fixedSolidBuffers?.[cell];if(!target?.count)continue;
       const animation=this.currentAnimation;
-      packets.push({id:'packing',target,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1,fixedShape:true,
+      packets.push({id:'packing',target,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1,lightingClass:'Solids',fixedShape:!!visualSettings.solidFixed,
         rotation:animation?.kind==='turn' && movedCell(cell,animation.move)?turnTransform(animation.move,animation.t):undefined});
     }
     renderPackets.call(

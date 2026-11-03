@@ -54,6 +54,9 @@ export function initializeExplorerSettings(root) {
   for(const [name,id]of [['Transparency','ditherTransparency'],['Lighting','lightAzimuth'],['Dither tuning','ditherLevels'],['ASCII tuning','asciiSize']]) {
     const sub=page(name,appearance);unpack(sub,$(id).closest('details'));tuning[id]=sub;
   }
+  const lightClasses=page('Lighting by element',tuning.lightAzimuth);
+  const classes=body.querySelector('#lightingClasses');
+  unpack(lightClasses,classes);classes.remove();
   const info=page('Collection status',home);add(info,status);
   let current=home;
   function refresh() {

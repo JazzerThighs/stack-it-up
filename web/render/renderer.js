@@ -88,8 +88,9 @@ class Renderer {
     this.ghost = null;
     this.preview = 0;
     this.activeOnly = this.buffer();
+    this.identityMesh = this.buffer();this.identityMesh.lightingClass='Solids';
     this.floatingMesh = this.buffer();
-    this.bandMesh = this.buffer();
+    this.bandMesh = this.buffer();this.bandMesh.lightingClass='Pieces';
     this.bandCache = new Map();
     this.decorBuffers = {};
     this.transparentBuffer = this.buffer();
@@ -199,7 +200,7 @@ class Renderer {
     this.rebuildSlots=rebuildSlots(s,this.rebuildSlots);
     this.animation = animation;
     this.gravity = s[S.GRAVITY];
-    const activeGeometry = [], floatingGeometry = [];
+    const activeGeometry = [], floatingGeometry = [],identityGeometry=[];
     const grid = [],
       activeLines = [],
       lines = [],
@@ -252,7 +253,8 @@ class Renderer {
             [activeLines, startActiveLine],
           ])
             rotateCell(out, start, i, animation.move, animation.t);
-        const destination = floating && !s[S.REBUILD_COLORS+i] ? floatingGeometry : activeGeometry;
+        const identity=this.rebuildSolidIdentities && (s.rebuildIds?.[i] || s[S.REBUILD_COLORS+i]);
+        const destination = identity?identityGeometry:floating && !s[S.REBUILD_COLORS+i] ? floatingGeometry : activeGeometry;
         for (let j=startSolid;j<solid.length;j++) destination.push(solid[j]);
       }
     const bands = [],bandCoverage=[];
@@ -276,6 +278,7 @@ class Renderer {
       }
     }
     this.upload(this.bandMesh, withCoverage(new Float32Array(bands),new Float32Array(bandCoverage)));
+    this.upload(this.identityMesh,new Float32Array(identityGeometry));
     this.upload(this.activeLines, new Float32Array(activeLines));
     this.upload(this.centers, new Float32Array(centers));
     this.upload(this.overlaps, new Float32Array(overlaps));
@@ -423,6 +426,7 @@ class Renderer {
         false,
         breath,
       );
+      add("active", this.identityMesh, gl.TRIANGLES, this.activeOpacity, false, breath);
       add("floating", this.bandMesh, gl.TRIANGLES, this.activeOpacity, false, 1, this.breathing && this.animation?.kind !== "turn" ? (breath - 1.04) * 0.10 : 0);
 
       add("recent", this.ghostLines, gl.LINES, 0.45, true);

@@ -5,11 +5,18 @@ import {appearanceIndex} from "./appearance.js";
 import {DitherPass} from "./dither-pass.js";
 import {AsciiPass} from "./ascii-pass.js";
 import {visualSettings,lightDirection} from "./visual-settings.js";
+export function lightingMode(packet,shape,settings=visualSettings) {
+  const kind=packet.lightingClass || packet.target.lightingClass ||
+    (['stack','packing'].includes(packet.id)?'Pieces':['active','centers','floating'].includes(packet.id)?'Cubies':'Other');
+  const mode=settings['light'+kind]??1;
+  return mode===2 || (mode===0 && shape==='gameboy');
+}
 const $ = (id) => document.getElementById(id);
 export function renderPackets(packets, context) {
   const { layerOrder } = context;
   const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
+  packets=packets.map(p=>({...p,positionalLighting:lightingMode(p,this.modelShape)}));
   // Keep original buffers intact: changing style never changes game geometry.
   if(this.modelShape==='voxel' || this.appearance==='voxel') {
     this.voxelTargets ??= new Map();
@@ -33,7 +40,6 @@ export function renderPackets(packets, context) {
   if(screenPass) screenPass.begin(this.canvas.width,this.canvas.height);
   gl.useProgram(this.program);
   gl.uniform1i(this.uniforms.appearance,appearanceIndex(this.appearance));
-  gl.uniform1i(this.uniforms.gameboyLighting,this.modelShape==='gameboy'?1:0);
   gl.uniform1f(this.uniforms.pixelRatio,pixelRatio);
   gl.uniform3fv(this.uniforms.lightDirection,lightDirection());
   for(const key of ['lightIntensity','lightAmbient','ditherLevels','ditherSize','ditherContrast','ditherMidpoint'])
@@ -43,6 +49,7 @@ export function renderPackets(packets, context) {
   gl.disable(gl.STENCIL_TEST);
   const stippled=p=>this.appearance==='dither' || !!visualSettings.ditherTransparency || p.id==='recent';
   const draw = (p) => {
+    gl.uniform1i(this.uniforms.gameboyLighting,p.positionalLighting?1:0);
     gl.uniform1i(this.uniforms.fixedShape,p.fixedShape?1:0);
     gl.uniformMatrix3fv(this.uniforms.modelRotation,false,p.rotation || IDENTITY);
     gl.uniform1f(this.uniforms.modelScale,p.modelScale ?? 1);
@@ -100,7 +107,7 @@ export function renderPackets(packets, context) {
         !run ||
         run.type !== p.type ||
         run.opacity !== p.opacity ||
-        run.unlit !== p.unlit
+        run.unlit !== p.unlit || run.positionalLighting !== p.positionalLighting
       ) {
         flush();
         vertices = [];
