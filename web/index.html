@@ -292,18 +292,18 @@
 </p>
 <fieldset id="piecePoolOptions">
 <legend>Queue pieces</legend>
-<p class="muted">Choose pieces for the next new game. Spatial pieces are assembled around the core, never inside it.</p>
-<div><label><input type="checkbox" id="poolPiece1" checked /> O</label><label><input type="checkbox" id="poolPiece2" checked /> T</label><label><input type="checkbox" id="poolPiece3" checked /> L</label><label><input type="checkbox" id="poolPiece4" checked /> J</label><label><input type="checkbox" id="poolPiece5" checked /> S</label><label><input type="checkbox" id="poolPiece6" checked /> Z</label><label><input type="checkbox" id="poolPiece7" checked /> B — Branch</label><label><input type="checkbox" id="poolPiece8" checked /> D — Right screw</label><label><input type="checkbox" id="poolPiece9" checked /> F — Left screw</label><label><input type="checkbox" id="poolPiece10" /> J/L - Either shape</label><label><input type="checkbox" id="poolPiece11" /> S/Z - Either shape</label></div>
-<p id="piecePoolNote" class="setting-reason">Confirm in New Game to apply this piece pool. Free J/L and S/Z accept either shape and retain both original reconstruction choices.</p>
+<p class="muted">Applies to the next game. B, D and F spawn and lock outside the core.</p>
+<div class="queue-piece-columns"><div class="queue-piece-column"><h4>O / T</h4><label><input type="checkbox" id="poolPiece1" checked /> O</label><label><input type="checkbox" id="poolPiece2" checked /> T</label></div><div class="queue-piece-column"><h4>J / L / S / Z</h4><label><input type="checkbox" id="poolPiece4" checked /> J</label><label><input type="checkbox" id="poolPiece3" checked /> L</label><label><input type="checkbox" id="poolPiece5" checked /> S</label><label><input type="checkbox" id="poolPiece6" checked /> Z</label></div><div class="queue-piece-column"><h4>Spatial</h4><label><input type="checkbox" id="poolPiece7" checked /> Branch</label><label><input type="checkbox" id="poolPiece8" checked /> Right screw</label><label><input type="checkbox" id="poolPiece9" checked /> Left screw</label></div><div class="queue-piece-column"><h4>Free choices</h4><label><input type="checkbox" id="poolPiece10" /> J/L</label><label><input type="checkbox" id="poolPiece11" /> S/Z</label></div></div>
+<p id="piecePoolNote" class="setting-reason">J/L and S/Z accept either shape, including when rebuilding to their original shape.</p>
 </fieldset>
-<p id="legacyRuleNote" class="muted" hidden>This shared puzzle uses older gameplay rules. Changing a gameplay option adopts the rules shown here and removes movement bandages.</p>
+<p id="legacyRuleNote" class="muted" hidden>Legacy save: editing rules adopts the current rules and removes movement bandages.</p>
 <p id="gameplayValidation" role="status" class="setting-reason">
 </p>
 <fieldset>
 <legend>Debug mode</legend>
-<label><input id="scienceMode" type="checkbox" checked /> For Science!</label>
-<p class="muted">Choose the current and held pieces, including an empty hold pocket. Undo is available during play. With this off, Undo is available only after top out.</p>
-<div id="scienceOptions">
+<label><input id="scienceMode" type="checkbox" checked /> For Science (Cheating)!</label>
+<p class="muted">Allows piece selection and Undo during play. Otherwise, Undo requires top out.</p>
+<div id="scienceOptions"><label><input id="chooseNext" type="checkbox" /> Choose the next queued tetromino</label>
 <label for="debugCurrent">Current piece</label>
 <select id="debugCurrent">
 <option value="0">Random / keep current</option>
@@ -331,76 +331,79 @@
 </div>
 </fieldset>
 <fieldset>
-<legend>Clear types · select at least one</legend>
+<legend>Clear types</legend>
 <label><input id="clearFullFace" type="checkbox" checked /> Full face clears</label>
 <label><input id="clearRingFace" type="checkbox" /> Ring face clears</label>
 <label><input id="clearFullSlice" type="checkbox" checked /> Full slice clears</label>
 <label><input id="clearRingSlice" type="checkbox" /> Ring slice clears</label>
-<p class="muted">Full clears require all 9 cells. Rings require the 8 perimeter cells; the center is optional. Both remove the whole plane. Faces are outside planes; slices are the three interior planes. A plane counts once even if both types are enabled.</p>
+<p class="muted">Full: 9 cells. Ring: 8 perimeter cells. Both remove the whole plane. Faces are outer planes; slices are interior planes.</p>
 </fieldset>
 <fieldset>
 <legend>Gravity</legend>
 <label><input id="gravityEnabled" type="checkbox" checked /> Enabled</label>
-<p id="gravityDependency" class="setting-reason">Enable gravity to adjust its direction and timing.</p>
+<label><input id="planeGravity" type="checkbox" checked /> Move whole layers</label>
+<p class="muted">Each layer moves into an empty layer, preserving its gaps. Off: connected fragments fall separately.</p>
+<label><input id="sliceGravity" type="checkbox" /> Slice clears cause gravity</label>
+<p class="muted">Off: interior slice clears do not trigger gravity or change its direction. Face clears and every-turn gravity still apply.</p>
+<p id="gravityDependency" class="setting-reason">Enable gravity to edit its options.</p>
 <fieldset id="gravityDirectionOptions">
 <legend>Direction</legend>
-<label><input id="gravityDirection0" name="gravityDirection" type="radio" value="0" checked /> Towards the last cleared plane</label>
-<label><input id="gravityDirection1" name="gravityDirection" type="radio" value="1" /> Away from the last cleared plane</label>
-<label><input id="gravityDirection2" name="gravityDirection" type="radio" value="2" /> Always towards the Down (D) face</label>
-<label><input id="gravityDirection3" name="gravityDirection" type="radio" value="3" /> Random direction every tetromino placement</label>
-<p class="muted">Towards / away uses the most recent cleared plane. Before the first clear there is no direction. Away from an interior slice pushes pieces toward their respective outer faces.</p>
+<label><input id="gravityDirection0" name="gravityDirection" type="radio" value="0" checked /> Toward last cleared plane</label>
+<label><input id="gravityDirection1" name="gravityDirection" type="radio" value="1" /> Away from last cleared plane</label>
+<label><input id="gravityDirection2" name="gravityDirection" type="radio" value="2" /> Toward D</label>
+<label><input id="gravityDirection3" name="gravityDirection" type="radio" value="3" /> Random face on placement</label>
+<p class="muted">Uses the last cleared plane. No direction exists before the first clear. Away from a middle slice pushes outward.</p>
 </fieldset>
 <fieldset id="gravityOccurrenceOptions">
-<legend>Occurrence</legend>
-<label><input id="gravityOccurrence0" name="gravityOccurrence" type="radio" value="0" checked /> Once after a clear</label>
-<label><input id="gravityOccurrence1" name="gravityOccurrence" type="radio" value="1" /> Always enabled</label>
-<p class="muted">Always enabled also runs after each cube turn and placement. Random direction changes on placement, never on camera motion or individual turns.</p>
+<legend>Timing</legend>
+<label><input id="gravityOccurrence0" name="gravityOccurrence" type="radio" value="0" checked /> After a clear</label>
+<label><input id="gravityOccurrence1" name="gravityOccurrence" type="radio" value="1" /> After each turn / placement</label>
+<p class="muted">Every-turn gravity also runs after placement. Random direction changes only on placement.</p>
 </fieldset>
 <fieldset id="gravityDistanceOptions">
 <legend>Fall distance</legend>
-<label><input id="planeGravity" type="checkbox" checked /> Move entire planes together during gravity</label>
-<p class="muted">A layer moves only into a completely empty layer. Cubies keep their positions within the layer, including gaps.</p>
-<label><input id="fallOneCell" type="checkbox" checked /> Fall at most one cell per gravity event</label>
-<p class="muted">Off: pieces settle until blocked. Each cascade clear can trigger another gravity event.</p>
+
+<label><input id="fallOneCell" type="checkbox" checked /> At most one cell per event</label>
+<p class="muted">Off: settle until blocked. Each cascade clear is a new gravity event.</p>
 </fieldset>
 </fieldset>
 <fieldset>
-<legend>Stack pieces become active</legend>
+<legend>Release stack pieces</legend>
 <label><input id="freedomEnabled" type="checkbox" checked /> Enabled</label>
-<p id="freedomDependency" class="setting-reason">Enable stack-piece release to configure these rules.</p>
+<p id="freedomDependency" class="setting-reason">Enable release to edit its options.</p>
 <fieldset id="freedomSizeOptions">
-<legend>Pieces able to be freed · select at least one</legend>
-<label><input id="freeSize4" type="checkbox" checked /> Whole tetrominos</label>
-<label><input id="freeSize3" type="checkbox" checked /> Fragments containing 3 cubies</label>
-<label><input id="freeSize2" type="checkbox" checked /> Fragments containing 2 cubies</label>
-<label><input id="freeSize1" type="checkbox" checked /> Fragments containing 1 cubie</label>
-<p class="muted">Freed pieces are never bandaged while moving. Whole pieces must form four face-connected cubies. With the same-face requirement off, Left Screw, Right Screw and Branch are also valid. Placed Left Screws are light gray, Right Screws dark gray, and Branches brown. Their original color identities still determine which freed cubies can mix.</p>
+<legend>Eligible group sizes</legend>
+<label><input id="freeSize4" type="checkbox" checked /> Whole tetracubes</label>
+<label><input id="freeSize3" type="checkbox" checked /> 3-cubie fragments</label>
+<label><input id="freeSize2" type="checkbox" checked /> 2-cubie fragments</label>
+<label><input id="freeSize1" type="checkbox" checked /> Single cubies</label>
+<p class="muted">Eligible pieces are connected groups from the stack. Freed groups can split while moving.</p>
 </fieldset>
 <fieldset id="freedomReconstructionOptions">
 <legend>Reconstruction</legend>
-<label><input id="fragmentsConnected" type="checkbox" checked /> Fragments must be face-to-face connected when locking</label>
+<label><input id="fragmentsConnected" type="checkbox" checked /> Require connected groups at lock</label>
 <div class="setting-dependency">
 <div id="reconstructionShapeRules">
-<label><input id="rebuildQueueShapes" type="checkbox" checked /> Reconstructed tetracubes must be shapes enabled in the queue</label>
-<label><input id="rebuildOriginalShape" type="checkbox" /> Reconstructed tetracubes must match their original shape</label>
-<p class="setting-reason">Applies to four-cubie pieces. Smaller fragments only need to reconnect within their own group. When both options are enabled, both must be satisfied.</p>
+<label><input id="rebuildQueueShapes" type="checkbox" checked /> Use queue-enabled shapes</label>
+<label><input id="rebuildOriginalShape" type="checkbox" /> Keep original shape choices</label>
+<p class="setting-reason">Applies to groups of four. Smaller groups only need to reconnect. Both checked: both restrictions apply.</p>
 </div>
 </div>
-<p class="muted">Connection applies to each released fragment separately, including single cubies. The same-face requirement also applies to whole-piece reconstruction. Each piece may use a different face. They lock with the successful sphere piece. Stack overlap always blocks placement.</p>
+<p class="muted">Off: freed groups may lock scattered. All freed cubies lock with the current piece and must avoid the stack.</p>
 </fieldset>
 <fieldset id="freedomEventOptions">
 <legend>When to free pieces</legend>
-<label><input id="freedomEvent0" name="freedomEvent" type="radio" value="0" checked /> One piece freedom attempt per clear</label>
-<label><input id="freedomEvent1" name="freedomEvent" type="radio" value="1" /> One piece freedom attempt per tetromino placement</label>
-<label><input id="freedomEvent2" name="freedomEvent" type="radio" value="2" /> Every eligible piece freed per clear</label>
-<p class="muted">Each cleared plane grants an attempt, including multi-clears and cascades. Placement attempts happen once when the next piece starts; hold and slice turns do not repeat them.</p>
+<label><input id="freedomEvent0" name="freedomEvent" type="radio" value="0" checked /> One attempt per cleared plane</label>
+<label><input id="freedomEvent1" name="freedomEvent" type="radio" value="1" /> One attempt per new piece</label>
+<label><input id="freedomEvent2" name="freedomEvent" type="radio" value="2" /> Free all eligible pieces after a clear</label>
+<p class="muted">Includes simultaneous clears and cascades. Per-piece release happens at the next turn start; hold does not repeat it.</p>
 </fieldset>
 <fieldset id="freedomMethodOptions">
-<legend>How an attempt chooses a piece</legend>
-<label><input id="freedomMethod0" name="freedomMethod" type="radio" value="0" checked /> Random eligible piece from stack</label>
-<label><input id="freedomMethod1" name="freedomMethod" type="radio" value="1" /> Random cubie spot (occupied eligible cells only; empty cells miss)</label>
-<label><input id="freedomMethod2" name="freedomMethod" type="radio" value="2" /> Prioritize pieces with more cubies</label>
-<label><input id="freedomMethod3" name="freedomMethod" type="radio" value="3" /> Prioritize pieces with fewer cubies</label>
+<legend>Selection</legend>
+<label><input id="freedomMethod0" name="freedomMethod" type="radio" value="0" checked /> Random eligible group</label>
+<label><input id="freedomMethod1" name="freedomMethod" type="radio" value="1" /> Random cell; empty cells miss</label>
+<label><input id="freedomMethod2" name="freedomMethod" type="radio" value="2" /> Largest groups first</label>
+<label><input id="freedomMethod3" name="freedomMethod" type="radio" value="3" /> Smallest groups first</label>
 <p id="freedomMethodNote" class="muted">
 </p>
 </fieldset>
@@ -411,7 +414,7 @@
 <p class="muted">Release modes combine. Options below become available when their parent mode is enabled. Disabling a mode leaves already freed pieces playable until they lock.</p>
           <fieldset>
             <legend>Piece selection</legend>
-<label><input id="chooseNext" type="checkbox" /> Choose the next queued tetromino</label>
+
 <p class="muted">Theorycrafting: set the next piece from the playfield. The current piece stays unchanged.</p>
 </fieldset>
 <fieldset>
@@ -435,14 +438,14 @@
             <div class="setting-dependency">
 <p class="setting-reason" id="gravityOptions0Reason">Enable gravity to use these options.</p>
 <fieldset id="gravityOptions0" aria-describedby="gravityOptions0Reason">
-<label><input id="sliceGravity" type="checkbox" /> Slice clears cause gravity</label>
+
 </fieldset>
 </div>
             <p class="muted">Off: clearing an interior ring or full slice causes no gravity. Face clears still follow the selected gravity mode.</p>
             <div class="setting-dependency">
 <p class="setting-reason" id="gravityOptions1Reason">Enable gravity to use these options.</p>
 <fieldset id="gravityOptions1" aria-describedby="gravityOptions1Reason">
-<label><input id="gravityOneStep" type="checkbox" checked /> Fall at most one cell per gravity event</label>
+<label><input id="gravityOneStep" type="checkbox" checked /> At most one cell per event</label>
 </fieldset>
 </div>
             <p class="muted">Each separated piece moves at most one cell when gravity runs. Another cascade clear can trigger another step. Off: settle until blocked.</p>
@@ -595,8 +598,7 @@
 <p class="setting-reason" id="arrowOptionsReason">Enable arrow buttons to show their guide lines.</p>
 <fieldset id="arrowOptions" aria-describedby="arrowOptionsReason">
 <label
-              ><input id="arrowGuides" type="checkbox" /> Sticker-to-arrow guide
-              lines</label
+              ><input id="arrowGuides" type="checkbox" /> Arrow guide lines</label
             >
 </fieldset>
 </div>
@@ -605,12 +607,11 @@
 <legend>Camera</legend>
 <label><input id="perspectiveCamera" type="checkbox" checked /> Perspective camera</label>
 <label
-              ><input id="freeOrbit" type="checkbox" checked /> Free 360°
-              rotation</label
+              ><input id="freeOrbit" type="checkbox" checked /> Unrestricted orbit</label
             >
-<p class="muted">Perspective shows depth through size. Turn it off for orthographic projection. Free rotation allows the cube to turn upside down.</p>
+<p class="muted">Off: orthographic projection. Free rotation allows upside-down views.</p>
 </fieldset>
-<p class="muted">Drag a sticker to turn a slice. Drag outside the cube or right-drag to orbit. Alt-drag turns a wide layer. Press C to hold.</p>
+<p class="muted">Drag a sticker to turn. Shift-drag for wide turns. Drag outside the cube or right-drag to orbit. C: hold.</p>
 </div>
 </details>
 <details id="hintSettings" class="settings-section">
@@ -633,19 +634,17 @@
 </fieldset>
 </div>
 <label
-              ><input id="hoverOutline" type="checkbox" /> Cel-style outlines on
-              affected cubies</label
+              ><input id="hoverOutline" type="checkbox" /> Outline hovered cubies</label
             >
 <label
-              ><input id="placementGlow" type="checkbox" checked /> Lightweight markers on
-              placement-making cubies</label
+              ><input id="placementGlow" type="checkbox" checked /> Completion markers</label
             >
-<p class="muted">Hover a sticker or arrow to preview affected cubies and mark moves that complete the current piece.</p>
+<p class="muted">Hover a sticker or arrow to preview a move. Completion markers identify cubies that would place successfully.</p>
 </fieldset>
 <fieldset>
 <legend>Queue search</legend>
 <label><input id="queueForecast" type="checkbox" /> Check for queue dead ends (experimental)</label>
-<p class="muted">Searches legal turns, face choices, early locks and automatic placements through the shown queue. A crossed circle appears only after exhaustive proof. Large searches may stay inconclusive.</p>
+<p class="muted">Checks legal continuations through the visible queue, including automatic placements. Marks only proven dead ends; large searches may be inconclusive.</p>
 <p id="forecastStatus" role="status" aria-live="polite">
 </p>
 <button id="forecastReplay" disabled>Inspect / replay found path</button>
@@ -663,61 +662,52 @@
 <div class="settings-section-body">
 <fieldset>
 <legend>Rendering style</legend>
-<label for="pieceAppearance">Style</label>
-<select id="pieceAppearance">
-<option value="jelly">Jelly</option>
-<option value="dither">Dithered</option>
-<option value="matte">Matte</option>
-<option value="voxel">Voxel</option>
-<option value="cel">Cel shaded</option>
-<option value="ascii">ASCII</option>
-</select>
+<label for="modelShape">Model shape</label><select id="modelShape"><option value="jelly">Jelly</option><option value="voxel">Voxel</option><option value="gameboy">Gameboy Tetronimos</option></select><label for="pieceAppearance">Rendering effect</label><select id="pieceAppearance"><option value="jelly">None</option><option value="dither">Dithered</option><option value="matte">Matte</option><option value="cel">Cel shaded</option><option value="ascii">ASCII</option></select>
 <label
               ><input id="animations" type="checkbox" checked />
               Animations</label
             >
-<p class="muted">Animations includes breathing for all styles. The current piece always uses spheres; white bandaged groups retain their connected shape.</p>
+<p class="muted">Includes placement, clear and gravity animations, plus breathing in every style. The current piece uses spheres.</p>
 </fieldset>
 <fieldset>
 <legend>Freed-piece shapes</legend>
 <label
-              ><input id="activeSpheres" type="checkbox" /> Spherical loose white
-              fragments</label
+              ><input id="activeSpheres" type="checkbox" /> Loose fragment spheres</label
             >
 <div class="setting-dependency">
-<p class="setting-reason" id="rebuildShapeOptionsReason">Enable stack-piece release, or have freed pieces in play.</p>
+<p class="setting-reason" id="rebuildShapeOptionsReason">Available when release is enabled or freed cubies are in play.</p>
 <fieldset id="rebuildShapeOptions" aria-describedby="rebuildShapeOptionsReason">
-<label><input id="rebuildSolidIdentities" type="checkbox" checked /> Distinguish freed groups with solid shapes</label>
+<label><input id="rebuildSolidIdentities" type="checkbox" checked /> Distinct solids for freed groups</label>
 </fieldset>
 </div>
 <div class="setting-dependency">
-<p class="setting-reason" id="solidOptionsReason">Enable solid ID shapes to configure their appearance.</p>
+<p class="setting-reason" id="solidOptionsReason">Enable group identities to edit their appearance.</p>
 <fieldset id="solidOptions" aria-describedby="solidOptionsReason">
-<label><input id="solidFixed" type="checkbox" /> Keep solid shapes aligned during slice turns <output id="solidFixedValue">Off</output>
+<label><input id="solidFixed" type="checkbox" /> Keep solids aligned during turns <output id="solidFixedValue">Off</output>
 </label>
-<label><input id="solidUniform" type="checkbox" checked /> One color for all solid ID shapes <output id="solidUniformValue">On</output>
+<label><input id="solidUniform" type="checkbox" checked /> One color for all solids <output id="solidUniformValue">On</output>
 </label>
 <div class="setting-dependency">
-<p class="setting-reason" id="solidColorOptionsReason">Used when one color is enabled.</p>
+<p class="setting-reason" id="solidColorOptionsReason">Enable one color to choose it.</p>
 <fieldset id="solidColorOptions" aria-describedby="solidColorOptionsReason">
 <label>Solid shape color <input id="solidColor" type="color" value="#c8c8c8" /><output id="solidColorValue">#c8c8c8</output>
 </label>
 </fieldset>
 </div>
 <div class="setting-dependency">
-<p class="setting-reason" id="solidGrayOptionsReason">Used when one color is off.</p>
+<p class="setting-reason" id="solidGrayOptionsReason">Turn off one color to use gray shades.</p>
 <fieldset id="solidGrayOptions" aria-describedby="solidGrayOptionsReason">
-<label><input id="solidGray" type="checkbox" checked /> Use gray shades when one color is off <output id="solidGrayValue">On</output>
+<label><input id="solidGray" type="checkbox" checked /> Otherwise use gray shades <output id="solidGrayValue">On</output>
 </label>
 </fieldset>
 </div>
 </fieldset>
 </div>
-<p class="muted">Solid colors and alignment are shared with family exploration.</p>
+<p class="muted">Solid appearance is shared with Family Explorer. Group identities override loose-fragment spheres.</p>
 </fieldset>
 <details class="visual-tuning">
 <summary>Lighting</summary>
-<p class="muted">Camera-relative direction. Horizontal: left / right; vertical: below / above. Shared by both apps and all styles.</p>
+<p class="muted">Light direction is relative to the camera. Shared with the explorer.</p>
 <label for="lightAzimuth">Horizontal angle<output id="lightAzimuthValue">-20°</output>
 </label><input id="lightAzimuth" type="range" min="-180" max="180" step="1" value="-20" />
 <label for="lightElevation">Vertical angle<output id="lightElevationValue">25°</output>
@@ -726,14 +716,14 @@
 </label><input id="lightIntensity" type="range" min="0" max="3" step="0.05" value="1" />
 <label for="lightAmbient">Fill light<output id="lightAmbientValue">0.35</output>
 </label><input id="lightAmbient" type="range" min="0" max="1" step="0.05" value="0.35" />
-<button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button>
+<fieldset id="lightingClasses"><legend>Lighting by element</legend><p class="muted">Model default uses positional light for Gameboy, surface light otherwise. Unlit guides stay unlit.</p><label>Placed pieces & packing blocks<select id="lightPieces"><option value="0" selected>Model default</option><option value="1">Surface angle</option><option value="2">Light proximity</option></select></label><label>Active cubies & loose fragments<select id="lightCubies"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Identity solids<select id="lightSolids"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Other lit elements<select id="lightOther"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label></fieldset><button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button>
 </details>
 <details class="visual-tuning">
 <summary>Dither tuning</summary>
 <div class="setting-dependency">
-<p class="setting-reason" id="ditherTuningReason">Choose the matching rendering style to adjust these settings.</p>
+<p class="setting-reason" id="ditherTuningReason">Select this rendering style first.</p>
 <fieldset id="ditherTuning" aria-describedby="ditherTuningReason">
-<p class="muted">Pixel size sets the resolution of the whole 3D view, including silhouettes. Fewer shading levels give bolder bands; balance shifts dark versus colored pixels.</p>
+<p class="muted">Pixel size sets view resolution. Fewer levels make stronger shading bands.</p>
 <label for="ditherLevels">Shading levels<output id="ditherLevelsValue">5</output>
 </label><input id="ditherLevels" type="range" min="2" max="17" step="1" value="5" />
 <label for="ditherSize">Pixel size<output id="ditherSizeValue">2px</output>
@@ -749,9 +739,9 @@
 <details class="visual-tuning">
 <summary>ASCII tuning</summary>
 <div class="setting-dependency">
-<p class="setting-reason" id="asciiTuningReason">Choose the matching rendering style to adjust these settings.</p>
+<p class="setting-reason" id="asciiTuningReason">Select this rendering style first.</p>
 <fieldset id="asciiTuning" aria-describedby="asciiTuningReason">
-<p class="muted">Lower edge coverage keeps more silhouette characters. Blending softens character changes while moving.</p>
+<p class="muted">Lower coverage keeps more edge characters. Blending reduces flicker.</p>
 <label for="asciiSize">Character size<output id="asciiSizeValue">1×</output>
 </label><input id="asciiSize" type="range" min="0.5" max="2" step="0.1" value="1" />
 <label for="asciiExposure">Brightness<output id="asciiExposureValue">1×</output>
@@ -768,7 +758,7 @@
 </details>
 <fieldset class="piece-colors">
 <legend>Tetromino colors</legend>
-<p class="muted">Shared by both apps and saved on this device. Color assignments and puzzle rules stay the same.</p>
+<p class="muted">Shared and saved on this device. J/L and S/Z use their constituent colors.</p>
 <div class="piece-color-grid">
 <label for="pieceColorO">O<input id="pieceColorO" type="color" aria-label="O piece color" />
 </label>
@@ -794,13 +784,13 @@
 <details class="visual-tuning transparency-settings">
 <summary>Transparency</summary>
 <div class="setting-dependency">
-<p class="setting-reason" id="transparencyStyleReason">Dithered rendering always uses dither transparency; other styles let you choose.</p>
+<p class="setting-reason" id="transparencyStyleReason">Dither rendering always uses pixel-pattern transparency.</p>
 <fieldset id="transparencyStyle" aria-describedby="transparencyStyleReason">
 <label><input id="ditherTransparency" type="checkbox" checked /> Dither-style transparency <output id="ditherTransparencyValue">On</output>
 </label>
 </fieldset>
 </div>
-<p>Uses stable pixel patterns instead of sorting transparent surfaces. Enabled by default for speed. Always used by the Dithered filter. Turn off for smooth transparency in other styles.</p>
+<p>Pixel patterns are faster. Off: smooth transparency, except in Dither style.</p>
 
 
             <label for="activeTransparency"
@@ -844,7 +834,7 @@
 <fieldset>
 <legend>Grids and outlines</legend>
 <div class="setting-dependency">
-<p class="setting-reason" id="splitGridOptionsReason">Available in split view. Use the view button below the cube to switch.</p>
+<p class="setting-reason" id="splitGridOptionsReason">Switch to split view using the button below the cube.</p>
 <fieldset id="splitGridOptions" aria-describedby="splitGridOptionsReason">
 <label
               ><input id="controlGrid" type="checkbox" checked /> Active cube
@@ -861,7 +851,7 @@
 </fieldset>
 </div>
 <div class="setting-dependency">
-<p class="setting-reason" id="combinedGridOptionsReason">Available in combined view.</p>
+<p class="setting-reason" id="combinedGridOptionsReason">Switch to combined view to edit this grid.</p>
 <fieldset id="combinedGridOptions" aria-describedby="combinedGridOptionsReason">
 <label
               ><input id="combinedGrid" type="checkbox" checked /> Combined cube
@@ -870,11 +860,10 @@
 </fieldset>
 </div>
 <div class="setting-dependency">
-<p class="setting-reason" id="rearGridOptionsReason">Enable the active or combined cube grid to use this option.</p>
+<p class="setting-reason" id="rearGridOptionsReason">Enable the active or combined grid first.</p>
 <fieldset id="rearGridOptions" aria-describedby="rearGridOptionsReason">
 <label
-              ><input id="rearGridOnly" type="checkbox" checked /> Grid on
-              rear-facing faces only</label
+              ><input id="rearGridOnly" type="checkbox" checked /> Rear faces only</label
             >
 </fieldset>
 </div>
@@ -889,9 +878,9 @@
             ><input id="customLayers" type="checkbox" /> Custom layer
             order</label
           >
-<p class="muted">Normally every element uses camera depth. Custom order draws categories at the top over those below, preserving depth within each category.</p>
+<p class="muted">Normally, depth controls visibility. Custom order draws upper categories over lower ones, with depth preserved within each category.</p>
 <div class="setting-dependency">
-<p class="setting-reason" id="layerOptionsReason">Enable custom layer order to rearrange categories.</p>
+<p class="setting-reason" id="layerOptionsReason">Enable custom order to rearrange layers.</p>
 <fieldset id="layerOptions" aria-describedby="layerOptionsReason">
 <ol id="renderLayers" class="render-layers">
 </ol>
@@ -903,8 +892,8 @@
 </fieldset>
 <fieldset>
 <legend>Top out</legend>
-<label><input id="topOutNewGame" type="checkbox" checked /> Show New game button after top out</label>
-<p class="muted">Turn off to inspect failed puzzles without a New game button on the playfield.</p>
+<label><input id="topOutNewGame" type="checkbox" checked /> Show restart button at top out</label>
+<p class="muted">Off: hide the playfield restart button. New game remains available in Settings.</p>
 </fieldset>
 </div>
 </details>
@@ -941,42 +930,20 @@
             </summary>
             <div class="help-grid">
               <div>
-                <h2>Build, then stack</h2>
-                <p>
-                  Turn the active segments until they form the target tetromino
-                  on a face. Centers are active cubies too: a center is usable
-                  only when your active center occupies it. It locks
-                  automatically when only one face fits. When multiple faces
-                  fit, choose a highlighted face button. Unused active segments
-                  disappear. A brief ghost marks the last placement. Active
-                  segments may pass through the fixed stack, but a placement
-                  needs four empty cells.
-                </p>
+                <h2>Placement</h2>
+                <p>Build the current piece on a face, or B/D/F around the core. Choose a highlighted placement when several fit. Active cubies may cross the stack; locking requires empty cells.</p>
               </div>
               <div>
-                <h2>Clear faces and slices</h2>
-                <p>Choose full planes, perimeter rings, or both. A full plane needs 9 cells; a ring needs 8. Matching planes clear simultaneously. Gravity follows your chosen direction and timing. Freed whole pieces must be rebuilt; freed fragments follow your selected connection rules. They can always move without bandages.</p>
+                <h2>Clears</h2>
+                <p>Matching planes clear together. Gravity and freed pieces follow your rules. Freed cubies lock when the current piece succeeds.</p>
               </div>
               <div>
-                <h2>Every turn is available</h2>
-                <p>
-                  Face turns use U D F B L R. Middle slices use M E S. Hold
-                  Shift for the inverse, or Alt with a face key for a wide turn.
-                  M turns like R, E like D, S like F. A ✓ highlights any turn
-                  that immediately places your piece, including in other tabs.
-                </p>
+                <h2>Keyboard</h2>
+                <p>Face keys: U D F B L R. Slices: M E S. Shift reverses a key turn; Alt makes a face key wide. C holds; Ctrl/Cmd+Z undoes when allowed.</p>
               </div>
               <div>
-                <h2>Gaps keep you alive</h2>
-                <p>
-                  Unfinished spawns include one active center plus edges and
-                  corners, spread across empty cells. If no unfinished spawn
-                  fits, the piece fills a facebound gap automatically. If no
-                  facebound gap fits, it tries a planar surface-only gap, then
-                  one through the core. Only failure of all three tiers ends the
-                  game. Automatic fills can clear faces and continue into the
-                  next piece. Undo restores the entire chain; before top out it requires For Science mode.
-                </p>
+                <h2>Spawning and top out</h2>
+                <p>Planar pieces try face gaps, then surface gaps, then gaps through the core. B/D/F stay outside the core. If an unfinished spawn cannot fit, a valid gap may fill automatically. No valid placement means top out.</p>
               </div>
             </div>
           </details>

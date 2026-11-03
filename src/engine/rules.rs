@@ -136,9 +136,12 @@ impl State {
                 self.ids[i] = 0;
             }
             self.record(2, removed, 0, std::array::from_fn(|i| i));
-            self.gravity_plane = full.last().copied();
+            let gravity_plane=full.iter().rev().copied().find(|&plane|plane<6 || self.slice_gravity);
             self.last_clears.extend(&full);
-            self.configured_gravity();
+            if let Some(plane)=gravity_plane {
+                self.gravity_plane=Some(plane);
+                self.configured_gravity();
+            }
             settled = true;
             total += full.len() as u32;
         }

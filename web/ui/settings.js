@@ -1,3 +1,4 @@
+import {initializeSettingsPages,openSettingsPage,refreshSettingsPages} from './settings-pages.js';
 import {refreshGameplay} from './gameplay-settings.js';
 import {S} from '../engine/snapshot.js';
 import {refreshSettingsAvailability} from './settings-availability.js';
@@ -15,7 +16,8 @@ export function refreshSettings() {
   const pending = !context?.settingUp && context?.state?.[S.PENDING_FACES];
   const busy = !context?.settingUp && context?.busy;
   status.hidden = !pending && !busy;
-  status.textContent = pending ? 'Choose a placement before changing gameplay rules.' : busy ? 'Gameplay rules are temporarily locked while the move resolves.' : '';
+  status.textContent = pending ? 'Choose a placement to edit rules.' : busy ? 'Finish the move to edit rules.' : '';
+  refreshSettingsPages();
 }
 const defaultLayers = [
   ["arrows", "Arrow buttons"],
@@ -85,9 +87,7 @@ export function initializeSettings(value) {
   }
   for (const id of ['gameplaySettings','controlSettings','hintSettings','appearanceSettings','visibilitySettings','infoSettings']) {
     $('nav' + id).onclick = () => {
-      $(id).open = true;
-      $(id).scrollIntoView?.({block:'start', behavior:'smooth'});
-      $(id).querySelector?.('summary')?.focus();
+      openSettingsPage(id);
     };
   }
   initializePaletteControls();
@@ -121,8 +121,10 @@ export function initializeSettings(value) {
     context.invalidate();
   };
   renderLayerSettings();
+  initializeSettingsPages();
   for (const id of [
     "pieceAppearance",
+    "modelShape",
     "perspectiveCamera",
     "activeSpheres",
     "hoverOutline",
@@ -146,10 +148,13 @@ export function syncDisplaySettings() {
   for (const r of context.renderers) {
     const appearance = $("pieceAppearance").value || "jelly";
     r.canvas.dataset.appearance = appearance;
-    if (r.appearance !== appearance) {
+    const modelShape = $("modelShape").value || "jelly";
+    if (r.appearance !== appearance || r.modelShape !== modelShape) {
       r.appearance = appearance;
+      r.modelShape = modelShape;
       r.stackEvent = null;
       if (r.sourceMesh) r.setMesh(r.sourceMesh);
+      if (r.state) r.setState(r.state,r.animation);
     }
     r.perspective = $("perspectiveCamera").checked;
     const shapeChanged = r.activeSpheres !== $("activeSpheres").checked || r.rebuildSolidIdentities!==$("rebuildSolidIdentities").checked;

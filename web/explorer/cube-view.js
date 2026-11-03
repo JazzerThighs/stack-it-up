@@ -1,3 +1,4 @@
+import {gameboyCell} from '../render/gameboy-mesh.js';
 import {unregisterRenderer} from '../render/recovery.js';
 import {solidStyleKey} from '../render/identity-solids.js';
 import {visualSettings} from '../render/visual-settings.js';
@@ -122,16 +123,16 @@ export class PackingCube extends Renderer {
     this.currentAnimation = animation;
     const out = [];
     if (this.familyExploration && this.meshGenerator) {
-      const signature=JSON.stringify([cells,cells.map(c=>c?.solidRotation),this.appearance,this.explorationSolids,this.explorationGray,this.fixedPieceColors,solidStyleKey(),PALETTE]);
+      const signature=JSON.stringify([cells,cells.map(c=>c?.solidRotation),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,solidStyleKey(),PALETTE]);
       if(signature!==this.explorationSignature) {
         this.explorationSignature=signature;
-        this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.appearance,this.explorationSolids,this.explorationGray,this.fixedPieceColors);
+        this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors);
         const fixed=visualSettings.solidFixed;
-        if(fixed) {
+        {
           this.fixedSolidBuffers ??= Array.from({length:27},()=>this.buffer());
           for(let cell=0;cell<27;cell++)this.upload(this.fixedSolidBuffers[cell],joinMeshes(this.explorationGeometry.filter(m=>m.identityCell===cell)));
         }
-        const turningGeometry=this.explorationGeometry.filter(m=>!fixed || m.identityCell===undefined);
+        const turningGeometry=this.explorationGeometry.filter(m=>m.identityCell===undefined);
         const fragments=mergeFragments(turningGeometry);
         this.explorationLayers ??= Array.from({length:45},()=>this.buffer());
         // Five motion partitions per axis: three single slices and two wide turns.
@@ -149,14 +150,14 @@ export class PackingCube extends Renderer {
       this.invalidate();this.onFrame?.(cells,animation);return;
     }
     if (this.connected && this.meshGenerator && !animation) {
-      const parts=compositeParts(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.appearance);
+      const parts=compositeParts(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.modelShape);
       const mesh=joinMeshes(parts);
       this.upload(this.solid,mesh); this.invalidate(); this.onFrame?.(cells,animation); return;
     }
     cells.forEach((cell, i) => {
       if (!cell) return;
       const start = out.length;
-      (this.appearance === "voxel" ? box : balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d));
+      (this.modelShape==='gameboy'?gameboyCell:balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d));
       if (animation?.kind === "turn") rotateCell(out, start, i, animation.move, animation.t);
     });
     this.upload(this.solid, new Float32Array(out));
@@ -258,10 +259,10 @@ export class PackingCube extends Renderer {
       packets=[0,1,2].map(i=>({id:'packing',target:this.explorationLayers[(axis*5+(layer==='wide'?(side===0?3:4):layer))*3+i],type:gl.TRIANGLES,
         opacity:this.opacity,unlit:false,breathe:1,rotation:(layer==='wide'?i!==2-side:i===layer)?rotation:undefined}));
     }
-    if(this.familyExploration && visualSettings.solidFixed)for(let cell=0;cell<27;cell++) {
+    if(this.familyExploration)for(let cell=0;cell<27;cell++) {
       const target=this.fixedSolidBuffers?.[cell];if(!target?.count)continue;
       const animation=this.currentAnimation;
-      packets.push({id:'packing',target,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1,fixedShape:true,
+      packets.push({id:'packing',target,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1,lightingClass:'Solids',fixedShape:!!visualSettings.solidFixed,
         rotation:animation?.kind==='turn' && movedCell(cell,animation.move)?turnTransform(animation.move,animation.t):undefined});
     }
     renderPackets.call(

@@ -1,14 +1,35 @@
+import {voxelMesh} from './voxel-mesh.js';
 import {categorySeed} from './transparency.js';
 import {IDENTITY,transformPoint} from './transforms.js';
 import {appearanceIndex} from "./appearance.js";
 import {DitherPass} from "./dither-pass.js";
 import {AsciiPass} from "./ascii-pass.js";
 import {visualSettings,lightDirection} from "./visual-settings.js";
+export function lightingMode(packet,shape,settings=visualSettings) {
+  const kind=packet.lightingClass || packet.target.lightingClass ||
+    (['stack','packing'].includes(packet.id)?'Pieces':['active','centers','floating'].includes(packet.id)?'Cubies':'Other');
+  const mode=settings['light'+kind]??1;
+  return mode===2 || (mode===0 && shape==='gameboy');
+}
 const $ = (id) => document.getElementById(id);
 export function renderPackets(packets, context) {
   const { layerOrder } = context;
   const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
+  packets=packets.map(p=>({...p,positionalLighting:lightingMode(p,this.modelShape)}));
+  // Keep original buffers intact: changing style never changes game geometry.
+  if(this.modelShape==='voxel' || this.appearance==='voxel') {
+    this.voxelTargets ??= new Map();
+    packets=packets.map(p=>{
+      let entry=this.voxelTargets.get(p.target);
+      if(!entry){entry={target:this.buffer()};this.voxelTargets.set(p.target,entry);}
+      if(entry.source!==p.target.data || entry.type!==p.type) {
+        entry.source=p.target.data;entry.type=p.type;
+        this.upload(entry.target,voxelMesh(p.target.data,p.type===gl.LINES));
+      }
+      return {...p,target:entry.target,type:gl.TRIANGLES};
+    });
+  }
   const pixelRatio=Math.min(globalThis.devicePixelRatio || 1,2);
   const ascii=this.appearance === 'ascii';
   if(this.canvas?.dataset && this.canvas.dataset.appearance !== this.appearance)
@@ -28,6 +49,7 @@ export function renderPackets(packets, context) {
   gl.disable(gl.STENCIL_TEST);
   const stippled=p=>this.appearance==='dither' || !!visualSettings.ditherTransparency || p.id==='recent';
   const draw = (p) => {
+    gl.uniform1i(this.uniforms.gameboyLighting,p.positionalLighting?1:0);
     gl.uniform1i(this.uniforms.fixedShape,p.fixedShape?1:0);
     gl.uniformMatrix3fv(this.uniforms.modelRotation,false,p.rotation || IDENTITY);
     gl.uniform1f(this.uniforms.modelScale,p.modelScale ?? 1);
@@ -85,7 +107,7 @@ export function renderPackets(packets, context) {
         !run ||
         run.type !== p.type ||
         run.opacity !== p.opacity ||
-        run.unlit !== p.unlit
+        run.unlit !== p.unlit || run.positionalLighting !== p.positionalLighting
       ) {
         flush();
         vertices = [];

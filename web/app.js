@@ -1,3 +1,4 @@
+import {openSettingsPage} from './ui/settings-pages.js';
 import {startupCheck,startupError,packingProgress} from './ui/startup.js';
 import {installRecovery} from './render/recovery.js';
 import {createLocalGame} from './ui/local-game.js';
@@ -790,7 +791,7 @@ $("gravityMode").onchange = () => {
   engine.game_set_gravity(+$("gravityMode").value);
   update();
 };
-$("settingsOpen").onclick = () => $("settingsDialog").showModal();
+$("settingsOpen").onclick = () => {$("settingsDialog").showModal();openSettingsPage();};
 $("settingsClose").onclick = () => $("settingsDialog").close();
 const requestNew = $("new").onclick;
 $("new").onclick = () => {

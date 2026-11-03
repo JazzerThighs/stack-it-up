@@ -1,9 +1,11 @@
+import {gameboyPiece} from './gameboy-mesh.js';
+import {identifyMask} from '../explorer/family-exploration.js';
 import {placedTetracubeColor} from './tetracube-colors.js';
 import {tagCoverage} from './transparency.js';
 import {joinMeshes} from './cell-fragments.js';
 // Shared native surfaces and retained colored pieces. Fragments can key their
 // cache by these stable arrays, independent of the current packing or piece ID.
-import {rgb, box, xyz} from './geometry.js';
+import {rgb, xyz} from './geometry.js';
 const cache=new Map(),colored=new Map();
 let coloredBytes=0;
 export function compositeParts(board,ids,palette,generate,appearance='jelly',spatialColors=false) {
@@ -13,18 +15,19 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly',spa
     g.mask|=1<<i;groups.set(key,g);
   }
   return [...groups.values()].map(({mask,color})=>{
-    const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+(appearance==='voxel');
+    const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+appearance;
     if(colored.has(key))return colored.get(key);
     const out=[],c=rgb(hex);
-    if(appearance==='voxel') {
-      for(let i=0;i<27;i++)if(mask&(1<<i))box(out,xyz(i),.485,c);
+    if(appearance==='gameboy') {
+      const letter=identifyMask(mask)||'O';
+      for(const v of gameboyPiece(mask,c,letter))out.push(v);
     } else {
       if(!cache.has(mask)) {
         if(cache.size>=192)cache.delete(cache.keys().next().value);
         cache.set(mask,generate(mask));
       }
-      const mesh=cache.get(mask);
-      for(let i=0;i<mesh.length;i+=9)out.push(...mesh.subarray(i,i+6),...c);
+      const source=cache.get(mask);
+      for(let i=0;i<source.length;i+=9)out.push(...source.subarray(i,i+6),...c);
     }
     const mesh=tagCoverage(new Float32Array(out),xyz(31-Math.clz32(mask&-mask)));
     while(coloredBytes+mesh.byteLength>16*1024*1024 && colored.size) {

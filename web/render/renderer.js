@@ -1,3 +1,4 @@
+import {gameboyPiece} from './gameboy-mesh.js';
 import {activePieceColor} from '../engine/queue-pieces.js';
 import {registerRenderer,graphicsNotice} from './recovery.js';
 import {vertexCoverage,withCoverage} from './transparency.js';
@@ -53,6 +54,7 @@ class Renderer {
     this.activeOutlines = false;
     this.breathing = true;
     this.appearance = "jelly";
+    this.modelShape = "jelly";
     this.controlGrid = true;
     this.stackGrid = true;
     this.combinedGrid = true;
@@ -86,8 +88,9 @@ class Renderer {
     this.ghost = null;
     this.preview = 0;
     this.activeOnly = this.buffer();
+    this.identityMesh = this.buffer();this.identityMesh.lightingClass='Solids';
     this.floatingMesh = this.buffer();
-    this.bandMesh = this.buffer();
+    this.bandMesh = this.buffer();this.bandMesh.lightingClass='Pieces';
     this.bandCache = new Map();
     this.decorBuffers = {};
     this.transparentBuffer = this.buffer();
@@ -123,7 +126,7 @@ class Renderer {
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
       throw Error(gl.getProgramInfoLog(this.program));
     this.uniforms = Object.fromEntries(
-      ["fixedShape", "ditherSeed", "modelRotation", "modelScale", "modelOffset", "screenDoor", "orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
+      ["gameboyLighting", "fixedShape", "ditherSeed", "modelRotation", "modelScale", "modelOffset", "screenDoor", "orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
         n,
         gl.getUniformLocation(this.program, n),
       ]),
@@ -188,7 +191,7 @@ class Renderer {
     this.stackPackets=null;
     this.stackEvent=null;
     this.sourceMesh = data;
-    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance,true) : [data];
+    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.modelShape,true) : [data];
     this.upload(this.stackMesh,joinMeshes(parts));
   }
   setState(s, animation = null) {
@@ -197,7 +200,7 @@ class Renderer {
     this.rebuildSlots=rebuildSlots(s,this.rebuildSlots);
     this.animation = animation;
     this.gravity = s[S.GRAVITY];
-    const activeGeometry = [], floatingGeometry = [];
+    const activeGeometry = [], floatingGeometry = [],identityGeometry=[];
     const grid = [],
       activeLines = [],
       lines = [],
@@ -250,7 +253,8 @@ class Renderer {
             [activeLines, startActiveLine],
           ])
             rotateCell(out, start, i, animation.move, animation.t);
-        const destination = floating && !s[S.REBUILD_COLORS+i] ? floatingGeometry : activeGeometry;
+        const identity=this.rebuildSolidIdentities && (s.rebuildIds?.[i] || s[S.REBUILD_COLORS+i]);
+        const destination = identity?identityGeometry:floating && !s[S.REBUILD_COLORS+i] ? floatingGeometry : activeGeometry;
         for (let j=startSolid;j<solid.length;j++) destination.push(solid[j]);
       }
     const bands = [],bandCoverage=[];
@@ -259,12 +263,13 @@ class Renderer {
       for (let i=0;i<27;i++) if (s[S.BAND_IDS+i] && (s[S.FLOATING] & (1<<i)))
         groups.set(s[S.BAND_IDS+i], (groups.get(s[S.BAND_IDS+i]) || 0) | (1<<i));
       for (const mask of groups.values()) {
-        if (!this.bandCache.has(mask)) {
+        const bandKey=this.modelShape+':'+mask;
+        if (!this.bandCache.has(bandKey)) {
           if (this.bandCache.size >= 128) this.bandCache.delete(this.bandCache.keys().next().value);
-          this.bandCache.set(mask, context.engine.bandMesh(mask));
+          this.bandCache.set(bandKey, this.modelShape==='gameboy'?gameboyPiece(mask,[1,1,1],'O'):context.engine.bandMesh(mask));
         }
         const start = bands.length;
-        for (const value of this.bandCache.get(mask)) bands.push(value);
+        for (const value of this.bandCache.get(bandKey)) bands.push(value);
         for(let j=start;j<bands.length;j+=9)bandCoverage.push(...xyz(31-Math.clz32(mask&-mask)));
         if (animation?.kind === "turn") {
           const cell = 31 - Math.clz32(mask & -mask);
@@ -273,6 +278,7 @@ class Renderer {
       }
     }
     this.upload(this.bandMesh, withCoverage(new Float32Array(bands),new Float32Array(bandCoverage)));
+    this.upload(this.identityMesh,new Float32Array(identityGeometry));
     this.upload(this.activeLines, new Float32Array(activeLines));
     this.upload(this.centers, new Float32Array(centers));
     this.upload(this.overlaps, new Float32Array(overlaps));
@@ -301,7 +307,7 @@ class Renderer {
     if(this.stackEvent===event)return;
     this.stackEvent=event;
     const source=event.kind===2?from:to;
-    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.appearance,true);
+    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.modelShape,true);
     const fragments=mergeFragments(parts);
     this.stackCellBuffers ??= Array.from({length:81},()=>this.buffer());
     for(let phase=0;phase<3;phase++) {
@@ -420,6 +426,7 @@ class Renderer {
         false,
         breath,
       );
+      add("active", this.identityMesh, gl.TRIANGLES, this.activeOpacity, false, breath);
       add("floating", this.bandMesh, gl.TRIANGLES, this.activeOpacity, false, 1, this.breathing && this.animation?.kind !== "turn" ? (breath - 1.04) * 0.10 : 0);
 
       add("recent", this.ghostLines, gl.LINES, 0.45, true);

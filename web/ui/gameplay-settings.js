@@ -30,6 +30,8 @@ export function refreshGameplay(root=document,{starting=false,busy=false,state=n
   const locked=!starting&&(busy||!!state?.[S.PENDING_FACES]);
   for(const id of gameplayIds)$(id).disabled=locked;
   const gravity=!!(r&32),freedom=!!(r&512),connected=!!(r&(1<<14));
+  $('planeGravity').disabled=locked||!gravity;
+  $('sliceGravity').disabled=locked||!gravity;
   for(const id of ['gravityDirectionOptions','gravityOccurrenceOptions','gravityDistanceOptions'])$(id).disabled=!gravity;
   for(const id of ['freedomSizeOptions','freedomReconstructionOptions','freedomEventOptions'])$(id).disabled=!freedom;
   $('freedomMethodOptions').disabled=!freedom||((r>>16)&3)===2;
@@ -40,10 +42,12 @@ export function refreshGameplay(root=document,{starting=false,busy=false,state=n
   $('nextPieceControls').hidden=!$('chooseNext').checked||!(r&1);
   for(const id of ['applyCurrent','applyHeld']){$(id).hidden=starting;$(id).disabled=locked||!(r&1)||!!state?.[S.OVER];}
   $('applyCurrent').disabled ||= !+$('debugCurrent').value;
-  $('debugEditNote').textContent=starting?'These choices set your starting piece and hold pocket. Random uses the shuffled queue.':'Changes apply when you press Set. Changing the current piece respawns its cubies and can trigger an automatic placement. Undo restores the previous state.';
-  $('freedomMethodNote').textContent=((r>>16)&3)===2?'Every eligible piece is freed, so no selection method is needed.':['Every eligible connected stack piece has the same chance.','One random cell among all 27 is tested per attempt. Empty or ineligible cells miss without retrying.','Choose the largest eligible piece; break ties randomly.','Choose the smallest eligible piece; break ties randomly.'][(r>>18)&3];
-  $('settingsRulesSummary').textContent=`${r&1?'For Science!':'Standard play'} · ${gravity?'Gravity on':'Gravity off'} · ${freedom?'Stack-piece release on':'Stack-piece release off'}`;
+  $('debugEditNote').textContent=starting?'Random uses the queue. Empty clears the hold pocket.':'Press Set to apply. Replacing the current piece may auto-place it; Undo restores the puzzle.';
+  $('freedomMethodNote').textContent=((r>>16)&3)===2?'All eligible groups are freed; selection is unused.':['Each eligible group has equal odds.','Pick one of 27 cells. Empty or ineligible cells miss; no retry.','Largest eligible group; random ties.','Smallest eligible group; random ties.'][(r>>18)&3];
+  $('settingsRulesSummary').textContent=`${r&1?'For Science (Cheating)!':'Standard play'} · ${gravity?'Gravity on':'Gravity off'} · ${freedom?'Stack-piece release on':'Stack-piece release off'}`;
   const rebuild=freedom||!!state?.[S.FLOATING];
+  $('activeSpheres').disabled=!rebuild||$('rebuildSolidIdentities').checked;
+  $('activeSpheres').title=$('rebuildSolidIdentities').checked?'Turn off distinct solids to change loose-fragment shapes.':'';
   $('rebuildShapeOptions').disabled=!rebuild;$('rebuildShapeOptionsReason').hidden=rebuild;
   $('solidOptions').disabled=!rebuild||!$('rebuildSolidIdentities').checked;
   $('solidOptionsReason').hidden=!$('solidOptions').disabled;

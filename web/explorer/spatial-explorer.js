@@ -14,7 +14,7 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
   $('datasetSelect').value=dependencies.dataset==='classic'?'classic':'spatial';
   const info=client.info,families=new Map(info.families.map(f=>[f.id,f])),membership=new Map();
   let current,position=0,total=0,counts=[],generation=0,active='solved',scramble=[];
-  const flags=['surfaceOnly','nonSurfaceOnly','allSurfaceIdentities','oneOfEach','officialOnly','iTunnelOnly','nonFaceboundSurface'];
+  const flags=['surfaceOnly','nonSurfaceOnly','allSurfaceIdentities','oneOfEach','officialOnly','iTunnelOnly','somaVOnly','somaSetOnly','dominoGapOnly','nonFaceboundSurface'];
   const types=['O','T','JL','SZ','B','D','F'];
   for(const id of ['oneOfEach','allSurfaceIdentities','officialOnly','surfaceOnly','nonSurfaceOnly'])$(id).checked=false;
   $('spatialFilters').hidden=false;

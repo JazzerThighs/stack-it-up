@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {lightingMode} from '../web/render/pipeline.js';
+import {visualSettings,setVisualSetting,resetVisualSettings} from '../web/render/visual-settings.js';
+const p=(id,lightingClass)=>({id,target:{},lightingClass});
+assert(lightingMode(p('packing'),'gameboy'));
+assert(!lightingMode(p('packing','Solids'),'gameboy'));
+assert(!lightingMode(p('active'),'gameboy'));
+assert(!lightingMode(p('packing'),'jelly'));
+setVisualSetting('lightSolids',2);assert(lightingMode(p('packing','Solids'),'jelly'));
+setVisualSetting('lightPieces',1);assert(!lightingMode(p('stack'),'gameboy'));
+resetVisualSettings('light');assert.equal(visualSettings.lightSolids,1);assert.equal(visualSettings.lightPieces,0);
+console.log('PASS: class lighting defaults, independent overrides and reset.');
