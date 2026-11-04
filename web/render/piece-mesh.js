@@ -1,3 +1,5 @@
+import {jellyStyleKey} from './visual-settings.js';
+import {visualSettings} from './visual-settings.js';
 import {gameboyPiece} from './gameboy-mesh.js';
 import {identifyMask} from '../explorer/family-exploration.js';
 import {placedTetracubeColor} from './tetracube-colors.js';
@@ -15,19 +17,21 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly',spa
     g.mask|=1<<i;groups.set(key,g);
   }
   return [...groups.values()].map(({mask,color})=>{
+    const cornerO=appearance==='jelly' && !!visualSettings.jellyCornerO && identifyMask(mask)==='O';
+    const geometryKey=mask+':'+cornerO+':'+jellyStyleKey();
     const bomb=!!(mask&extrasMask);
-    const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+appearance+':'+bomb;
+    const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+appearance+':'+bomb+':'+cornerO+':'+jellyStyleKey();
     if(colored.has(key))return colored.get(key);
     const out=[],c=rgb(hex);
     if(appearance==='gameboy') {
       const letter=bomb?'bomb':identifyMask(mask)||'O';
       for(const v of gameboyPiece(mask,c,letter))out.push(v);
     } else {
-      if(!cache.has(mask)) {
+      if(!cache.has(geometryKey)) {
         if(cache.size>=192)cache.delete(cache.keys().next().value);
-        cache.set(mask,generate(mask));
+        cache.set(geometryKey,generate(mask,cornerO));
       }
-      const source=cache.get(mask);
+      const source=cache.get(geometryKey);
       for(let i=0;i<source.length;i+=9)out.push(...source.subarray(i,i+6),...c);
     }
     const mesh=tagCoverage(new Float32Array(out),xyz(31-Math.clz32(mask&-mask)));

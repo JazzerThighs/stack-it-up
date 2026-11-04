@@ -501,3 +501,12 @@ assert.equal($('countMinExtraV').value,'1');assert.equal($('countMaxJL').value,'
 $('filterPreset').value='all';await $('filterPreset').onchange();
 assert.equal($('familySelect').value,'');assert.equal($('countMaxExtraCore').value,'1');assert.equal($('countMaxExtraSingle').value,'3');
 console.log('PASS: editable count presets combine shape/placement constraints, expose family selection and reset all ranges.');
+
+familyView.modelShape='jelly';familyView.familyExploration=true;
+const cornerCells=Array(27).fill(null);for(const i of [0,1,3,4])cornerCells[i]={piece:0,color:'y'};
+familyView.setCells(cornerCells);const defaultCornerMesh=familyView.solid.data.slice();
+$('jellyCornerO').checked=true;$('jellyCornerO').listeners.change();
+assert.notDeepEqual(familyView.solid.data,defaultCornerMesh);assert.deepEqual(familyView.cells,cornerCells);
+$('jellyCornerO').checked=false;$('jellyCornerO').listeners.change();
+assert.deepEqual(familyView.solid.data,defaultCornerMesh);
+console.log('PASS: explorer corner-O toggle refreshes cached family meshes without changing cells.');

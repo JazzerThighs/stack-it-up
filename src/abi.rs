@@ -151,7 +151,13 @@ pub extern "C" fn game_lock_band(cell: u32) -> u32 {
 }
 thread_local! { static BAND_MESH: RefCell<Vec<f32>> = const { RefCell::new(Vec::new()) }; }
 #[unsafe(no_mangle)]
-pub extern "C" fn band_mesh_ptr(mask: u32) -> *const f32 {
+pub extern "C" fn band_mesh_ptr(mask: u32) -> *const f32 { band_mesh_styled_ptr(mask, 0) }
+#[unsafe(no_mangle)]
+pub extern "C" fn band_mesh_styled_ptr(mask: u32, corner_o: u32) -> *const f32 {
+    band_mesh_tuned_ptr(mask, corner_o, 0.30, 0.24)
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn band_mesh_tuned_ptr(mask: u32, corner_o: u32, softness: f32, opening: f32) -> *const f32 {
     let mut s = crate::engine::State::empty(1);
     for i in 0..27 {
         if mask & (1 << i) != 0 {
@@ -160,7 +166,7 @@ pub extern "C" fn band_mesh_ptr(mask: u32) -> *const f32 {
         }
     }
     BAND_MESH.with_borrow_mut(|out| {
-        *out = mesh::build(&s);
+        *out = mesh::build_tuned(&s, corner_o != 0, softness, opening);
         for v in out.chunks_exact_mut(9) {
             v[6..9].fill(1.0);
         }

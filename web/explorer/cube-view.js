@@ -1,3 +1,4 @@
+import {jellyStyleKey} from '../render/visual-settings.js';
 import {controlSettings,subscribeControls,setControlSetting} from '../input/control-settings.js';
 import {sceneDecorations} from '../render/decorations.js';
 import {createMoveButtons} from '../ui/move-buttons.js';
@@ -154,7 +155,7 @@ export class PackingCube extends Renderer {
     this.currentAnimation = animation;
     const out = [];
     if (this.familyExploration && this.meshGenerator) {
-      const signature=JSON.stringify([cells,cells.map(c=>c?.solidRotation),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,solidStyleKey(),PALETTE]);
+      const signature=JSON.stringify([cells,cells.map(c=>c?.solidRotation),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,solidStyleKey(),jellyStyleKey(),PALETTE]);
       if(signature!==this.explorationSignature) {
         this.explorationSignature=signature;
         this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors);

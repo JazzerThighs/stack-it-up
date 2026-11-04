@@ -40,7 +40,7 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
     familyOptions:()=>info.families.filter(f=>counts[f.id]>0).map(f=>({...f,matching:counts[f.id]})),
     familyStart:async id=>{const result=await client.query({filters:{...filters(),family:id},random:true});remember(result.record);return result;},
   };
-  const views=createExplorerViews({root,meshGenerator:mask=>engine.bandMesh(mask),data:provider});
+  const views=createExplorerViews({root,meshGenerator:(mask,cornerO)=>engine.bandMesh(mask,cornerO),data:provider});
   function options(select,items,label) {
     const value=select.value;select.replaceChildren();
     const any=document.createElement('option');any.value='';any.textContent=label;select.append(any);
@@ -103,8 +103,8 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
     }catch(e){if(token===generation)$('status').textContent=e.message;}
   }
   for(const id of [...flags,'familySelect','familyBag','extraEdges','extraCorners','extraCenters','spatialComposition','planarSpanning','corePieceType',...types.flatMap(t=>['countMin'+t,'countMax'+t])])$(id).addEventListener('change',()=>query({position:0},true));
-  $('filterPreset').onchange=()=>{
-    const name=$('filterPreset').value;if(!name)return;
+  function applyPreset(name){
+    if(!name)return;
     const current=Object.fromEntries(types.map(id=>[id,{min:Number($('countMin'+id).value),max:Number($('countMax'+id).value)}]));
     const preset=presetCounts(name,current,+$('familySelect').value||0);clearFilters();
     for(const [id,range]of Object.entries(preset.ranges)){$('countMin'+id).value=String(range.min);$('countMax'+id).value=String(range.max);}
@@ -115,6 +115,8 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
     $('familySelect').value=preset.family?String(preset.family):'';
     return query({position:0},true);
   };
+  $('filterPreset').onchange=()=>applyPreset($('filterPreset').value);
+  $('resetPackingFilters').onclick=()=>{$('filterPreset').value='';return applyPreset('all');};
   $('clearFilterFamily').onclick=()=>{$('familySelect').value='';$('filterPreset').value='';return query({position:0},true);};
   for(const id of types.flatMap(t=>['countMin'+t,'countMax'+t]))$(id).addEventListener('input',()=>{$('filterPreset').value='';});
   function collectionChanged() {

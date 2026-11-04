@@ -1,3 +1,4 @@
+import {jellyStyleKey} from '../render/visual-settings.js';
 import {bindControlSettings} from '../input/control-settings.js';
 import {solidStyleKey} from '../render/identity-solids.js';
 import {visualSettings} from '../render/visual-settings.js';
@@ -22,7 +23,9 @@ export function createExplorerViews({
 }) {
   const $ = id => root.getElementById(id);
   const cubes = new Map();
+  let cornerO=jellyStyleKey();
   initializeVisualControls(root,()=>{
+    if(cornerO!==jellyStyleKey()){cornerO=jellyStyleKey();for(const cube of cubes.values())cube.setState(cube.cells,cube.currentAnimation);}
     for(const cube of cubes.values()) {
       if(cube.solidStyle!==solidStyleKey()){cube.solidStyle=solidStyleKey();cube.explorationGray=!!visualSettings.solidGray;cube.setState(cube.cells,cube.currentAnimation);}
       cube.invalidate();

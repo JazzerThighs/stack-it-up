@@ -4,26 +4,40 @@ use crate::engine::{COLORS, State, bits, xyz};
 type V = [f32; 3];
 // Smooth the occupied volume as a whole. Adjacent cell integrals telescope,
 // avoiding raised seams where overlapping rounded boxes used to meet.
-const SOFTNESS: f32 = 0.28;
+const SOFTNESS: f32 = 0.30;
 const ISO: f32 = 0.65;
 #[derive(Clone)]
 struct CellVolume {
     center: V,
     shape_center: V,
     shape_half: V,
+    corner_axis: Option<usize>,
+    softness: f32,
+    opening: f32,
 }
-fn integral(x: f32) -> f32 {
-    if x <= -SOFTNESS { return 0.; }
-    if x >= SOFTNESS { return 1.; }
-    let t = x / SOFTNESS;
+fn integral(x: f32, softness: f32) -> f32 {
+    if x <= -softness { return 0.; }
+    if x >= softness { return 1.; }
+    let t = x / softness;
     let t2 = t * t;
     0.5 + (15. / 16.) * t * (1. + t2 * (-2. / 3. + t2 / 5.))
 }
 fn field(p: V, boxes: &[CellVolume]) -> f32 {
+    if let Some(b) = boxes.first().filter(|b| b.corner_axis.is_some()) {
+        let axis=b.corner_axis.unwrap();
+        let x=p[(axis+1)%3]-b.shape_center[(axis+1)%3];
+        let y=p[(axis+2)%3]-b.shape_center[(axis+2)%3];
+        let z=p[axis]-b.shape_center[axis];
+        let exponent=4.*0.34/b.softness;
+        let radius=(x.abs().powf(exponent)+y.abs().powf(exponent)).powf(1./exponent);
+        let major=(0.93+b.opening)*0.5;
+        let tube=(0.93-b.opening)*0.5;
+        return ((radius-major)/tube).abs().powf(exponent)+(z/0.43).abs().powf(exponent)-1.;
+    }
     let filled = boxes.iter().map(|b| {
         (0..3).map(|k| {
             let x = p[k] - b.center[k];
-            integral(x + 0.5) - integral(x - 0.5)
+            integral(x + 0.5, b.softness) - integral(x - 0.5, b.softness)
         }).product::<f32>()
     }).sum::<f32>();
     // Disjoint pieces cannot overlap: their normalized occupancies sum to at
@@ -33,7 +47,8 @@ fn field(p: V, boxes: &[CellVolume]) -> f32 {
     let dome = boxes.first().map_or(0., |b| {
         (0..3).map(|k| ((p[k]-b.shape_center[k])/b.shape_half[k]).powi(2)).sum::<f32>()
     });
-    ISO + 0.10 * (dome - 1.) - filled
+    // Broad faces keep a gentle crown; the wider edge kernel carries the bevel.
+    ISO + 0.08 * (dome - 1.) - filled
 }
 fn normal(p: V, boxes: &[CellVolume]) -> V {
     let g: V = std::array::from_fn(|k| {
@@ -54,7 +69,7 @@ fn boxes(mask: u32) -> Vec<CellVolume> {
     let shape_center = std::array::from_fn(|k| (lo[k]+hi[k])*0.5);
     let shape_half = std::array::from_fn(|k| (hi[k]-lo[k])*0.5);
     cells.into_iter().map(|cell| CellVolume {
-        center: cell.map(|v| v as f32 - 1.), shape_center, shape_half,
+        center: cell.map(|v| v as f32 - 1.), shape_center, shape_half, corner_axis: None, softness: SOFTNESS, opening: 0.24,
     }).collect()
 }
 fn triangle(mut points: [V; 3], boxes: &[CellVolume], color: V, out: &mut Vec<f32>) {
@@ -76,7 +91,40 @@ fn triangle(mut points: [V; 3], boxes: &[CellVolume], color: V, out: &mut Vec<f3
         out.extend(color);
     }
 }
-pub fn build(state: &State) -> Vec<f32> {
+// Periodic supertorus: rounded-square centerline and rounded-square tube.
+// Unlike cutting a tiny hole into a coarse marching grid, both rims have
+// regular tessellation and share the same continuous analytic surface.
+fn corner_o_mesh(boxes: &[CellVolume], color: V, out: &mut Vec<f32>) {
+    const A: usize=80;
+    const B: usize=40;
+    let b=&boxes[0];let axis=b.corner_axis.unwrap();
+    let exponent=4.*0.34/b.softness;
+    let squircle=|angle:f32| {
+        let (s,c)=angle.sin_cos();
+        let scale=(s.abs().powf(exponent)+c.abs().powf(exponent)).powf(1./exponent);
+        [c/scale,s/scale]
+    };
+    let points:Vec<V>=(0..A).flat_map(|i| {
+        let d=squircle(i as f32*std::f32::consts::TAU/A as f32);
+        (0..B).map(move |j| {
+            let tube=squircle(j as f32*std::f32::consts::TAU/B as f32);
+            let radius=(0.93+b.opening)*0.5+(0.93-b.opening)*0.5*tube[0];
+            let mut p=b.shape_center;
+            p[(axis+1)%3]+=radius*d[0];p[(axis+2)%3]+=radius*d[1];
+            p[axis]+=0.43*tube[1];p
+        })
+    }).collect();
+    for i in 0..A {for j in 0..B {
+        let p=points[i*B+j];let q=points[((i+1)%A)*B+j];
+        let r=points[((i+1)%A)*B+(j+1)%B];let s=points[i*B+(j+1)%B];
+        triangle([p,q,r],boxes,color,out);triangle([p,r,s],boxes,color,out);
+    }}
+}
+pub fn build(state: &State) -> Vec<f32> { build_styled(state, false) }
+pub fn build_styled(state: &State, corner_o: bool) -> Vec<f32> {
+    build_tuned(state, corner_o, SOFTNESS, 0.24)
+}
+pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -> Vec<f32> {
     let mut out = Vec::new();
     const CORNERS: [[usize; 3]; 8] = [
         [0, 0, 0],
@@ -96,9 +144,21 @@ pub fn build(state: &State) -> Vec<f32> {
         [0, 7, 4, 6],
         [0, 4, 5, 6],
     ];
-    const STEP: f32 = 0.16;
+    const STEP: f32 = 0.12;
     for g in state.groups() {
-        let boxes = boxes(g.mask);
+        let mut boxes = boxes(g.mask);
+        for b in &mut boxes { b.softness=softness.clamp(0.24,0.40); b.opening=opening.clamp(0.18,0.40); }
+        if corner_o && boxes.len()==4 {
+            let half=boxes[0].shape_half;
+            if half.iter().filter(|&&v| v==1.).count()==2 && half.contains(&0.5) {
+                let axis=half.iter().position(|&v| v==0.5);
+                for b in &mut boxes { b.corner_axis=axis; }
+            }
+        }
+        if boxes[0].corner_axis.is_some() {
+            corner_o_mesh(&boxes,COLORS[g.color as usize-1],&mut out);
+            continue;
+        }
         let cells = bits(g.mask).map(xyz).collect::<Vec<_>>();
         let lo: V = std::array::from_fn(|k| cells.iter().map(|p| p[k]).min().unwrap() as f32 - 1.6);
         let n: [usize; 3] = std::array::from_fn(|k| {
@@ -293,4 +353,49 @@ mod tests {
             assert!((n - 1.).abs() < 0.002);
         }
     }
+    #[test]
+    fn corner_o_is_optional_seamless_and_cosmetic() {
+        for cells in [[0,1,3,4],[0,1,9,10],[0,3,9,12]] {
+            let mut s=State::empty(1);
+            for i in cells {s.board[i]=1;s.ids[i]=1;}
+            let ordinary=build(&s);
+            assert_eq!(ordinary,build_styled(&s,false));
+            let rounded=build_styled(&s,true);
+            assert_ne!(ordinary,rounded);
+            assert!(rounded.iter().all(|x|x.is_finite()));
+            let mut volume=boxes(cells.into_iter().fold(0,|m,i|m|(1<<i)));
+            let axis=volume[0].shape_half.iter().position(|&v|v==0.5).unwrap();
+            for b in &mut volume {b.corner_axis=Some(axis);}
+            assert!(field(volume[0].shape_center,&volume)>0.);
+            for v in rounded.chunks_exact(9) {
+                assert!((v[3..6].iter().map(|n|n*n).sum::<f32>()-1.).abs()<0.002);
+                assert!(field([v[0],v[1],v[2]],&volume).abs()<0.003);
+            }
+            assert_eq!(s.board.iter().filter(|&&v|v!=0).count(),4);
+        }
+        let mut l=State::empty(1);
+        for i in [0,1,2,5]{l.board[i]=1;l.ids[i]=1;}
+        assert_eq!(build(&l),build_styled(&l,true));
+    }
+
+    #[test]
+    fn supertorus_is_watertight_without_polar_pinching() {
+        let mut state=State::empty(1);
+        for i in [0,1,3,4]{state.board[i]=1;state.ids[i]=1;}
+        let mesh=build_styled(&state,true);
+        let mut edges=std::collections::BTreeMap::new();
+        for t in mesh.chunks_exact(27) {
+            let p: [[f32;3];3]=std::array::from_fn(|i|[t[i*9],t[i*9+1],t[i*9+2]]);
+            let u:V=std::array::from_fn(|i|p[1][i]-p[0][i]);
+            let v:V=std::array::from_fn(|i|p[2][i]-p[0][i]);
+            let cross=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+            assert!(cross.iter().map(|n|n*n).sum::<f32>()>1e-10);
+            for (a,b) in [(0,1),(1,2),(2,0)] {
+                let mut pair=[p[a].map(f32::to_bits),p[b].map(f32::to_bits)];pair.sort();
+                *edges.entry(pair).or_insert(0)+=1;
+            }
+        }
+        assert!(edges.values().all(|&n|n==2),"every edge joins exactly two triangles");
+    }
+
 }

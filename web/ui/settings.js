@@ -1,3 +1,4 @@
+import {jellyStyleKey} from '../render/visual-settings.js';
 import {initializeSettingsPages,openSettingsPage,refreshSettingsPages} from './settings-pages.js';
 import {refreshGameplay} from './gameplay-settings.js';
 import {S} from '../engine/snapshot.js';
@@ -91,7 +92,9 @@ export function initializeSettings(value) {
     };
   }
   initializePaletteControls();
+  let cornerO=jellyStyleKey();
   initializeVisualControls(document,()=>{
+    if(cornerO!==jellyStyleKey()){cornerO=jellyStyleKey();for(const r of context.renderers){if(r.sourceMesh)r.setMesh(r.sourceMesh);if(r.state)r.setState(r.state,r.animation);}}
     for(const r of context.renderers) {
       if(r.solidStyle!==solidStyleKey()){r.solidStyle=solidStyleKey();r.solidGray=!!visualSettings.solidGray;if(r.state)r.setState(r.state,r.animation);}
     }

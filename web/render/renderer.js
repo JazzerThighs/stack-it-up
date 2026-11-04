@@ -1,3 +1,5 @@
+import {jellyStyleKey} from './visual-settings.js';
+import {visualSettings} from './visual-settings.js';
 import {gameboyPiece} from './gameboy-mesh.js';
 import {activePieceColor} from '../engine/queue-pieces.js';
 import {registerRenderer,graphicsNotice} from './recovery.js';
@@ -191,7 +193,7 @@ class Renderer {
     this.stackPackets=null;
     this.stackEvent=null;
     this.sourceMesh = data;
-    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.modelShape,true) : [data];
+    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true) : [data];
     this.upload(this.stackMesh,joinMeshes(parts));
   }
   setState(s, animation = null) {
@@ -264,10 +266,11 @@ class Renderer {
       for (let i=0;i<27;i++) if (s[S.BAND_IDS+i] && (s[S.FLOATING] & (1<<i)))
         groups.set(s[S.BAND_IDS+i], (groups.get(s[S.BAND_IDS+i]) || 0) | (1<<i));
       for (const mask of groups.values()) {
-        const bandKey=this.modelShape+':'+mask;
+        const cornerO=this.modelShape==='jelly' && !!visualSettings.jellyCornerO;
+        const bandKey=this.modelShape+':'+mask+':'+cornerO+':'+jellyStyleKey();
         if (!this.bandCache.has(bandKey)) {
           if (this.bandCache.size >= 128) this.bandCache.delete(this.bandCache.keys().next().value);
-          this.bandCache.set(bandKey, this.modelShape==='gameboy'?gameboyPiece(mask,[1,1,1],'O'):context.engine.bandMesh(mask));
+          this.bandCache.set(bandKey, this.modelShape==='gameboy'?gameboyPiece(mask,[1,1,1],'O'):context.engine.bandMesh(mask,cornerO));
         }
         const start = bands.length;
         for (const value of this.bandCache.get(bandKey)) bands.push(value);
@@ -308,7 +311,7 @@ class Renderer {
     if(this.stackEvent===event)return;
     this.stackEvent=event;
     const source=event.kind===2?from:to;
-    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,mask=>context.engine.bandMesh(mask),this.modelShape,true);
+    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true);
     const fragments=mergeFragments(parts);
     this.stackCellBuffers ??= Array.from({length:81},()=>this.buffer());
     for(let phase=0;phase<3;phase++) {

@@ -3,6 +3,10 @@ export const visualSpecs = {"solidUniform":{"min":0,"max":1,"step":1,"value":1,"
 // 0: model default, 1: surface-angle lighting, 2: positional lighting.
 for(const [key,value] of [['lightPieces',0],['lightCubies',1],['lightSolids',1],['lightOther',1]])
   visualSpecs[key]={min:0,max:2,step:1,value,unit:'',select:true};
+visualSpecs.jellyCornerO={min:0,max:1,step:1,value:0,checkbox:true};
+visualSpecs.jellyBevel={min:24,max:40,step:1,value:30,unit:""};
+visualSpecs.jellyOpening={min:18,max:40,step:1,value:24,unit:""};
+export function jellyStyleKey(){return [visualSettings.jellyCornerO,visualSettings.jellyBevel,visualSettings.jellyOpening].join(":");}
 export const visualSettings = Object.fromEntries(Object.entries(visualSpecs).map(([k,s])=>[k,s.value]));
 const listeners=new Set();
 function valid(key,value) {

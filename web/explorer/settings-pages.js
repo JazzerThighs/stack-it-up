@@ -46,6 +46,7 @@ export function initializeExplorerSettings(root) {
   const tuning={};
   for(const [name,id]of [['Transparency','ditherTransparency'],['Lighting','lightAzimuth'],['Dither tuning','ditherLevels'],['ASCII tuning','asciiSize']]) {
     const sub=page(name,appearance);unpack(sub,$(id).closest('details'));tuning[id]=sub;
+    if(id==='lightAzimuth')add(page('Jelly shaping',appearance),$('jellyShaping'));
   }
   const lightClasses=page('Lighting by element',tuning.lightAzimuth);
   const classes=body.querySelector('#lightingClasses');

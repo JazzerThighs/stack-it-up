@@ -24,11 +24,12 @@ export function indexedCounts(flags,spatial,core,span,gaps,extras){
  Facebound:6-bitCount(spatial|core|span),SurfaceNonface:bitCount((spatial|span)&~core),CorePieces:bitCount(core)};
 }
 export const filterPresets=[
- ['all','All packings / reset'],['planar','Planar tetrominos only'],['spatial','Spatial tetrominos only'],['pieces','All tetrominos'],
+ ['planar','Planar tetrominos only'],['spatial','Spatial tetrominos only'],['pieces','All tetrominos'],
  ['surface','Surfacebound only'],['nonface','Non-facebound surface only'],['face','Facebound only'],['core','Non-surfacebound only'],['placements','All placement types'],
- ['six','All-6 planar tetrominos (JLOTSZ)'],['official',"Tetris × Rubik’s Cube compatible (Family 562)"],['soma','Soma Cube'],['sloth','Slothouber–Graatsma puzzle (OOOOOO)'],
+ ['six','All-6 planar tetrominos (JLOTSZ)'],['faceSix','Facebound + All-6 Bag'],['official',"Tetris × Rubik’s Cube compatible (Family 562)"],['soma','Soma Cube'],['sloth','Slothouber–Graatsma puzzle (OOOOOO)'],
 ];
 export function presetCounts(name,current={},currentFamily=0){
+ if(name==='faceSix'){const six=presetCounts('six',current,currentFamily);return presetCounts('face',six.ranges,six.family);}
  const ranges=Object.fromEntries(countSpecs.map(([id,,max])=>[id,{min:0,max}]));
  const resetAll=name==='all';
  if(!resetAll)for(const [id,value]of Object.entries(current))if(ranges[id])ranges[id]={...value};

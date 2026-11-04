@@ -1,3 +1,4 @@
+import {visualSettings} from '../render/visual-settings.js';
 import {IDENTITY,turnTransform,composeRotation,movedCell,transformPoint} from '../render/transforms.js';
 import {CubeStack} from './coordinates.js';
 import { S, SNAPSHOT_WORDS, EVENT_WORDS } from "./snapshot.js";
@@ -49,8 +50,8 @@ export function adaptEngine(w,{trackSolids=true}={}) {
     game_set_modes: w.game_set_modes,
     game_set_early_lock: w.game_set_early_lock,
     game_lock_band: w.game_lock_band,
-    bandMesh(mask) {
-      const ptr = w.band_mesh_ptr(mask);
+    bandMesh(mask,cornerO=false) {
+      const ptr = w.band_mesh_tuned_ptr(mask,Number(cornerO),visualSettings.jellyBevel/100,visualSettings.jellyOpening/100);
       return new Float32Array(w.memory.buffer, ptr, w.band_mesh_len()).slice();
     },
     game_set_fragments: w.game_set_fragments,

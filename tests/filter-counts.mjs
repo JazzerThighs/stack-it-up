@@ -42,3 +42,10 @@ const custom=presetCounts('soma').ranges;const official=presetCounts('official',
 const six=presetCounts('six').ranges;assert.deepEqual(six.JL,{min:2,max:2});assert.deepEqual(six.SZ,{min:2,max:2});
 const allPieces=presetCounts('pieces',presetCounts('face').ranges);assert.deepEqual(allPieces.ranges.Facebound,{min:6,max:6});assert.deepEqual(allPieces.ranges.D,{min:0,max:6});
 console.log('PASS: explicit exclusions, consistent aggregate limits, family-only selection and scoped resets.');
+
+const faceSix=presetCounts('faceSix',{},562);
+assert.equal(faceSix.family,0);
+for(const id of ['J','L','O','T','S','Z'])assert.deepEqual(faceSix.ranges[id],{min:1,max:1});
+assert.deepEqual(faceSix.ranges.Facebound,{min:6,max:6});
+assert.deepEqual(faceSix.ranges.CorePieces,{min:0,max:0});
+assert.deepEqual(faceSix.ranges.ExtraCore,{min:1,max:1});
