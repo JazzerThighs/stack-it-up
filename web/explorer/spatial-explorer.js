@@ -1,3 +1,4 @@
+import {countSpecs,countLimits,presetCounts} from './filter-counts.js';
 import {packingPresentation} from './presentation.js';
 import {createPackingClient} from './data-client.js';
 import {createEngine} from '../engine/wasm.js';
@@ -15,14 +16,14 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
   const info=client.info,families=new Map(info.families.map(f=>[f.id,f])),membership=new Map();
   let current,position=0,total=0,counts=[],generation=0,active='solved',scramble=[];
   const flags=['surfaceOnly','nonSurfaceOnly','allSurfaceIdentities','oneOfEach','officialOnly','iTunnelOnly','somaVOnly','somaSetOnly','dominoGapOnly','nonFaceboundSurface'];
-  const types=['O','T','JL','SZ','B','D','F'];
+  const types=countSpecs.map(([id])=>id);
   for(const id of ['oneOfEach','allSurfaceIdentities','officialOnly','surfaceOnly','nonSurfaceOnly'])$(id).checked=false;
   $('spatialFilters').hidden=false;
   function filters() {
     const f=Object.fromEntries(flags.map(id=>[id,$(id).checked]));
     for(const id of ['extraEdges','extraCorners','extraCenters'])f[id]=$(id).value;
     Object.assign(f,{family:+$('familySelect').value||0,bag:$('familyBag').value||'',spatial:$('datasetSelect').value==='classic'?'none':$('spatialComposition').value,planar:$('planarSpanning').value,coreType:$('corePieceType').value});
-    f.counts=types.map(type=>({type,min:+$('countMin'+type).value||0,max:$('countMax'+type).value===''?6:+$('countMax'+type).value}));
+    f.counts=types.map(type=>({type,min:+$('countMin'+type).value||0,max:$('countMax'+type).value===''?countLimits[type]:+$('countMax'+type).value}));
     return f;
   }
   function remember(p) {
@@ -77,13 +78,15 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
       for(const id of flags)$(id).checked=false;
       for(const id of ['familySelect','familyBag','spatialComposition','planarSpanning','corePieceType'])$(id).value='';
       for(const id of ['extraEdges','extraCorners','extraCenters'])$(id).value='any';
-      for(const t of types){$('countMin'+t).value='0';$('countMax'+t).value='6';}
+      for(const t of types){$('countMin'+t).value='0';$('countMax'+t).value=String(countLimits[t]);}
   }
   async function query(action={},refresh=false,apply=true) {
     const token=++generation;$('status').textContent='Filtering local index…';
     try {
       const f=filters();
-      if(f.counts.some(c=>!Number.isInteger(c.min)||!Number.isInteger(c.max)||c.min<0||c.max>6||c.min>c.max)){throw Error('Piece counts must satisfy 0 ≤ minimum ≤ maximum ≤ 6.');}
+      $('filterFamilyStatus').textContent=f.family?`Family ${f.family}`:'All families';
+      $('clearFilterFamily').hidden=!f.family;
+      if(f.counts.some(c=>!Number.isInteger(c.min)||!Number.isInteger(c.max)||c.min<0||c.max>countLimits[c.type]||c.min>c.max)){throw Error('Use whole-number counts with 0 ≤ min ≤ max, within each row’s limit.');}
       let result=await client.query({filters:f,position,...(action.offset&&current?{line:current.lineNumber}:{}),...action});if(token!==generation)return;
       if(!apply&&action.line&&result.record?.lineNumber!==action.line) {
         clearFilters();result=await client.query({filters:filters(),line:action.line});if(token!==generation)return;
@@ -100,6 +103,20 @@ export async function initializeSpatialExplorer(root=document,dependencies={}) {
     }catch(e){if(token===generation)$('status').textContent=e.message;}
   }
   for(const id of [...flags,'familySelect','familyBag','extraEdges','extraCorners','extraCenters','spatialComposition','planarSpanning','corePieceType',...types.flatMap(t=>['countMin'+t,'countMax'+t])])$(id).addEventListener('change',()=>query({position:0},true));
+  $('filterPreset').onchange=()=>{
+    const name=$('filterPreset').value;if(!name)return;
+    const current=Object.fromEntries(types.map(id=>[id,{min:Number($('countMin'+id).value),max:Number($('countMax'+id).value)}]));
+    const preset=presetCounts(name,current,+$('familySelect').value||0);clearFilters();
+    for(const [id,range]of Object.entries(preset.ranges)){$('countMin'+id).value=String(range.min);$('countMax'+id).value=String(range.max);}
+    if(preset.family){
+      // Include the requested family even if the preceding query excluded it.
+      const option=document.createElement('option');option.value=String(preset.family);option.textContent=`Family ${preset.family}`;$('familySelect').append(option);
+    }
+    $('familySelect').value=preset.family?String(preset.family):'';
+    return query({position:0},true);
+  };
+  $('clearFilterFamily').onclick=()=>{$('familySelect').value='';$('filterPreset').value='';return query({position:0},true);};
+  for(const id of types.flatMap(t=>['countMin'+t,'countMax'+t]))$(id).addEventListener('input',()=>{$('filterPreset').value='';});
   function collectionChanged() {
     const classic=$('datasetSelect').value==='classic';
     $('spatialComposition').disabled=classic;

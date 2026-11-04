@@ -55,10 +55,9 @@ const pages=doc.querySelectorAll('.explorer-settings-page');
 assert.equal(pages.filter(p=>!p.hidden).length,1);
 const links=doc.querySelectorAll('.explorer-page-link');
 const go=name=>links.find(b=>b.textContent===name+' ›').onclick();
-go('Packing filters');go('Piece composition');go('Piece counts');go('Right screw');
-assert(!doc.getElementById('countMinD').closest('section').hidden);
-doc.querySelector('.explorer-page-back').onclick();
-assert.equal(pages.find(p=>!p.hidden).getAttribute('aria-label'),'Piece counts');
+go('Packing filters');
+for(const id of ['D','J','S','ExtraV','ExtraCore','Facebound']){assert(!doc.getElementById('countMin'+id).closest('section').hidden);assert.equal(doc.getElementById('countMin'+id).closest('section'),doc.getElementById('countMax'+id).closest('section'));}
+
 doc.getElementById('familyExploreMode').checked=true;
 doc.getElementById('familySolidIdentities').checked=true;
 doc.getElementById('solidUniform').checked=true;

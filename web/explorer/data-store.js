@@ -1,3 +1,4 @@
+import {pieceCountTypes,identityCount,countLimits,familyExtraCounts,indexedCounts} from './filter-counts.js';
 import {isSomaBag} from './puzzle-shapes.js';
 import {ROTATIONS,cellsOf} from './model.js';
 const FULL=(1<<27)-1;
@@ -20,7 +21,8 @@ export class PackingStore {
     if(manifest.format!==1||index.byteLength!==manifest.count*20)throw Error('Invalid packing index');
     this.manifest=manifest;this.index=new DataView(index.buffer,index.byteOffset,index.byteLength);
     this.loadAsset=loadAsset;this.cache=new Map();this.cacheBytes=0;this.selectionBuffer=new Uint32Array(manifest.count);this.selected=this.selectionBuffer.subarray(0,0);
-    this.familyMap=new Map(manifest.families.map(f=>[f.id,f]));this.queryKey=null;
+    this.familyMap=new Map(manifest.families.map(f=>[f.id,f]));
+    this.extraCounts=new Map(manifest.families.map(f=>[f.id,familyExtraCounts(f.invariant)]));this.queryKey=null;
     const officialKey=invariant(OFFICIAL_MASKS,FULL^OFFICIAL_MASKS.reduce((a,b)=>a|b,0));
     this.officialFamily=manifest.families.find(f=>f.invariant===officialKey)?.id;
   }
@@ -61,11 +63,11 @@ export class PackingStore {
     const v=this.index;let n=0;
     const bag=filters.bag?this.manifest.bags.indexOf(filters.bag):-1;
     // Compile composition predicates once per identity bag, never per packing.
-    const constrained=(filters.counts||[]).filter(c=>c.min>0||c.max<6);
-    const matches=(id,type)=>type==='JL'?'JL'.includes(id):type==='SZ'?'SZ'.includes(id):id===type;
-    const allowedBags=constrained.length?this.manifest.bags.map(b=>constrained.every(({type,min,max})=>{
-      let count=0;for(const id of b.toUpperCase())if(matches(id,type))count++;
-      return count>=min&&count<=max;
+    const constrained=(filters.counts||[]).filter(c=>c.min>0||c.max<(countLimits[c.type]??6));
+    const pieceConstraints=constrained.filter(c=>pieceCountTypes.has(c.type));
+    const otherConstraints=constrained.filter(c=>!pieceCountTypes.has(c.type));
+    const allowedBags=pieceConstraints.length?this.manifest.bags.map(b=>pieceConstraints.every(({type,min,max})=>{
+      const count=identityCount(b,type);return count>=min&&count<=max;
     })):null;
     const somaBags=filters.somaSetOnly?this.manifest.bags.map(isSomaBag):null;
     const coreLetters=filters.coreType?new Set([...filters.coreType].map(c=>c.charCodeAt(0))):null;
@@ -80,6 +82,10 @@ export class PackingStore {
       if(filters.surfaceOnly&&!(flags&1)||filters.nonSurfaceOnly&&(flags&1)||filters.allSurfaceIdentities&&!(flags&2)||filters.oneOfEach&&!(flags&4))continue;
       if(filters.officialOnly&&f!==this.officialFamily)continue;
       const gaps=v.getUint8(a+9);
+      if(otherConstraints.length){
+        const values=indexedCounts(flags,sp,core,span,gaps,this.extraCounts.get(f));
+        if(otherConstraints.some(c=>values[c.type]<c.min||values[c.type]>c.max))continue;
+      }
       if(filters.iTunnelOnly&&!(gaps&1))continue;
       if((filters.somaVOnly||filters.somaSetOnly)&&!(gaps&2))continue;
       if(filters.dominoGapOnly&&!(gaps&4))continue;

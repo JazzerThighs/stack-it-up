@@ -390,7 +390,7 @@ $('spatialComposition').value='only';await spatial.query({position:0},true);
 assert(spatial.current.identities.every(c=>'BDF'.includes(c.toUpperCase())));
 await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
 await $('practiceRandom').onclick();assert.match($('practiceStatus').textContent,/Reachable pair/);
-$('countMinB').value='7';await spatial.query();assert.match($('status').textContent,/Piece counts/);
+$('countMinB').value='7';await spatial.query();assert.match($('status').textContent,/whole-number counts/);
 $('countMinB').value='0';
 console.log('PASS: expanded explorer startup, full collection, spatial-only filters, detected family metadata, practice pairs and invalid counts.');
 
@@ -489,3 +489,15 @@ controls.setControlSetting('classicControls',true);assert(!hoverView.classicGrid
 controls.setControlSetting('showArrows',true);assert(!hoverView.arrowHost.hidden);hoverView.draw();assert(hoverView.attachedNodes.some(n=>n.layout));
 hoverView.upload=hoverOriginalUpload;
 console.log('PASS: explorer rings/labels, suppressed orbit feedback, shared wide turns, classic controls and clickable arrows.');
+
+$('filterPreset').value='planar';await $('filterPreset').onchange();
+assert.equal($('countMaxB').value,'0');assert.equal($('countMaxD').value,'0');
+$('filterPreset').value='surface';await $('filterPreset').onchange();
+assert.equal($('countMaxB').value,'0');assert.equal($('countMaxCorePieces').value,'0');
+$('filterPreset').value='official';await $('filterPreset').onchange();
+assert.equal($('familySelect').value,'562');assert.equal($('filterFamilyStatus').textContent,'Family 562');
+$('filterPreset').value='soma';await $('filterPreset').onchange();
+assert.equal($('countMinExtraV').value,'1');assert.equal($('countMaxJL').value,'1');
+$('filterPreset').value='all';await $('filterPreset').onchange();
+assert.equal($('familySelect').value,'');assert.equal($('countMaxExtraCore').value,'1');assert.equal($('countMaxExtraSingle').value,'3');
+console.log('PASS: editable count presets combine shape/placement constraints, expose family selection and reset all ranges.');

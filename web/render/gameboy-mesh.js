@@ -13,7 +13,7 @@ export function gameboyPattern(letter='O') {
     // All perimeters meet on the same base cube; only the motif rises above it.
     const edge=Math.min(x,y,7-x,7-y);let h=0;
     if(edge>0) {
-      if(letter==='bomb')h=bombRows[y][x]==='#'?.008:.032;
+      if(letter==='bomb')h=bombRows[y][x]==='#'?0:.032;
       else if(letter==='L')h=.018;
       else if(letter==='Z')h=(x>=3&&x<=4&&y>=3&&y<=4)?0:.028;
       else if(letter==='O')h=edge===1?.032:0;
@@ -23,7 +23,7 @@ export function gameboyPattern(letter='O') {
         // From the center: up, right, down, left = clockwise (D).
         const spiral=(y===2&&u>=2&&u<=5)||(u===5&&y>=2&&y<=5)||(y===5&&u>=3&&u<=5)||(u===3&&y===4);
         h=letter==='F'?(spiral?.035:0):(spiral?.006:.035);
-      } else h=edge===1?.032:edge===2?.004:.024;
+      } else h=edge===1?.032:edge===2?0:.024;
     }
     heights.push(h);
   }

@@ -23,23 +23,11 @@ export function initializeExplorerSettings(root) {
   const mode=page('Explorer mode',home);unpack(mode,find('.explorer-modes'));
   help(mode,'Turn both modes off to browse target and scrambled cubes.');
   const filters=page('Packing filters',home);
-  add(filters,$('datasetSelect').closest('label'),$('familyBag').closest('label'));
-  const puzzles=page('Puzzle shapes',filters);
-  add(puzzles,$('iTunnelOnly').closest('label'));
-  unpack(puzzles,$('puzzleShapeFilters'));
-  const placement=page('Placement & extras',filters);
-  add(placement,find('.filter-flags'),find('.extra-filters'));
-  const composition=page('Piece composition',filters);
-  add(composition,$('spatialComposition').closest('label'),$('planarSpanning').closest('label'),$('corePieceType').closest('label'));
-  help(composition,'Classic collection allows planar pieces only.');
-  const counts=page('Piece counts',composition);
-  for(const [id,label]of [['O','O'],['T','T'],['JL','J / L'],['SZ','S / Z'],['B','Branch'],['D','Right screw'],['F','Left screw']]) {
-    const sub=page(label,counts);add(sub,$('countMin'+id).closest('label'),$('countMax'+id).closest('label'));
-  }
-  help(counts,'Counts range from 0 to 6. J/L and S/Z each share a count.');
-  add(filters,$('familySummary'));
-  // Keep the legacy container reachable for collection setup code, now empty.
-  const spatial=$('spatialFilters');spatial.replaceChildren();spatial.hidden=true;add(filters,spatial);
+  add(filters,$('countFilterPanel'),$('familySummary'));
+  // Retain old controls for saved integrations, but expose only editable counts.
+  const legacy=document.createElement('div');legacy.hidden=true;
+  for(const node of [$('datasetSelect').closest('label'),$('familyBag').closest('label'),$('spatialFilters'),find('.filter-flags'),$('puzzleShapeFilters'),find('.extra-filters')])if(node)legacy.append(node);
+  add(filters,legacy);
   const controls=page('Controls',home);
   help(controls,'Shared with the game. Changes apply to both apps.');
   const input=page('Input',controls);unpack(input,$('explorerInputSettings'));
