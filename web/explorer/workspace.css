@@ -276,3 +276,10 @@ button.primary { background:var(--accent);color:#142724; }
 .packing-arrow-controls .sticker-arrow-stem { display:none; }
 .packing-classic-controls { position:absolute; bottom:62px; left:10px; right:10px; display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:3px; padding:6px; background:#17262ee8; border-radius:10px; }
 .packing-classic-controls button { min-width:0; min-height:30px; padding:3px; font-size:12px; }
+
+.packing-counts { display:grid; gap:6px; }
+.packing-counts .count-row { display:grid; grid-template-columns:minmax(0,1fr) 80px 80px; align-items:center; gap:8px; padding:7px 10px; border-radius:8px; background:#1d2b35; }
+.packing-counts .count-row label { display:flex; flex-direction:column; gap:2px; padding:0; margin:0; border:0; background:none; min-width:0; }
+.packing-counts input { width:100%; box-sizing:border-box; min-width:0; padding:7px; }
+.packing-counts .count-label { font-size:11px; color:#a8bcc5; }
+@media(max-width:480px){.packing-counts .count-row { grid-template-columns:minmax(0,1fr) 62px 62px;gap:6px;font-size:13px; }}

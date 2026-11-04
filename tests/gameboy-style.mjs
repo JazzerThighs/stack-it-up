@@ -120,3 +120,14 @@ for(const letter of ['T','B']) {
  assert(white>0&&colored>0&&dark>0);
 }
 console.log('PASS: white T inset ring and Branch inset corners, colored raised shapes and dark perimeters.');
+
+for(const letter of ['O','J','S','T']){
+ const p=gameboyPattern(letter);
+ for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(Math.min(x,y,7-x,7-y)===2)assert.equal(p[y*8+x],0,`${letter} inset uses the perimeter base plane`);
+}
+console.log('PASS: inset rings meet the standard cube base without a raised intermediate seam.');
+
+const bombPlane=gameboyPattern('bomb');
+assert.deepEqual([...new Set(bombPlane)].sort((a,b)=>a-b),[0,.032],'bomb uses only the perimeter plane and raised colored field');
+for(const [x,y]of [[0,3],[1,3],[0,4],[1,4],[4,0],[4,1]])assert.equal(bombPlane[y*8+x],0,'dark bomb motif meets its frame without a step');
+console.log('PASS: bomb extras have no intermediate dark relief plane at the perimeter seam.');
