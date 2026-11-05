@@ -1,3 +1,4 @@
+import {angularPiece} from './angular-mesh.js';
 import {jellyStyleKey} from './visual-settings.js';
 import {visualSettings} from './visual-settings.js';
 import {gameboyPiece} from './gameboy-mesh.js';
@@ -56,7 +57,7 @@ class Renderer {
     this.activeOutlines = false;
     this.breathing = true;
     this.appearance = "jelly";
-    this.modelShape = "jelly";
+    this.modelShape = "angular";
     this.controlGrid = true;
     this.stackGrid = true;
     this.combinedGrid = true;
@@ -270,7 +271,7 @@ class Renderer {
         const bandKey=this.modelShape+':'+mask+':'+cornerO+':'+jellyStyleKey();
         if (!this.bandCache.has(bandKey)) {
           if (this.bandCache.size >= 128) this.bandCache.delete(this.bandCache.keys().next().value);
-          this.bandCache.set(bandKey, this.modelShape==='gameboy'?gameboyPiece(mask,[1,1,1],'O'):context.engine.bandMesh(mask,cornerO));
+          this.bandCache.set(bandKey, this.modelShape==='angular'?angularPiece(mask):this.modelShape==='gameboy'?gameboyPiece(mask,[1,1,1],'O'):context.engine.bandMesh(mask,cornerO));
         }
         const start = bands.length;
         for (const value of this.bandCache.get(bandKey)) bands.push(value);

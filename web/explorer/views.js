@@ -45,7 +45,7 @@ export function createExplorerViews({
       const view = new PackingCube($(id), options);
       view.fitScale = id==='practiceLeft'||id==='practiceRight'?5.2:6.0;
       view.appearance = $("pieceAppearance").value || "jelly";
-      view.modelShape = $("modelShape").value || "jelly";
+      view.modelShape = $("modelShape").value || "angular";
       view.perspective = $("explorerCamera").value !== "orthographic";
       view.meshGenerator = meshGenerator;
       view.explorationGray=!!visualSettings.solidGray;
@@ -99,7 +99,7 @@ export function createExplorerViews({
   for(const id of ["pieceAppearance","modelShape"]) $(id).addEventListener("change", () => {
     for (const cube of cubes.values()) {
       cube.appearance = $("pieceAppearance").value;
-      cube.modelShape = $("modelShape").value || "jelly";
+      cube.modelShape = $("modelShape").value || "angular";
       cube.setState(cube.cells,cube.currentAnimation);
     }
   });

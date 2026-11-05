@@ -158,6 +158,14 @@ pub extern "C" fn band_mesh_styled_ptr(mask: u32, corner_o: u32) -> *const f32 {
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn band_mesh_tuned_ptr(mask: u32, corner_o: u32, softness: f32, opening: f32) -> *const f32 {
+    band_mesh_profiled_ptr(mask,corner_o,softness,opening,2.)
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn band_mesh_profiled_ptr(mask: u32, corner_o: u32, softness: f32, opening: f32, profile: f32) -> *const f32 {
+    band_mesh_elbows_ptr(mask,corner_o,softness,opening,profile,1.)
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn band_mesh_elbows_ptr(mask: u32, corner_o: u32, softness: f32, opening: f32, profile: f32, elbow: f32) -> *const f32 {
     let mut s = crate::engine::State::empty(1);
     for i in 0..27 {
         if mask & (1 << i) != 0 {
@@ -166,7 +174,7 @@ pub extern "C" fn band_mesh_tuned_ptr(mask: u32, corner_o: u32, softness: f32, o
         }
     }
     BAND_MESH.with_borrow_mut(|out| {
-        *out = mesh::build_tuned(&s, corner_o != 0, softness, opening);
+        *out = mesh::build_elbows(&s, corner_o != 0, softness, opening, profile, elbow);
         for v in out.chunks_exact_mut(9) {
             v[6..9].fill(1.0);
         }

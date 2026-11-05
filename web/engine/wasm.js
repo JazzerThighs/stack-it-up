@@ -51,7 +51,7 @@ export function adaptEngine(w,{trackSolids=true}={}) {
     game_set_early_lock: w.game_set_early_lock,
     game_lock_band: w.game_lock_band,
     bandMesh(mask,cornerO=false) {
-      const ptr = w.band_mesh_tuned_ptr(mask,Number(cornerO),visualSettings.jellyBevel/100,visualSettings.jellyOpening/100);
+      const ptr = w.band_mesh_elbows_ptr(mask,Number(cornerO),visualSettings.jellyBevel/100,visualSettings.jellyOpening/100,visualSettings.jellyProfile,visualSettings.jellyElbows/100);
       return new Float32Array(w.memory.buffer, ptr, w.band_mesh_len()).slice();
     },
     game_set_fragments: w.game_set_fragments,

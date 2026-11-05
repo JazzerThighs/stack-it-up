@@ -9,7 +9,9 @@ export function initializeVisualControls(root,invalidate) {
     }
     invalidate();
   };
-  for(const [key,s] of Object.entries(visualSpecs)) $(key).addEventListener(s.checkbox||s.select?'change':'input',()=>setVisualSetting(key,s.checkbox?Number($(key).checked):(s.color?$(key).value:Number($(key).value))));
+  for(const [key,s] of Object.entries(visualSpecs)) $(key).addEventListener(s.checkbox||s.select||key.startsWith('jelly')?'change':'input',()=>setVisualSetting(key,s.checkbox?Number($(key).checked):(s.color?$(key).value:Number($(key).value))));
+  // Rebuild geometry on release, not at every intermediate slider tick.
+  for(const [key,s] of Object.entries(visualSpecs))if(key.startsWith('jelly')&&!s.checkbox)$(key).addEventListener('input',()=>{$(key+'Value').textContent=$(key).value+(s.unit||'');});
   for(const prefix of ['light','dither','ascii']) $('reset'+prefix).onclick=()=>resetVisualSettings(prefix);
   $('faceLight').onclick=faceLight;
   refresh();return subscribeVisualSettings(refresh);

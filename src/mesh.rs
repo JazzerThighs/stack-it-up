@@ -2,6 +2,7 @@
 //! WebGL transforms and shades the retained vertex buffer during orbiting.
 use crate::engine::{COLORS, State, bits, xyz};
 type V = [f32; 3];
+type NormalCache = std::collections::HashMap<[u32;3],V>;
 // Smooth the occupied volume as a whole. Adjacent cell integrals telescope,
 // avoiding raised seams where overlapping rounded boxes used to meet.
 const SOFTNESS: f32 = 0.30;
@@ -14,13 +15,23 @@ struct CellVolume {
     corner_axis: Option<usize>,
     softness: f32,
     opening: f32,
+    profile: f32,
+    elbow: f32,
+    hulls: Vec<(V,V)>,
 }
-fn integral(x: f32, softness: f32) -> f32 {
-    if x <= -softness { return 0.; }
-    if x >= softness { return 1.; }
-    let t = x / softness;
-    let t2 = t * t;
-    0.5 + (15. / 16.) * t * (1. + t2 * (-2. / 3. + t2 / 5.))
+// A separable, symmetric kernel preserves telescoping at joined cell faces.
+// Its positive half has a superellipse profile: p near 1 gives a chamfer;
+// larger p retains more of the square corner. Width sets the support separately.
+fn integral(x: f32, width: f32, profile: f32) -> f32 {
+    if x <= -width { return 0.; }
+    if x >= width { return 1.; }
+    let v=(-std::f32::consts::LN_2*(1.-x.abs()/width).powf(profile)).exp();
+    if x>=0. {v} else {1.-v}
+}
+fn bevel_profile(x:f32,y:f32,width:f32,profile:f32)->f32 {
+    let a=(x.abs()-(1.-width)).max(0.);
+    let b=(y.abs()-(1.-width)).max(0.);
+    (a.powf(profile)+b.powf(profile)).powf(1./profile)-width
 }
 fn field(p: V, boxes: &[CellVolume]) -> f32 {
     if let Some(b) = boxes.first().filter(|b| b.corner_axis.is_some()) {
@@ -28,18 +39,24 @@ fn field(p: V, boxes: &[CellVolume]) -> f32 {
         let x=p[(axis+1)%3]-b.shape_center[(axis+1)%3];
         let y=p[(axis+2)%3]-b.shape_center[(axis+2)%3];
         let z=p[axis]-b.shape_center[axis];
-        let exponent=4.*0.34/b.softness;
+        let exponent=4.;
         let radius=(x.abs().powf(exponent)+y.abs().powf(exponent)).powf(1./exponent);
         let major=(0.93+b.opening)*0.5;
         let tube=(0.93-b.opening)*0.5;
-        return ((radius-major)/tube).abs().powf(exponent)+(z/0.43).abs().powf(exponent)-1.;
+        return bevel_profile((radius-major)/tube,z/0.43,b.softness*2.,b.profile);
     }
     let filled = boxes.iter().map(|b| {
         (0..3).map(|k| {
             let x = p[k] - b.center[k];
-            integral(x + 0.5, b.softness) - integral(x - 0.5, b.softness)
+            integral(x + 0.5, b.softness, b.profile) - integral(x - 0.5, b.softness, b.profile)
         }).product::<f32>()
     }).sum::<f32>();
+    let filled=if let Some(b)=boxes.first().filter(|b| b.elbow<1.) {
+        let sharp=b.hulls.iter().map(|(lo,hi)| (0..3).map(|k|
+            integral(p[k]-lo[k],b.softness,b.profile)-integral(p[k]-hi[k],b.softness,b.profile)
+        ).product::<f32>()).fold(0.,f32::max);
+        sharp+(filled-sharp)*b.elbow
+    } else {filled};
     // Disjoint pieces cannot overlap: their normalized occupancies sum to at
     // most one, and each surface requires more than half of that occupancy.
     // A piece-wide pressure profile bows broad faces without reintroducing
@@ -68,13 +85,24 @@ fn boxes(mask: u32) -> Vec<CellVolume> {
     let hi: V = std::array::from_fn(|k| cells.iter().map(|c| c[k]).max().unwrap() as f32 - 0.5);
     let shape_center = std::array::from_fn(|k| (lo[k]+hi[k])*0.5);
     let shape_half = std::array::from_fn(|k| (hi[k]-lo[k])*0.5);
+    let mut hulls=Vec::new();
+    for a in &cells {for b in &cells {
+        if (0..3).any(|k|a[k]>b[k]) {continue;}
+        let mut full=true;
+        for x in a[0]..=b[0] {for y in a[1]..=b[1] {for z in a[2]..=b[2] {
+            if mask & (1 << (x*9+y*3+z))==0 {full=false;}
+        }}}
+        if full {hulls.push((a.map(|v|v as f32-1.5),b.map(|v|v as f32-0.5)));}
+    }}
+    let all=hulls.clone();
+    hulls.retain(|(lo,hi)|!all.iter().any(|(a,b)|(a!=lo || b!=hi)&&(0..3).all(|k|a[k]<=lo[k]&&b[k]>=hi[k])));
     cells.into_iter().map(|cell| CellVolume {
-        center: cell.map(|v| v as f32 - 1.), shape_center, shape_half, corner_axis: None, softness: SOFTNESS, opening: 0.24,
+        center: cell.map(|v| v as f32 - 1.), shape_center, shape_half, corner_axis: None, softness: SOFTNESS, opening: 0.24, profile: 2., elbow: 1., hulls: hulls.clone(),
     }).collect()
 }
-fn triangle(mut points: [V; 3], boxes: &[CellVolume], color: V, out: &mut Vec<f32>) {
-    let center: V = std::array::from_fn(|k| (points[0][k] + points[1][k] + points[2][k]) / 3.);
-    let n = normal(center, boxes);
+fn triangle(mut points: [V; 3], boxes: &[CellVolume], color: V, out: &mut Vec<f32>, cache: &mut NormalCache) {
+    let mut normals=points.map(|p| *cache.entry(p.map(f32::to_bits)).or_insert_with(||normal(p,boxes)));
+    let n:V=std::array::from_fn(|k|normals.iter().map(|v|v[k]).sum());
     let u: V = std::array::from_fn(|k| points[1][k] - points[0][k]);
     let v: V = std::array::from_fn(|k| points[2][k] - points[0][k]);
     let cross = [
@@ -84,10 +112,11 @@ fn triangle(mut points: [V; 3], boxes: &[CellVolume], color: V, out: &mut Vec<f3
     ];
     if (0..3).map(|k| cross[k] * n[k]).sum::<f32>() < 0. {
         points.swap(1, 2);
+        normals.swap(1,2);
     }
-    for p in points {
+    for (p,n) in points.into_iter().zip(normals) {
         out.extend(p);
-        out.extend(normal(p, boxes));
+        out.extend(n);
         out.extend(color);
     }
 }
@@ -95,10 +124,11 @@ fn triangle(mut points: [V; 3], boxes: &[CellVolume], color: V, out: &mut Vec<f3
 // Unlike cutting a tiny hole into a coarse marching grid, both rims have
 // regular tessellation and share the same continuous analytic surface.
 fn corner_o_mesh(boxes: &[CellVolume], color: V, out: &mut Vec<f32>) {
+    let mut normals=NormalCache::new();
     const A: usize=80;
     const B: usize=40;
     let b=&boxes[0];let axis=b.corner_axis.unwrap();
-    let exponent=4.*0.34/b.softness;
+    let exponent=4.;
     let squircle=|angle:f32| {
         let (s,c)=angle.sin_cos();
         let scale=(s.abs().powf(exponent)+c.abs().powf(exponent)).powf(1./exponent);
@@ -107,7 +137,13 @@ fn corner_o_mesh(boxes: &[CellVolume], color: V, out: &mut Vec<f32>) {
     let points:Vec<V>=(0..A).flat_map(|i| {
         let d=squircle(i as f32*std::f32::consts::TAU/A as f32);
         (0..B).map(move |j| {
-            let tube=squircle(j as f32*std::f32::consts::TAU/B as f32);
+            let angle=j as f32*std::f32::consts::TAU/B as f32;
+            let (sy,cx)=angle.sin_cos();
+            let (mut lo,mut hi)=(0.,1.415);
+            for _ in 0..22 {let mid=(lo+hi)*0.5;
+                if bevel_profile(cx*mid,sy*mid,b.softness*2.,b.profile)>0. {hi=mid;}else{lo=mid;}
+            }
+            let tube=[cx*(lo+hi)*0.5,sy*(lo+hi)*0.5];
             let radius=(0.93+b.opening)*0.5+(0.93-b.opening)*0.5*tube[0];
             let mut p=b.shape_center;
             p[(axis+1)%3]+=radius*d[0];p[(axis+2)%3]+=radius*d[1];
@@ -117,7 +153,7 @@ fn corner_o_mesh(boxes: &[CellVolume], color: V, out: &mut Vec<f32>) {
     for i in 0..A {for j in 0..B {
         let p=points[i*B+j];let q=points[((i+1)%A)*B+j];
         let r=points[((i+1)%A)*B+(j+1)%B];let s=points[i*B+(j+1)%B];
-        triangle([p,q,r],boxes,color,out);triangle([p,r,s],boxes,color,out);
+        triangle([p,q,r],boxes,color,out,&mut normals);triangle([p,r,s],boxes,color,out,&mut normals);
     }}
 }
 pub fn build(state: &State) -> Vec<f32> { build_styled(state, false) }
@@ -125,6 +161,12 @@ pub fn build_styled(state: &State, corner_o: bool) -> Vec<f32> {
     build_tuned(state, corner_o, SOFTNESS, 0.24)
 }
 pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -> Vec<f32> {
+    build_profiled(state,corner_o,softness,opening,2.)
+}
+pub fn build_profiled(state: &State, corner_o: bool, softness: f32, opening: f32, profile: f32) -> Vec<f32> {
+    build_elbows(state,corner_o,softness,opening,profile,1.)
+}
+pub fn build_elbows(state: &State, corner_o: bool, softness: f32, opening: f32, profile: f32, elbow: f32) -> Vec<f32> {
     let mut out = Vec::new();
     const CORNERS: [[usize; 3]; 8] = [
         [0, 0, 0],
@@ -144,10 +186,11 @@ pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -
         [0, 7, 4, 6],
         [0, 4, 5, 6],
     ];
-    const STEP: f32 = 0.12;
+    // Fine sampling resolves narrow bevels at the square end of the profile range.
+    let step: f32 = if profile>3. || softness<0.24 {0.09} else {0.12};
     for g in state.groups() {
         let mut boxes = boxes(g.mask);
-        for b in &mut boxes { b.softness=softness.clamp(0.24,0.40); b.opening=opening.clamp(0.18,0.40); }
+        for b in &mut boxes { b.softness=softness.clamp(0.15,0.48); b.opening=opening.clamp(0.18,0.40); b.profile=profile.clamp(1.05,6.); b.elbow=elbow.clamp(0.,1.); }
         if corner_o && boxes.len()==4 {
             let half=boxes[0].shape_half;
             if half.iter().filter(|&&v| v==1.).count()==2 && half.contains(&0.5) {
@@ -159,18 +202,20 @@ pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -
             corner_o_mesh(&boxes,COLORS[g.color as usize-1],&mut out);
             continue;
         }
+        let mut normals=NormalCache::new();
+        let mut edges=std::collections::HashMap::<(usize,usize),V>::new();
         let cells = bits(g.mask).map(xyz).collect::<Vec<_>>();
         let lo: V = std::array::from_fn(|k| cells.iter().map(|p| p[k]).min().unwrap() as f32 - 1.6);
         let n: [usize; 3] = std::array::from_fn(|k| {
-            ((cells.iter().map(|p| p[k]).max().unwrap() as f32 - 0.4 - lo[k]) / STEP).ceil()
+            ((cells.iter().map(|p| p[k]).max().unwrap() as f32 - 0.4 - lo[k]) / step).ceil()
                 as usize
         });
         let key = |x: usize, y: usize, z: usize| (x * (n[1] + 1) + y) * (n[2] + 1) + z;
         let position = |x: usize, y: usize, z: usize| {
             [
-                lo[0] + x as f32 * STEP,
-                lo[1] + y as f32 * STEP,
-                lo[2] + z as f32 * STEP,
+                lo[0] + x as f32 * step,
+                lo[1] + y as f32 * step,
+                lo[2] + z as f32 * step,
             ]
         };
         let mut distances = vec![0.; (n[0] + 1) * (n[1] + 1) * (n[2] + 1)];
@@ -193,12 +238,16 @@ pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -
                     if d.iter().all(|&d| d >= 0.) || d.iter().all(|&d| d < 0.) {
                         continue;
                     }
-                    let edge = |a: usize, b: usize| {
+                    let indices:[usize;8]=std::array::from_fn(|i|key(x+CORNERS[i][0],y+CORNERS[i][1],z+CORNERS[i][2]));
+                    let mut edge = |a: usize, b: usize| {
+                        let edge_key=(indices[a].min(indices[b]),indices[a].max(indices[b]));
+                        if let Some(p)=edges.get(&edge_key){return *p;}
+
                         // Refine on the shared edge so normals are sampled on
                         // the actual curved surface, not a linear approximation.
                         let (mut lo, mut hi) = (0., 1.);
                         let (mut dl, mut dh) = (d[a], d[b]);
-                        for _ in 0..4 {
+                        for _ in 0..10 {
                             let t = (lo + hi) * 0.5;
                             let p = std::array::from_fn(|k| {
                                 vertices[a][k] + (vertices[b][k] - vertices[a][k]) * t
@@ -213,9 +262,10 @@ pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -
                             }
                         }
                         let t = lo + (hi - lo) * dl / (dl - dh);
-                        std::array::from_fn(|k| {
+                        let p=std::array::from_fn(|k| {
                             vertices[a][k] + (vertices[b][k] - vertices[a][k]) * t
-                        })
+                        });
+                        edges.insert(edge_key,p);p
                     };
                     for tet in TETS {
                         let mut inside = [0; 4];
@@ -239,7 +289,7 @@ pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -
                                 ],
                                 &boxes,
                                 COLORS[g.color as usize - 1],
-                                &mut out,
+                                &mut out, &mut normals,
                             ),
                             3 => triangle(
                                 [
@@ -249,7 +299,7 @@ pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -
                                 ],
                                 &boxes,
                                 COLORS[g.color as usize - 1],
-                                &mut out,
+                                &mut out, &mut normals,
                             ),
                             2 => {
                                 let ac = edge(inside[0], outside[0]);
@@ -260,13 +310,13 @@ pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -
                                     [ac, ad, bc],
                                     &boxes,
                                     COLORS[g.color as usize - 1],
-                                    &mut out,
+                                    &mut out, &mut normals,
                                 );
                                 triangle(
                                     [ad, bd, bc],
                                     &boxes,
                                     COLORS[g.color as usize - 1],
-                                    &mut out,
+                                    &mut out, &mut normals,
                                 );
                             }
                             _ => (),
@@ -282,6 +332,28 @@ pub fn build_tuned(state: &State, corner_o: bool, softness: f32, opening: f32) -
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn bevel_controls_preserve_seams_and_piece_separation_at_extremes() {
+        let mask=(1<<0)|(1<<1)|(1<<2)|(1<<5);
+        for width in [0.15,0.30,0.48] {for profile in [1.05,2.,6.] {
+            let mut a=boxes(mask);let mut b=boxes(((1<<27)-1)^mask);
+            for cell in a.iter_mut().chain(b.iter_mut()) {cell.softness=width;cell.profile=profile;}
+            assert!(field([-1.,-1.,-0.5],&a)<0.);
+            for y in 0..25 {for z in 0..25 {
+                let p=[-1.,-1.5+y as f32*0.12,-1.5+z as f32*0.12];
+                assert!(field(p,&a)>=0. || field(p,&b)>=0.);
+            }}
+            for x in [-0.5,-0.25,0.,0.25,0.5] {
+                assert!((integral(x,width,profile)+integral(-x,width,profile)-1.).abs()<1e-6);
+            }
+        }}
+        // Increasing profile preserves a fuller corner without moving the
+        // start of the rounded-rectangle bevel on either broad face.
+        for width in [0.3,0.6,0.96] {
+            for profile in [1.05,2.,6.] {assert!(bevel_profile(1.,1.-width,width,profile).abs()<1e-6);}
+            assert!(bevel_profile(0.9,0.9,width,1.05)>bevel_profile(0.9,0.9,width,6.));
+        }
+    }
     #[test]
     fn connected_field_has_no_internal_seams() {
         let b = boxes((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5));

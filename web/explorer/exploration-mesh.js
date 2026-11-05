@@ -5,7 +5,7 @@ import {detectedColor} from './family-colors.js';
 import {detectPieces} from './family-exploration.js';
 import {PALETTE} from './model.js';
 import {CubeStack} from '../engine/coordinates.js';
-import {compositeParts} from '../render/piece-mesh.js';
+import {compositeParts,jellyCell} from '../render/piece-mesh.js';
 import {balloon,box,xyz,rgb,rotateCell} from '../render/geometry.js';
 import {clipMesh} from '../render/slice-mesh.js';
 
@@ -28,6 +28,7 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
     for(const i of indices) {
       const color=rgb(PALETTE[cells[i].color]||PALETTE.d);
       if(solidIdentities && cells[i].piece>=0) identitySolid(out,xyz(i),.465,solidColor(cells[i].piece,color,gray),cells[i].piece,cells[i].solidRotation);
+      else if(['jelly','angular'].includes(appearance))jellyCell(out,i,color,generate,.465,appearance);
       else (appearance==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,color,cells[i].piece<0?'bomb':'O');
     }
     const mesh=tagCoverage(new Float32Array(out),xyz(indices[0]));

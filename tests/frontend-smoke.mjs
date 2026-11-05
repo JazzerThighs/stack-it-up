@@ -81,7 +81,7 @@ console.log('PASS: setup confirmation, conditional band locking, state sharing/l
 // Display controls may change rendering, never the exported puzzle state.
 const visualState=Array.from(context.engine.exportState());
 $('animations').checked=true;
-for(const shape of ['jelly','voxel','gameboy']) for(const style of ['jelly','dither','matte','cel','ascii']) {
+for(const shape of ['jelly','voxel','gameboy','angular']) for(const style of ['jelly','dither','matte','cel','ascii']) {
   $('modelShape').value=shape;
   $('pieceAppearance').value=style;
   $('pieceAppearance').listeners.input();flush();
@@ -294,3 +294,13 @@ assert.notDeepEqual(cornerMesh.compositeParts(oBoard,oIds,['','#ffff00'],oGenera
 assert.deepEqual(context.engine.exportState(),unchangedGame);
 cornerVisual.setVisualSetting('jellyBevel',30);cornerVisual.setVisualSetting('jellyOpening',24);
 console.log('PASS: adjustable bevel and ring opening invalidate meshes without changing the puzzle.');
+
+cornerVisual.setVisualSetting('jellyProfile',1.05);
+const chamferMesh=cornerMesh.compositeParts(oBoard,oIds,['','#ffff00'],oGenerate,'jelly')[0];
+cornerVisual.setVisualSetting('jellyProfile',6);
+const squareMesh=cornerMesh.compositeParts(oBoard,oIds,['','#ffff00'],oGenerate,'jelly')[0];
+assert.notDeepEqual(chamferMesh,squareMesh);
+assert.equal(cornerVisual.visualSettings.jellyBevel,30);
+assert.deepEqual(context.engine.exportState(),unchangedGame);
+cornerVisual.setVisualSetting('jellyProfile',2);
+console.log('PASS: independent bevel profile refreshes geometry without changing width or game state.');

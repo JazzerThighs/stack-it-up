@@ -12,7 +12,7 @@ import {turnTransform,composeRotation,movedCell} from '../render/transforms.js';
 import {CubeStack} from '../engine/coordinates.js';
 import {explorationMeshes} from "./exploration-mesh.js";
 import {CAMERA_DISTANCE} from "../render/camera.js";
-import {compositeParts} from "../render/piece-mesh.js";
+import {compositeParts,jellyCell} from "../render/piece-mesh.js";
 import { Renderer } from "../render/renderer.js";
 import { balloon, box, xyz, rgb, rotateCell } from "../render/geometry.js";
 import { renderPackets } from "../render/pipeline.js";
@@ -140,7 +140,10 @@ export class PackingCube extends Renderer {
     this.refreshTurnHover?.();this.invalidate();
   }
   hoverCellGeometry(i) {
-    const out=[];(this.modelShape==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,[1,1,1],this.cells[i]?.piece<0?'bomb':'O');return out;
+    const out=[];
+    if(['jelly','angular'].includes(this.modelShape) && this.meshGenerator)jellyCell(out,i,[1,1,1],this.meshGenerator,.465,this.modelShape);
+    else (this.modelShape==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,[1,1,1],this.cells[i]?.piece<0?'bomb':'O');
+    return out;
   }
   setCells(cells) {
     this.generation++;
@@ -189,7 +192,8 @@ export class PackingCube extends Renderer {
     cells.forEach((cell, i) => {
       if (!cell) return;
       const start = out.length;
-      (this.modelShape==='gameboy'?gameboyCell:balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d),cell.piece<0?'bomb':'O');
+      if(['jelly','angular'].includes(this.modelShape) && this.meshGenerator)jellyCell(out,i,rgb(PALETTE[cell.color] || PALETTE.d),this.meshGenerator,.465,this.modelShape);
+      else (this.modelShape==='gameboy'?gameboyCell:balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d),cell.piece<0?'bomb':'O');
       if (animation?.kind === "turn") rotateCell(out, start, i, animation.move, animation.t);
     });
     this.upload(this.solid, new Float32Array(out));

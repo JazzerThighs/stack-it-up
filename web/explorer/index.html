@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stack It Up - Packing explorer</title>
     <link rel="stylesheet" href="./style.css" />
-<link rel="stylesheet" href="./workspace.css" />
+    <link rel="stylesheet" href="./workspace.css" />
   </head>
   <body>
     <div class="app">
-<section class="toolbar" aria-label="Explorer controls">
+      <section class="toolbar" aria-label="Explorer controls">
         <div class="navigation">
           <div class="nav-primary" id="packingNavigation">
             <button id="previous" aria-label="Previous packing">←</button
@@ -17,61 +17,76 @@
             ><button id="next" aria-label="Next packing">→</button>
           </div>
 
-            <details class="packing-picker">
-              <summary>Choose packing</summary>
-<div class="packing-picker-content">
-              <div class="explorer-section-body">              <label
-                >Packing family
-                <select id="familySelect">
-                  <option value="">All families</option>
-                </select></label
-              >
-<button id="exploreFamily" type="button">Stay in this family</button>
-<p class="settings-help">Skip forward or back within your current filters.</p><div class="nav-steps" aria-label="Skip matching packings">
-            <button id="back100">−100</button><button id="back10">−10</button
-            ><button id="forward10">+10</button
-            ><button id="forward100">+100</button>
-          </div>
-          <form id="sourceJump" class="source-jump">
-            <label for="sourceLine">Source line</label
-            ><input
-              id="sourceLine"
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              required
-            /><button type="submit">Go</button
-            ><span id="jumpStatus" role="status"></span>
-          </form>
-</div>
-        <div id="practiceNavigation" hidden>          <label id="navigationTargetLabel" hidden>Change cube<select id="navigationTarget"><option value="start">Start</option><option value="target">Target</option></select></label><form id="practiceLoad" class="practice-controls">
-          <label
-            >Start source line
-            <input id="practiceA" type="number" min="1" required
-          /></label>
-          <label
-            >Target source line
-            <input id="practiceB" type="number" min="1" required
-          /></label>
-          <button type="submit">Load pair</button>
-          <button id="practiceRandom" type="button">
-            Random pair in same family
-          </button>
-          <button id="practiceSwap" type="button">Swap start / target</button>
-        </form>
-        <p id="practiceStatus" role="status">
-          Random pairs respect the current explorer filters.
-        </p>
-        <p class="hint">
-          Drag stickers to turn the start cube. Drag the target to inspect it.
-          Colors identify physical pieces, not their current letters. Random
-          pairs respect the explorer filters.
-        </p>
-        </div>
+          <details class="packing-picker">
+            <summary>Choose packing</summary>
+            <div class="packing-picker-content">
+              <div class="explorer-section-body">
+                <label
+                  >Packing family
+                  <select id="familySelect">
+                    <option value="">All families</option>
+                  </select></label
+                >
+                <button id="exploreFamily" type="button">
+                  Stay in this family
+                </button>
+                <p class="settings-help">
+                  Skip forward or back within your current filters.
+                </p>
+                <div class="nav-steps" aria-label="Skip matching packings">
+                  <button id="back100">−100</button
+                  ><button id="back10">−10</button
+                  ><button id="forward10">+10</button
+                  ><button id="forward100">+100</button>
+                </div>
+                <form id="sourceJump" class="source-jump">
+                  <label for="sourceLine">Source line</label
+                  ><input
+                    id="sourceLine"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    required
+                  /><button type="submit">Go</button
+                  ><span id="jumpStatus" role="status"></span>
+                </form>
+              </div>
+              <div id="practiceNavigation" hidden>
+                <label id="navigationTargetLabel" hidden
+                  >Change cube<select id="navigationTarget">
+                    <option value="start">Start</option>
+                    <option value="target">Target</option>
+                  </select></label
+                >
+                <form id="practiceLoad" class="practice-controls">
+                  <label
+                    >Start source line
+                    <input id="practiceA" type="number" min="1" required
+                  /></label>
+                  <label
+                    >Target source line
+                    <input id="practiceB" type="number" min="1" required
+                  /></label>
+                  <button type="submit">Load pair</button>
+                  <button id="practiceRandom" type="button">
+                    Random pair in same family
+                  </button>
+                  <button id="practiceSwap" type="button">
+                    Swap start / target
+                  </button>
+                </form>
+                <p id="practiceStatus" role="status">
+                  Random pairs respect the current explorer filters.
+                </p>
+                <p class="hint">
+                  Drag stickers to turn the start cube. Drag the target to
+                  inspect it. Colors identify physical pieces, not their current
+                  letters. Random pairs respect the explorer filters.
+                </p>
+              </div>
             </div>
-</details>
-
+          </details>
         </div>
         <details class="settings" id="settingsPanel">
           <summary>
@@ -80,200 +95,1248 @@
           </summary>
           <div class="settings-content" aria-label="Packing explorer settings">
             <div class="settings-heading">
-              <div><span class="settings-eyebrow">PACKING EXPLORER</span><strong>Settings</strong><p></p></div>
-              <button type="button" id="closeSettings" aria-label="Close explorer settings">Close</button>
+              <div>
+                <span class="settings-eyebrow">PACKING EXPLORER</span
+                ><strong>Settings</strong>
+                <p></p>
+              </div>
+              <button
+                type="button"
+                id="closeSettings"
+                aria-label="Close explorer settings"
+              >
+                Close
+              </button>
             </div>
             <details class="explorer-setting-section" open>
-              <summary><span>Filter packings<small>Choose the shapes and families to explore</small></span></summary>
-              <div class="explorer-section-body"><fieldset class="family-controls">
-              <legend>Collection</legend><label>Collection<select id="datasetSelect"><option value="spatial">All tetracubes (v2)</option><option value="classic">Classic (planar only)</option></select></label>
-              <label
-                >Piece mix
-                <select id="familyBag">
-                  <option value="">All piece mixes</option>
-                </select></label
-              >
-              <div id="countFilterPanel"><button id="resetPackingFilters" type="button">All packings / Reset</button><label>Preset<select id="filterPreset"><option value="">Custom counts</option><option value="planar">Planar Tetrominos Only</option><option value="spatial">Spatial Tetrominos Only</option><option value="pieces">All Tetrominos</option><option value="surface">Surfacebound Only</option><option value="nonface">Non-Facebound Surface Only</option><option value="face">Facebound Only</option><option value="core">Non-Surfacebound Only</option><option value="placements">All Placement Types</option><option value="six">All-6 Planar Tetrominos (JLOTSZ Bag)</option><option value="faceSix">Facebound + All-6 Bag</option><option value="official">Tetris × Rubik’s Cube Compatible (Family 562)</option><option value="soma">Soma Cube (J/L, S/Z, T, B, D, F, V Bag)</option><option value="sloth">Slothouber–Graatsma puzzle (OOOOOO Bag)</option></select></label><p class="settings-help">Only filters and fixed bags set incompatible counts to 0–0. Family 562 changes only the family. All tetrominos and All placement types remove limits in their own category. All packings resets everything.</p><p id="filterFamilyStatus" role="status">All families</p><button id="clearFilterFamily" type="button">All families</button><div class="packing-counts"><div class="count-row"><span>O</span><label><span class="count-label">Min</span><input aria-label="O minimum" id="countMinO" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="O maximum" id="countMaxO" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>T</span><label><span class="count-label">Min</span><input aria-label="T minimum" id="countMinT" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="T maximum" id="countMaxT" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Specifically S</span><label><span class="count-label">Min</span><input aria-label="Specifically S minimum" id="countMinS" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Specifically S maximum" id="countMaxS" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Specifically Z</span><label><span class="count-label">Min</span><input aria-label="Specifically Z minimum" id="countMinZ" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Specifically Z maximum" id="countMaxZ" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Specifically J</span><label><span class="count-label">Min</span><input aria-label="Specifically J minimum" id="countMinJ" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Specifically J maximum" id="countMaxJ" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Specifically L</span><label><span class="count-label">Min</span><input aria-label="Specifically L minimum" id="countMinL" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Specifically L maximum" id="countMaxL" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>J/L Free Tetromino</span><label><span class="count-label">Min</span><input aria-label="J/L Free Tetromino minimum" id="countMinJL" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="J/L Free Tetromino maximum" id="countMaxJL" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>S/Z Free Tetromino</span><label><span class="count-label">Min</span><input aria-label="S/Z Free Tetromino minimum" id="countMinSZ" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="S/Z Free Tetromino maximum" id="countMaxSZ" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Branch</span><label><span class="count-label">Min</span><input aria-label="Branch minimum" id="countMinB" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Branch maximum" id="countMaxB" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Left Screw</span><label><span class="count-label">Min</span><input aria-label="Left Screw minimum" id="countMinF" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Left Screw maximum" id="countMaxF" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Right Screw</span><label><span class="count-label">Min</span><input aria-label="Right Screw minimum" id="countMinD" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Right Screw maximum" id="countMaxD" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>1-Fragment Extra Cubie</span><label><span class="count-label">Min</span><input aria-label="1-Fragment Extra Cubie minimum" id="countMinExtraSingle" type="number" min="0" max="3" value="0"></label><label><span class="count-label">Max</span><input aria-label="1-Fragment Extra Cubie maximum" id="countMaxExtraSingle" type="number" min="0" max="3" value="3"></label></div>
-<div class="count-row"><span>2-fragment Extra Cubie</span><label><span class="count-label">Min</span><input aria-label="2-fragment Extra Cubie minimum" id="countMinExtraDomino" type="number" min="0" max="1" value="0"></label><label><span class="count-label">Max</span><input aria-label="2-fragment Extra Cubie maximum" id="countMaxExtraDomino" type="number" min="0" max="1" value="1"></label></div>
-<div class="count-row"><span>V-piece (Soma)</span><label><span class="count-label">Min</span><input aria-label="V-piece (Soma) minimum" id="countMinExtraV" type="number" min="0" max="1" value="0"></label><label><span class="count-label">Max</span><input aria-label="V-piece (Soma) maximum" id="countMaxExtraV" type="number" min="0" max="1" value="1"></label></div>
-<div class="count-row"><span>Straight 3-Fragment</span><label><span class="count-label">Min</span><input aria-label="Straight 3-Fragment minimum" id="countMinExtraBar" type="number" min="0" max="1" value="0"></label><label><span class="count-label">Max</span><input aria-label="Straight 3-Fragment maximum" id="countMaxExtraBar" type="number" min="0" max="1" value="1"></label></div>
-<div class="count-row"><span>Extra Cubies in Core</span><label><span class="count-label">Min</span><input aria-label="Extra Cubies in Core minimum" id="countMinExtraCore" type="number" min="0" max="1" value="0"></label><label><span class="count-label">Max</span><input aria-label="Extra Cubies in Core maximum" id="countMaxExtraCore" type="number" min="0" max="1" value="1"></label></div>
-<div class="count-row"><span>Extra Cubies in Centers</span><label><span class="count-label">Min</span><input aria-label="Extra Cubies in Centers minimum" id="countMinExtraCenters" type="number" min="0" max="3" value="0"></label><label><span class="count-label">Max</span><input aria-label="Extra Cubies in Centers maximum" id="countMaxExtraCenters" type="number" min="0" max="3" value="3"></label></div>
-<div class="count-row"><span>Extra Cubies in Edges</span><label><span class="count-label">Min</span><input aria-label="Extra Cubies in Edges minimum" id="countMinExtraEdges" type="number" min="0" max="3" value="0"></label><label><span class="count-label">Max</span><input aria-label="Extra Cubies in Edges maximum" id="countMaxExtraEdges" type="number" min="0" max="3" value="3"></label></div>
-<div class="count-row"><span>Extra Cubies in Corners</span><label><span class="count-label">Min</span><input aria-label="Extra Cubies in Corners minimum" id="countMinExtraCorners" type="number" min="0" max="3" value="0"></label><label><span class="count-label">Max</span><input aria-label="Extra Cubies in Corners maximum" id="countMaxExtraCorners" type="number" min="0" max="3" value="3"></label></div>
-<div class="count-row"><span>Facebound pieces</span><label><span class="count-label">Min</span><input aria-label="Facebound pieces minimum" id="countMinFacebound" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Facebound pieces maximum" id="countMaxFacebound" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Non-facebound surface pieces</span><label><span class="count-label">Min</span><input aria-label="Non-facebound surface pieces minimum" id="countMinSurfaceNonface" type="number" min="0" max="6" value="0"></label><label><span class="count-label">Max</span><input aria-label="Non-facebound surface pieces maximum" id="countMaxSurfaceNonface" type="number" min="0" max="6" value="6"></label></div>
-<div class="count-row"><span>Core-occupying pieces</span><label><span class="count-label">Min</span><input aria-label="Core-occupying pieces minimum" id="countMinCorePieces" type="number" min="0" max="1" value="0"></label><label><span class="count-label">Max</span><input aria-label="Core-occupying pieces maximum" id="countMaxCorePieces" type="number" min="0" max="1" value="1"></label></div>
-</div><p class="settings-help">J/L and S/Z are combined totals, including non-facebound forms. Specific J, L, S and Z count their facebound identities. Extra shapes count complete face-connected groups, without overlap. Non-facebound surface means at least one such piece and no piece in the core.</p></div><fieldset id="spatialFilters" hidden><legend>Spatial pieces and composition</legend>
-<p class="muted">B = branch, D = right screw, F = left screw. Lowercase b/d/f means core occupancy only. J/L and S/Z counts combine their spatially equivalent forms.</p>
-<label>Spatial composition<select id="spatialComposition"><option value="">Any</option><option value="none">Planar only</option><option value="mixed">Mixed planar and spatial</option><option value="only">Spatial only</option></select></label>
-<label>Planar pieces spanning faces<select id="planarSpanning"><option value="">Any</option><option value="none">None</option><option value="any">At least one</option><option value="surface">At least one without core</option><option value="core">At least one through core</option></select></label>
-<label>Piece occupying core<select id="corePieceType"><option value="">Any type</option><option value="O">O</option><option value="T">T</option><option value="JL">JL</option><option value="SZ">SZ</option><option value="B">B</option><option value="D">D</option><option value="F">F</option></select></label>
-</fieldset><div class="filter-flags">
-                <label
-                  ><input type="checkbox" id="oneOfEach" checked /> JLOSTZ
-                  bag</label
+              <summary>
+                <span
+                  >Filter packings<small
+                    >Choose the shapes and families to explore</small
+                  ></span
                 >
-                <label
-                  ><input type="checkbox" id="allSurfaceIdentities" checked />
-                  Facebound</label
-                >
-                <label
-                  ><input type="checkbox" id="officialOnly" /> Official
-                  compatible</label
-                >
-                <label
-                  ><input type="checkbox" id="surfaceOnly" /> Surface
-                  only</label
-                >
-                <label
-                  ><input type="checkbox" id="nonSurfaceOnly" /> Non-surface
-                  only</label
-                >
-                <label
-                  ><input type="checkbox" id="nonFaceboundSurface" />
-                  Non-Facebound surface only</label
-                >
-                <label
-                  title="A straight empty 1 by 1 passage through the cube along any axis. Extra cubies are treated as empty space."
-                  ><input type="checkbox" id="iTunnelOnly" /> I-piece
-                  tunnel</label
-                >
+              </summary>
+              <div class="explorer-section-body">
+                <fieldset class="family-controls">
+                  <legend>Collection</legend>
+                  <label
+                    >Collection<select id="datasetSelect">
+                      <option value="spatial">All tetracubes (v2)</option>
+                      <option value="classic">Classic (planar only)</option>
+                    </select></label
+                  >
+                  <label
+                    >Piece mix
+                    <select id="familyBag">
+                      <option value="">All piece mixes</option>
+                    </select></label
+                  >
+                  <div id="countFilterPanel">
+                    <button id="resetPackingFilters" type="button">
+                      All packings / Reset</button
+                    ><label
+                      >Preset<select id="filterPreset">
+                        <option value="">Custom counts</option>
+                        <option value="planar">Planar Tetrominos Only</option>
+                        <option value="spatial">Spatial Tetrominos Only</option>
+                        <option value="pieces">All Tetrominos</option>
+                        <option value="surface">Surfacebound Only</option>
+                        <option value="nonface">
+                          Non-Facebound Surface Only
+                        </option>
+                        <option value="face">Facebound Only</option>
+                        <option value="core">Non-Surfacebound Only</option>
+                        <option value="placements">All Placement Types</option>
+                        <option value="six">
+                          All-6 Planar Tetrominos (JLOTSZ Bag)
+                        </option>
+                        <option value="faceSix">Facebound + All-6 Bag</option>
+                        <option value="official">
+                          Tetris × Rubik’s Cube Compatible (Family 562)
+                        </option>
+                        <option value="soma">
+                          Soma Cube (J/L, S/Z, T, B, D, F, V Bag)
+                        </option>
+                        <option value="sloth">
+                          Slothouber–Graatsma puzzle (OOOOOO Bag)
+                        </option>
+                      </select></label
+                    >
+                    <p class="settings-help">
+                      Only filters and fixed bags set incompatible counts to
+                      0–0. Family 562 changes only the family. All tetrominos
+                      and All placement types remove limits in their own
+                      category. All packings resets everything.
+                    </p>
+                    <p id="filterFamilyStatus" role="status">All families</p>
+                    <button id="clearFilterFamily" type="button">
+                      All families
+                    </button>
+                    <div class="packing-counts">
+                      <div class="count-row">
+                        <span>O</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="O minimum"
+                            id="countMinO"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="O maximum"
+                            id="countMaxO"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>T</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="T minimum"
+                            id="countMinT"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="T maximum"
+                            id="countMaxT"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Specifically S</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Specifically S minimum"
+                            id="countMinS"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Specifically S maximum"
+                            id="countMaxS"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Specifically Z</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Specifically Z minimum"
+                            id="countMinZ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Specifically Z maximum"
+                            id="countMaxZ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Specifically J</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Specifically J minimum"
+                            id="countMinJ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Specifically J maximum"
+                            id="countMaxJ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Specifically L</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Specifically L minimum"
+                            id="countMinL"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Specifically L maximum"
+                            id="countMaxL"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>J/L Free Tetromino</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="J/L Free Tetromino minimum"
+                            id="countMinJL"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="J/L Free Tetromino maximum"
+                            id="countMaxJL"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>S/Z Free Tetromino</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="S/Z Free Tetromino minimum"
+                            id="countMinSZ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="S/Z Free Tetromino maximum"
+                            id="countMaxSZ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Branch</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Branch minimum"
+                            id="countMinB"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Branch maximum"
+                            id="countMaxB"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Left Screw</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Left Screw minimum"
+                            id="countMinF"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Left Screw maximum"
+                            id="countMaxF"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Right Screw</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Right Screw minimum"
+                            id="countMinD"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Right Screw maximum"
+                            id="countMaxD"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>1-Fragment Extra Cubie</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="1-Fragment Extra Cubie minimum"
+                            id="countMinExtraSingle"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="1-Fragment Extra Cubie maximum"
+                            id="countMaxExtraSingle"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="3"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>2-fragment Extra Cubie</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="2-fragment Extra Cubie minimum"
+                            id="countMinExtraDomino"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="2-fragment Extra Cubie maximum"
+                            id="countMaxExtraDomino"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>V-piece (Soma)</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="V-piece (Soma) minimum"
+                            id="countMinExtraV"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="V-piece (Soma) maximum"
+                            id="countMaxExtraV"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Straight 3-Fragment</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Straight 3-Fragment minimum"
+                            id="countMinExtraBar"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Straight 3-Fragment maximum"
+                            id="countMaxExtraBar"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Extra Cubies in Core</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Extra Cubies in Core minimum"
+                            id="countMinExtraCore"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Extra Cubies in Core maximum"
+                            id="countMaxExtraCore"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Extra Cubies in Centers</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Extra Cubies in Centers minimum"
+                            id="countMinExtraCenters"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Extra Cubies in Centers maximum"
+                            id="countMaxExtraCenters"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="3"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Extra Cubies in Edges</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Extra Cubies in Edges minimum"
+                            id="countMinExtraEdges"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Extra Cubies in Edges maximum"
+                            id="countMaxExtraEdges"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="3"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Extra Cubies in Corners</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Extra Cubies in Corners minimum"
+                            id="countMinExtraCorners"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Extra Cubies in Corners maximum"
+                            id="countMaxExtraCorners"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="3"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Facebound pieces</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Facebound pieces minimum"
+                            id="countMinFacebound"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Facebound pieces maximum"
+                            id="countMaxFacebound"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Non-facebound surface pieces</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Non-facebound surface pieces minimum"
+                            id="countMinSurfaceNonface"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Non-facebound surface pieces maximum"
+                            id="countMaxSurfaceNonface"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      </div>
+                      <div class="count-row">
+                        <span>Core-occupying pieces</span
+                        ><label
+                          ><span class="count-label">Min</span
+                          ><input
+                            aria-label="Core-occupying pieces minimum"
+                            id="countMinCorePieces"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Max</span
+                          ><input
+                            aria-label="Core-occupying pieces maximum"
+                            id="countMaxCorePieces"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      </div>
+                    </div>
+                    <p class="settings-help">
+                      J/L and S/Z are combined totals, including non-facebound
+                      forms. Specific J, L, S and Z count their facebound
+                      identities. Extra shapes count complete face-connected
+                      groups, without overlap. Non-facebound surface means at
+                      least one such piece and no piece in the core.
+                    </p>
+                  </div>
+                  <fieldset id="spatialFilters" hidden>
+                    <legend>Spatial pieces and composition</legend>
+                    <p class="muted">
+                      B = branch, D = right screw, F = left screw. Lowercase
+                      b/d/f means core occupancy only. J/L and S/Z counts
+                      combine their spatially equivalent forms.
+                    </p>
+                    <label
+                      >Spatial composition<select id="spatialComposition">
+                        <option value="">Any</option>
+                        <option value="none">Planar only</option>
+                        <option value="mixed">Mixed planar and spatial</option>
+                        <option value="only">Spatial only</option>
+                      </select></label
+                    >
+                    <label
+                      >Planar pieces spanning faces<select id="planarSpanning">
+                        <option value="">Any</option>
+                        <option value="none">None</option>
+                        <option value="any">At least one</option>
+                        <option value="surface">
+                          At least one without core
+                        </option>
+                        <option value="core">At least one through core</option>
+                      </select></label
+                    >
+                    <label
+                      >Piece occupying core<select id="corePieceType">
+                        <option value="">Any type</option>
+                        <option value="O">O</option>
+                        <option value="T">T</option>
+                        <option value="JL">JL</option>
+                        <option value="SZ">SZ</option>
+                        <option value="B">B</option>
+                        <option value="D">D</option>
+                        <option value="F">F</option>
+                      </select></label
+                    >
+                  </fieldset>
+                  <div class="filter-flags">
+                    <label
+                      ><input type="checkbox" id="oneOfEach" checked /> JLOSTZ
+                      bag</label
+                    >
+                    <label
+                      ><input
+                        type="checkbox"
+                        id="allSurfaceIdentities"
+                        checked
+                      />
+                      Facebound</label
+                    >
+                    <label
+                      ><input type="checkbox" id="officialOnly" /> Official
+                      compatible</label
+                    >
+                    <label
+                      ><input type="checkbox" id="surfaceOnly" /> Surface
+                      only</label
+                    >
+                    <label
+                      ><input type="checkbox" id="nonSurfaceOnly" /> Non-surface
+                      only</label
+                    >
+                    <label
+                      ><input type="checkbox" id="nonFaceboundSurface" />
+                      Non-Facebound surface only</label
+                    >
+                    <label
+                      title="A straight empty 1 by 1 passage through the cube along any axis. Extra cubies are treated as empty space."
+                      ><input type="checkbox" id="iTunnelOnly" /> I-piece
+                      tunnel</label
+                    >
+                  </div>
+                  <fieldset id="puzzleShapeFilters">
+                    <legend>Puzzle shapes</legend>
+                    <label
+                      ><input type="checkbox" id="somaVOnly" /> Soma V
+                      gap</label
+                    >
+                    <p class="settings-help">
+                      All three extras form a face-connected right angle.
+                    </p>
+                    <label
+                      ><input type="checkbox" id="somaSetOnly" /> Complete Soma
+                      set</label
+                    >
+                    <p class="settings-help">
+                      V gap, T, one J/L, one S/Z, branch, and both screws. No O
+                      or repeated shapes.
+                    </p>
+                    <label
+                      ><input type="checkbox" id="dominoGapOnly" /> Domino
+                      gap</label
+                    >
+                    <p class="settings-help">
+                      Two extras share a face; one extra remains. Inspired by
+                      the Diabolical Cube's dicube.
+                    </p>
+                    <p class="settings-help">
+                      Extras count as empty space. Filters combine; incompatible
+                      choices return no matches.
+                    </p>
+                  </fieldset>
+                  <div class="extra-filters">
+                    <label
+                      >Extra edges
+                      <select id="extraEdges">
+                        <option value="any">Any</option>
+                        <option value="yes">Contains</option>
+                        <option value="no">No extra edges</option>
+                      </select></label
+                    >
+                    <label
+                      >Extra corners
+                      <select id="extraCorners">
+                        <option value="any">Any</option>
+                        <option value="yes">Contains</option>
+                        <option value="no">No extra corners</option>
+                      </select></label
+                    >
+                    <label
+                      >Extra centers
+                      <select id="extraCenters">
+                        <option value="any">Any</option>
+                        <option value="yes">Contains</option>
+                        <option value="no">No extra centers</option>
+                      </select></label
+                    >
+                  </div>
+                  <p id="familySummary" role="status"></p>
+                </fieldset>
               </div>
-              <fieldset id="puzzleShapeFilters"><legend>Puzzle shapes</legend>
-<label><input type="checkbox" id="somaVOnly" /> Soma V gap</label>
-<p class="settings-help">All three extras form a face-connected right angle.</p>
-<label><input type="checkbox" id="somaSetOnly" /> Complete Soma set</label>
-<p class="settings-help">V gap, T, one J/L, one S/Z, branch, and both screws. No O or repeated shapes.</p>
-<label><input type="checkbox" id="dominoGapOnly" /> Domino gap</label>
-<p class="settings-help">Two extras share a face; one extra remains. Inspired by the Diabolical Cube's dicube.</p>
-<p class="settings-help">Extras count as empty space. Filters combine; incompatible choices return no matches.</p>
-</fieldset>
-              <div class="extra-filters">
-                <label
-                  >Extra edges
-                  <select id="extraEdges">
-                    <option value="any">Any</option>
-                    <option value="yes">Contains</option>
-                    <option value="no">No extra edges</option>
-                  </select></label
-                >
-                <label
-                  >Extra corners
-                  <select id="extraCorners">
-                    <option value="any">Any</option>
-                    <option value="yes">Contains</option>
-                    <option value="no">No extra corners</option>
-                  </select></label
-                >
-                <label
-                  >Extra centers
-                  <select id="extraCenters">
-                    <option value="any">Any</option>
-                    <option value="yes">Contains</option>
-                    <option value="no">No extra centers</option>
-                  </select></label
-                >
-              </div>
-              <p id="familySummary" role="status"></p>
-            </fieldset>
-            </div>
             </details>
-<fieldset class="explorer-modes"><legend>Explorer mode</legend>      <div class="practice-toggle">
-          <label><input id="familyExploreMode" type="checkbox" checked /> Family exploration</label>
-        <label
-          ><input id="practiceMode" type="checkbox" /> Two-packing
-          practice</label
-        ><span>Turn the start cube into the target.</span>
-      </div>
-</fieldset>
+            <fieldset class="explorer-modes">
+              <legend>Explorer mode</legend>
+              <div class="practice-toggle">
+                <label
+                  ><input id="familyExploreMode" type="checkbox" checked />
+                  Family exploration</label
+                >
+                <label
+                  ><input id="practiceMode" type="checkbox" /> Two-packing
+                  practice</label
+                ><span>Turn the start cube into the target.</span>
+              </div>
+            </fieldset>
             <details class="explorer-setting-section">
-              <summary><span>Appearance &amp; views<small>Colors, visible cubes, and transparency</small></span></summary>
-              <div class="explorer-section-body"><div class="control-groups">
-              <fieldset class="color-controls">
-                <legend>Colors</legend>
-                <label
-                  ><input type="radio" name="colorMode" id="canonicalColors" />
-                  Canonical</label
+              <summary>
+                <span
+                  >Appearance &amp; views<small
+                    >Colors, visible cubes, and transparency</small
+                  ></span
                 >
-                <label
-                  ><input type="radio" name="colorMode" id="positionalColors" />
-                  Multicolor</label
-                >
-                <label
-                  ><input
-                    type="radio"
-                    name="colorMode"
-                    id="officialColors"
-                    checked
-                  />
-                  Official</label
-                >
-              </fieldset>
-              <fieldset id="explorerInputSettings"><legend>Input</legend>
-<label><input id="classicControls" type="checkbox"> Classic button grid</label>
-<label><input id="showArrows" type="checkbox"> Arrow buttons</label>
-<label><input id="arrowGuides" type="checkbox"> Arrow guide lines</label>
-<label><input id="wideTurns" type="checkbox"> Wide turns</label>
-<p>Drag a sticker to turn. Shift-drag for wide turns. Right-drag or drag outside to orbit.</p>
-</fieldset>
-<fieldset id="explorerHoverSettings"><legend>Hover feedback</legend>
-<label><input id="hoverRings" type="checkbox" checked> Slice rings</label>
-<label><input id="ringLabels" type="checkbox"> Move letters on rings</label>
-<label><input id="hoverOutline" type="checkbox"> Outline hovered cubies</label>
-</fieldset>
-<label><input id="freeOrbit" type="checkbox" checked> Unrestricted orbit</label>
-<fieldset class="window-controls">
-                <legend>Visible cubes</legend>
-                <label
-                  ><input type="checkbox" id="showSolved" checked />
-                  Target cube</label
-                >
-                <label
-                  ><input type="checkbox" id="showScrambled" checked />
-                  Scrambled</label
-                >
-              </fieldset>
-            </div>
-            <fieldset class="target-display"><legend>Family exploration</legend>
-<label><input id="familySolidIdentities" type="checkbox" checked /> Use identity shapes</label>
-<label><input id="solidUniform" type="checkbox" checked /> Single color <output id="solidUniformValue">On</output></label>
-<label>Shape color <input id="solidColor" type="color" value="#c8c8c8" /><output id="solidColorValue">#c8c8c8</output></label>
-<label><input id="solidFixed" type="checkbox" /> Keep shapes upright during turns <output id="solidFixedValue">Off</output></label>
-<label><input id="solidGray" type="checkbox" checked /> Gray shades <output id="solidGrayValue">On</output></label>
-<p class="settings-help">Incomplete pieces keep a distinct solid shape. Completed pieces join and follow the selected color scheme.</p>
-</fieldset>
-<details class="visual-tuning"><summary>Transparency</summary>
-<label><input id="ditherTransparency" type="checkbox" checked /> Dither-style transparency <output id="ditherTransparencyValue">On</output></label>
-<p>Pixel patterns reveal pieces behind a surface. Required by Dithered; turn off for smooth transparency in other styles.</p>
+              </summary>
+              <div class="explorer-section-body">
+                <div class="control-groups">
+                  <fieldset class="color-controls">
+                    <legend>Colors</legend>
+                    <label
+                      ><input
+                        type="radio"
+                        name="colorMode"
+                        id="canonicalColors"
+                      />
+                      Canonical</label
+                    >
+                    <label
+                      ><input
+                        type="radio"
+                        name="colorMode"
+                        id="positionalColors"
+                      />
+                      Multicolor</label
+                    >
+                    <label
+                      ><input
+                        type="radio"
+                        name="colorMode"
+                        id="officialColors"
+                        checked
+                      />
+                      Official</label
+                    >
+                  </fieldset>
+                  <fieldset id="explorerInputSettings">
+                    <legend>Input</legend>
+                    <label
+                      ><input id="classicControls" type="checkbox" /> Classic
+                      button grid</label
+                    >
+                    <label
+                      ><input id="showArrows" type="checkbox" /> Arrow
+                      buttons</label
+                    >
+                    <label
+                      ><input id="arrowGuides" type="checkbox" /> Arrow guide
+                      lines</label
+                    >
+                    <label
+                      ><input id="wideTurns" type="checkbox" /> Wide
+                      turns</label
+                    >
+                    <p>
+                      Drag a sticker to turn. Shift-drag for wide turns.
+                      Right-drag or drag outside to orbit.
+                    </p>
+                  </fieldset>
+                  <fieldset id="explorerHoverSettings">
+                    <legend>Hover feedback</legend>
+                    <label
+                      ><input id="hoverRings" type="checkbox" checked /> Slice
+                      rings</label
+                    >
+                    <label
+                      ><input id="ringLabels" type="checkbox" /> Move letters on
+                      rings</label
+                    >
+                    <label
+                      ><input id="hoverOutline" type="checkbox" /> Outline
+                      hovered cubies</label
+                    >
+                  </fieldset>
+                  <label
+                    ><input id="freeOrbit" type="checkbox" checked />
+                    Unrestricted orbit</label
+                  >
+                  <fieldset class="window-controls">
+                    <legend>Visible cubes</legend>
+                    <label
+                      ><input type="checkbox" id="showSolved" checked /> Target
+                      cube</label
+                    >
+                    <label
+                      ><input type="checkbox" id="showScrambled" checked />
+                      Scrambled</label
+                    >
+                  </fieldset>
+                </div>
+                <fieldset class="target-display">
+                  <legend>Family exploration</legend>
+                  <label
+                    ><input
+                      id="familySolidIdentities"
+                      type="checkbox"
+                      checked
+                    />
+                    Use identity shapes</label
+                  >
+                  <label
+                    ><input id="solidUniform" type="checkbox" checked /> Single
+                    color <output id="solidUniformValue">On</output></label
+                  >
+                  <label
+                    >Shape color
+                    <input
+                      id="solidColor"
+                      type="color"
+                      value="#c8c8c8"
+                    /><output id="solidColorValue">#c8c8c8</output></label
+                  >
+                  <label
+                    ><input id="solidFixed" type="checkbox" /> Keep shapes
+                    upright during turns
+                    <output id="solidFixedValue">Off</output></label
+                  >
+                  <label
+                    ><input id="solidGray" type="checkbox" checked /> Gray
+                    shades <output id="solidGrayValue">On</output></label
+                  >
+                  <p class="settings-help">
+                    Incomplete pieces keep a distinct solid shape. Completed
+                    pieces join and follow the selected color scheme.
+                  </p>
+                </fieldset>
+                <details class="visual-tuning">
+                  <summary>Transparency</summary>
+                  <label
+                    ><input id="ditherTransparency" type="checkbox" checked />
+                    Dither-style transparency
+                    <output id="ditherTransparencyValue">On</output></label
+                  >
+                  <p>
+                    Pixel patterns reveal pieces behind a surface. Required by
+                    Dithered; turn off for smooth transparency in other styles.
+                  </p>
 
-<label for="targetTransparency">All explorer cubes <output id="transparencyValue">0%</output></label>
-<input id="targetTransparency" type="range" min="0" max="100" value="0" />
-<p class="settings-help">All explorer views: 0% opaque, 100% invisible.</p></details><fieldset class="viewer-display"><legend>Camera &amp; style</legend>
-<label>Camera <select id="explorerCamera"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
-<label>Model shape <select id="modelShape"><option value="jelly">Jelly</option><option value="voxel">Voxel</option><option value="gameboy">Gameboy Tetronimos</option></select></label><label>Rendering effect <select id="pieceAppearance"><option value="jelly">None</option><option value="dither">Dithered</option><option value="matte">Matte</option><option value="cel">Cel shaded</option><option value="ascii">ASCII</option></select></label></fieldset>
-<details class="visual-tuning"><summary>Lighting</summary><p class="muted">Light follows the camera. Shared with the game.</p><label for="lightAzimuth">Horizontal angle<output id="lightAzimuthValue">-20°</output></label><input id="lightAzimuth" type="range" min="-180" max="180" step="1" value="-20" /><label for="lightElevation">Vertical angle<output id="lightElevationValue">25°</output></label><input id="lightElevation" type="range" min="-85" max="85" step="1" value="25" /><label for="lightIntensity">Light strength<output id="lightIntensityValue">1×</output></label><input id="lightIntensity" type="range" min="0" max="3" step="0.05" value="1" /><label for="lightAmbient">Fill light<output id="lightAmbientValue">0.35</output></label><input id="lightAmbient" type="range" min="0" max="1" step="0.05" value="0.35" /><fieldset id="lightingClasses"><legend>Lighting by element</legend><p class="muted">Model default uses positional light for Gameboy, surface light otherwise. Unlit guides stay unlit.</p><label>Placed pieces & packing blocks<select id="lightPieces"><option value="0" selected>Model default</option><option value="1">Surface angle</option><option value="2">Light proximity</option></select></label><label>Active cubies & loose fragments<select id="lightCubies"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Identity solids<select id="lightSolids"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Other lit elements<select id="lightOther"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label></fieldset><button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button></details>
-<fieldset id="jellyShaping"><legend>Jelly shaping</legend><label><input id="jellyCornerO" type="checkbox"> Rounded-square O rings (Jelly only) <output id="jellyCornerOValue">Off</output></label><p class="muted">Smooth beveled ring with a rounded-square opening. Cosmetic only.</p><label>Bevel softness <input id="jellyBevel" type="range" min="24" max="40" step="1" value="30"><output id="jellyBevelValue">30</output></label><p class="muted">Lower: more defined edges. Higher: rounder edges.</p><label>O opening <input id="jellyOpening" type="range" min="18" max="40" step="1" value="24"><output id="jellyOpeningValue">24</output></label><p class="muted">Opening size when rounded-square O rings are enabled.</p></fieldset><details class="visual-tuning"><summary>Dither tuning</summary><p class="muted">Pixel size controls resolution. Fewer levels give bolder shading.</p><label for="ditherLevels">Shading levels<output id="ditherLevelsValue">5</output></label><input id="ditherLevels" type="range" min="2" max="17" step="1" value="5" /><label for="ditherSize">Pixel size<output id="ditherSizeValue">2px</output></label><input id="ditherSize" type="range" min="1" max="6" step="0.5" value="2" /><label for="ditherContrast">Contrast<output id="ditherContrastValue">2.5×</output></label><input id="ditherContrast" type="range" min="0.5" max="5" step="0.1" value="2.5" /><label for="ditherMidpoint">Light / dark balance<output id="ditherMidpointValue">0.6</output></label><input id="ditherMidpoint" type="range" min="0" max="1" step="0.05" value="0.6" /><button id="resetdither" type="button">Reset dither</button></details><details class="visual-tuning"><summary>ASCII tuning</summary><p class="muted">Lower edge coverage keeps more characters. Blending softens movement.</p><label for="asciiSize">Character size<output id="asciiSizeValue">1×</output></label><input id="asciiSize" type="range" min="0.5" max="2" step="0.1" value="1" /><label for="asciiExposure">Brightness<output id="asciiExposureValue">1×</output></label><input id="asciiExposure" type="range" min="0.5" max="3" step="0.1" value="1" /><label for="asciiDensity">Character density<output id="asciiDensityValue">1×</output></label><input id="asciiDensity" type="range" min="0.5" max="2" step="0.1" value="1" /><label for="asciiCoverage">Edge coverage required<output id="asciiCoverageValue">0.16</output></label><input id="asciiCoverage" type="range" min="0.02" max="0.6" step="0.02" value="0.16" /><label for="asciiBlend">Character blending<output id="asciiBlendValue">1</output></label><input id="asciiBlend" type="range" min="0" max="1" step="0.1" value="1" /><button id="resetascii" type="button">Reset ASCII</button></details>
-<fieldset class="piece-colors"><legend>Tetromino colors</legend><p class="muted">Shared with the game and saved on this device.</p><div class="piece-color-grid"><label for="pieceColorO">O<input id="pieceColorO" type="color" aria-label="O piece color" /></label><label for="pieceColorT">T<input id="pieceColorT" type="color" aria-label="T piece color" /></label><label for="pieceColorL">L<input id="pieceColorL" type="color" aria-label="L piece color" /></label><label for="pieceColorJ">J<input id="pieceColorJ" type="color" aria-label="J piece color" /></label><label for="pieceColorS">S<input id="pieceColorS" type="color" aria-label="S piece color" /></label><label for="pieceColorZ">Z<input id="pieceColorZ" type="color" aria-label="Z piece color" /></label><label for="pieceColorB">B — Branch<input id="pieceColorB" type="color" aria-label="Branch piece color" /></label><label for="pieceColorD">D — Right screw<input id="pieceColorD" type="color" aria-label="Right screw piece color" /></label><label for="pieceColorF">F — Left screw<input id="pieceColorF" type="color" aria-label="Left screw piece color" /></label></div><button id="resetPieceColors" type="button">Reset colors</button></fieldset>
-<fieldset class="target-display"><legend>Target cube display</legend><label><input id="targetComposite" type="checkbox" checked /> Join completed pieces</label>
-          </fieldset></div>
+                  <label for="targetTransparency"
+                    >All explorer cubes
+                    <output id="transparencyValue">0%</output></label
+                  >
+                  <input
+                    id="targetTransparency"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value="0"
+                  />
+                  <p class="settings-help">
+                    All explorer views: 0% opaque, 100% invisible.
+                  </p>
+                </details>
+                <fieldset class="viewer-display">
+                  <legend>Camera &amp; style</legend>
+                  <label
+                    >Camera
+                    <select id="explorerCamera">
+                      <option value="perspective">Perspective</option>
+                      <option value="orthographic">Orthographic</option>
+                    </select></label
+                  >
+                  <label
+                    >Model shape
+                    <select id="modelShape">
+                      <option value="angular" selected>Angular (Tengen)</option>
+                      <option value="jelly">Jelly</option>
+                      <option value="voxel">Voxel</option>
+                      <option value="gameboy">Gameboy Tetronimos</option>
+                    </select></label
+                  ><label
+                    >Rendering effect
+                    <select id="pieceAppearance">
+                      <option value="jelly">None</option>
+                      <option value="dither">Dithered</option>
+                      <option value="matte">Matte</option>
+                      <option value="cel">Cel shaded</option>
+                      <option value="ascii">ASCII</option>
+                    </select></label
+                  >
+                </fieldset>
+                <details class="visual-tuning">
+                  <summary>Lighting</summary>
+                  <p class="muted">
+                    Light follows the camera. Shared with the game.
+                  </p>
+                  <label for="lightAzimuth"
+                    >Horizontal angle<output id="lightAzimuthValue"
+                      >-20°</output
+                    ></label
+                  ><input
+                    id="lightAzimuth"
+                    type="range"
+                    min="-180"
+                    max="180"
+                    step="1"
+                    value="-20"
+                  /><label for="lightElevation"
+                    >Vertical angle<output id="lightElevationValue"
+                      >25°</output
+                    ></label
+                  ><input
+                    id="lightElevation"
+                    type="range"
+                    min="-85"
+                    max="85"
+                    step="1"
+                    value="25"
+                  /><label for="lightIntensity"
+                    >Light strength<output id="lightIntensityValue"
+                      >1×</output
+                    ></label
+                  ><input
+                    id="lightIntensity"
+                    type="range"
+                    min="0"
+                    max="3"
+                    step="0.05"
+                    value="1"
+                  /><label for="lightAmbient"
+                    >Fill light<output id="lightAmbientValue"
+                      >0.35</output
+                    ></label
+                  ><input
+                    id="lightAmbient"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value="0.35"
+                  />
+                  <fieldset id="lightingClasses">
+                    <legend>Lighting by element</legend>
+                    <p class="muted">
+                      Model default uses positional light for Gameboy, surface
+                      light otherwise. Unlit guides stay unlit.
+                    </p>
+                    <label
+                      >Placed pieces & packing blocks<select id="lightPieces">
+                        <option value="0" selected>Model default</option>
+                        <option value="1">Surface angle</option>
+                        <option value="2">Light proximity</option>
+                      </select></label
+                    ><label
+                      >Active cubies & loose fragments<select id="lightCubies">
+                        <option value="0">Model default</option>
+                        <option value="1" selected>Surface angle</option>
+                        <option value="2">Light proximity</option>
+                      </select></label
+                    ><label
+                      >Identity solids<select id="lightSolids">
+                        <option value="0">Model default</option>
+                        <option value="1" selected>Surface angle</option>
+                        <option value="2">Light proximity</option>
+                      </select></label
+                    ><label
+                      >Other lit elements<select id="lightOther">
+                        <option value="0">Model default</option>
+                        <option value="1" selected>Surface angle</option>
+                        <option value="2">Light proximity</option>
+                      </select></label
+                    >
+                  </fieldset>
+                  <button id="faceLight" type="button">
+                    Light from camera
+                  </button>
+                  <button id="resetlight" type="button">Reset lighting</button>
+                </details>
+                <fieldset id="jellyShaping">
+                  <legend>Jelly shaping</legend>
+                  <label
+                    ><input id="jellyCornerO" type="checkbox" /> O rings (Jelly
+                    / Angular)
+                    <output id="jellyCornerOValue">Off</output></label
+                  >
+                  <p class="muted">
+                    Smooth beveled ring with a rounded-square opening. Cosmetic
+                    only.
+                  </p>
+                  <label
+                    >Bevel width
+                    <input
+                      id="jellyBevel"
+                      type="range"
+                      min="1"
+                      max="41"
+                      step="1"
+                      value="15"
+                    /><output id="jellyBevelValue">15</output></label
+                  >
+                  <p class="muted">
+                    Higher: bevels start closer to the face centers.
+                  </p>
+                  <label
+                    >Bevel profile
+                    <input
+                      id="jellyProfile"
+                      type="range"
+                      min="1.05"
+                      max="6"
+                      step="0.05"
+                      value="2"
+                    /><output id="jellyProfileValue">2</output></label
+                  >
+                  <p class="muted">
+                    Low: nearly straight chamfer. Middle: rounded. High:
+                    near-square corner. Width stays independent.
+                  </p>
+                  <label
+                    >Elbow smoothing
+                    <input
+                      id="jellyElbows"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value="100"
+                    /><output id="jellyElbowsValue">100%</output></label
+                  >
+                  <p class="muted">
+                    Lower values keep inside corners sharper. Angular models use
+                    flat faces and straight bevels; width and O-ring controls
+                    apply.
+                  </p>
+                  <label
+                    >O opening
+                    <input
+                      id="jellyOpening"
+                      type="range"
+                      min="1"
+                      max="48"
+                      step="1"
+                      value="24"
+                    /><output id="jellyOpeningValue">24</output></label
+                  >
+                  <p class="muted">
+                    Opening size when rounded-square O rings are enabled.
+                  </p>
+                </fieldset>
+                <details class="visual-tuning">
+                  <summary>Dither tuning</summary>
+                  <p class="muted">
+                    Pixel size controls resolution. Fewer levels give bolder
+                    shading.
+                  </p>
+                  <label for="ditherLevels"
+                    >Shading levels<output id="ditherLevelsValue"
+                      >5</output
+                    ></label
+                  ><input
+                    id="ditherLevels"
+                    type="range"
+                    min="2"
+                    max="17"
+                    step="1"
+                    value="5"
+                  /><label for="ditherSize"
+                    >Pixel size<output id="ditherSizeValue">2px</output></label
+                  ><input
+                    id="ditherSize"
+                    type="range"
+                    min="1"
+                    max="6"
+                    step="0.5"
+                    value="2"
+                  /><label for="ditherContrast"
+                    >Contrast<output id="ditherContrastValue"
+                      >2.5×</output
+                    ></label
+                  ><input
+                    id="ditherContrast"
+                    type="range"
+                    min="0.5"
+                    max="5"
+                    step="0.1"
+                    value="2.5"
+                  /><label for="ditherMidpoint"
+                    >Light / dark balance<output id="ditherMidpointValue"
+                      >0.6</output
+                    ></label
+                  ><input
+                    id="ditherMidpoint"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value="0.6"
+                  /><button id="resetdither" type="button">Reset dither</button>
+                </details>
+                <details class="visual-tuning">
+                  <summary>ASCII tuning</summary>
+                  <p class="muted">
+                    Lower edge coverage keeps more characters. Blending softens
+                    movement.
+                  </p>
+                  <label for="asciiSize"
+                    >Character size<output id="asciiSizeValue"
+                      >1×</output
+                    ></label
+                  ><input
+                    id="asciiSize"
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value="1"
+                  /><label for="asciiExposure"
+                    >Brightness<output id="asciiExposureValue"
+                      >1×</output
+                    ></label
+                  ><input
+                    id="asciiExposure"
+                    type="range"
+                    min="0.5"
+                    max="3"
+                    step="0.1"
+                    value="1"
+                  /><label for="asciiDensity"
+                    >Character density<output id="asciiDensityValue"
+                      >1×</output
+                    ></label
+                  ><input
+                    id="asciiDensity"
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value="1"
+                  /><label for="asciiCoverage"
+                    >Edge coverage required<output id="asciiCoverageValue"
+                      >0.16</output
+                    ></label
+                  ><input
+                    id="asciiCoverage"
+                    type="range"
+                    min="0.02"
+                    max="0.6"
+                    step="0.02"
+                    value="0.16"
+                  /><label for="asciiBlend"
+                    >Character blending<output id="asciiBlendValue"
+                      >1</output
+                    ></label
+                  ><input
+                    id="asciiBlend"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value="1"
+                  /><button id="resetascii" type="button">Reset ASCII</button>
+                </details>
+                <fieldset class="piece-colors">
+                  <legend>Tetromino colors</legend>
+                  <p class="muted">
+                    Shared with the game and saved on this device.
+                  </p>
+                  <div class="piece-color-grid">
+                    <label for="pieceColorO"
+                      >O<input
+                        id="pieceColorO"
+                        type="color"
+                        aria-label="O piece color" /></label
+                    ><label for="pieceColorT"
+                      >T<input
+                        id="pieceColorT"
+                        type="color"
+                        aria-label="T piece color" /></label
+                    ><label for="pieceColorL"
+                      >L<input
+                        id="pieceColorL"
+                        type="color"
+                        aria-label="L piece color" /></label
+                    ><label for="pieceColorJ"
+                      >J<input
+                        id="pieceColorJ"
+                        type="color"
+                        aria-label="J piece color" /></label
+                    ><label for="pieceColorS"
+                      >S<input
+                        id="pieceColorS"
+                        type="color"
+                        aria-label="S piece color" /></label
+                    ><label for="pieceColorZ"
+                      >Z<input
+                        id="pieceColorZ"
+                        type="color"
+                        aria-label="Z piece color" /></label
+                    ><label for="pieceColorB"
+                      >B — Branch<input
+                        id="pieceColorB"
+                        type="color"
+                        aria-label="Branch piece color" /></label
+                    ><label for="pieceColorD"
+                      >D — Right screw<input
+                        id="pieceColorD"
+                        type="color"
+                        aria-label="Right screw piece color" /></label
+                    ><label for="pieceColorF"
+                      >F — Left screw<input
+                        id="pieceColorF"
+                        type="color"
+                        aria-label="Left screw piece color"
+                    /></label>
+                  </div>
+                  <button id="resetPieceColors" type="button">
+                    Reset colors
+                  </button>
+                </fieldset>
+                <fieldset class="target-display">
+                  <legend>Target cube display</legend>
+                  <label
+                    ><input id="targetComposite" type="checkbox" checked /> Join
+                    completed pieces</label
+                  >
+                </fieldset>
+              </div>
             </details>
             <div class="status-row">
               <span id="status" role="status">Loading…</span
               ><span id="colorStatus" role="status"></span>
             </div>
-
           </div>
         </details>
       </section>
@@ -282,21 +1345,37 @@
         ><textarea id="packingData"></textarea
         ><button id="loadPackings">Load packing list</button>
       </section>
-      <section id="familyExplorePanel" class="cube-card" hidden aria-label="Family exploration">
-          <h2 id="familyExploreTitle">Family exploration</h2>
-          <div id="familyExploreCube" class="cube"></div>
-          <details class="family-explore-info">
-            <summary id="familyExploreProgress" role="status">Choose a family</summary>
-            <div class="packing-info">
-              <p>Drag to turn. Joined pieces are sliced at the turning layer. Shape detection follows each physical piece, regardless of its color or original letter. Completed shapes use canonical colors; separated cubies keep their assigned ID colors. Optional solid shapes distinguish IDs in Settings.</p>
-              <p id="familyExploreLetters"></p>
-              <div id="familyExploreMatches"></div>
-            </div>
-          </details>
-        </section>
-        <section id="practicePanel" data-active="start" hidden>
-<nav class="practice-view-tabs" aria-label="Practice cube"><button id="practiceViewStart" aria-pressed="true">Start</button><button id="practiceViewTarget" aria-pressed="false">Target</button></nav>
-<div class="practice-cubes">
+      <section
+        id="familyExplorePanel"
+        class="cube-card"
+        hidden
+        aria-label="Family exploration"
+      >
+        <h2 id="familyExploreTitle">Family exploration</h2>
+        <div id="familyExploreCube" class="cube"></div>
+        <details class="family-explore-info">
+          <summary id="familyExploreProgress" role="status">
+            Choose a family
+          </summary>
+          <div class="packing-info">
+            <p>
+              Drag to turn. Joined pieces are sliced at the turning layer. Shape
+              detection follows each physical piece, regardless of its color or
+              original letter. Completed shapes use canonical colors; separated
+              cubies keep their assigned ID colors. Optional solid shapes
+              distinguish IDs in Settings.
+            </p>
+            <p id="familyExploreLetters"></p>
+            <div id="familyExploreMatches"></div>
+          </div>
+        </details>
+      </section>
+      <section id="practicePanel" data-active="start" hidden>
+        <nav class="practice-view-tabs" aria-label="Practice cube">
+          <button id="practiceViewStart" aria-pressed="true">Start</button
+          ><button id="practiceViewTarget" aria-pressed="false">Target</button>
+        </nav>
+        <div class="practice-cubes">
           <section class="cube-card" id="practiceStartPanel">
             <h2 id="practiceLeftTitle">Start</h2>
             <div id="practiceLeft" class="cube"></div>
@@ -308,14 +1387,17 @@
         </div>
         <p id="practiceProgress" role="status"></p>
       </section>
-      <div id="cubeLayout" class="cube-layout">      <nav id="viewTabs" class="view-tabs" aria-label="Cube view">
-        <button id="viewSolved" aria-pressed="true">Target cube</button
-        ><button id="viewScrambled" aria-pressed="false">Scrambled cube</button>
-      </nav>
+      <div id="cubeLayout" class="cube-layout">
+        <nav id="viewTabs" class="view-tabs" aria-label="Cube view">
+          <button id="viewSolved" aria-pressed="true">Target cube</button
+          ><button id="viewScrambled" aria-pressed="false">
+            Scrambled cube
+          </button>
+        </nav>
 
         <p id="emptyView" class="empty-view" hidden>
-          All cube views are hidden. Enable a cube in Settings → Views & camera to continue
-          exploring.
+          All cube views are hidden. Enable a cube in Settings → Views & camera
+          to continue exploring.
         </p>
         <section id="scrambledPanel" class="cube-card">
           <h2>Scrambled cube</h2>
@@ -342,23 +1424,25 @@
           <h2>Target cube</h2>
 
           <div id="solvedCube" class="cube"></div>
-<details class="packing-overlay"><summary>Packing <span id="packingIndex">-</span> · details</summary>      <div class="packing-info">
-        <details class="packing-details">
-          <summary>Packing code</summary>
-          <code id="packingCode">—</code
-          ><button id="copyCode">Copy packing code</button>
-        </details>
-        <p id="packingFamily"></p>
-        <div id="pieceIdentities"></div>
-        <details class="technical-details">
-          <summary>Facelet data</summary>
-          <code id="solvedFacelets"></code>
-        </details>
-      </div>
-</details>
+          <details class="packing-overlay">
+            <summary>
+              Packing <span id="packingIndex">-</span> · details
+            </summary>
+            <div class="packing-info">
+              <details class="packing-details">
+                <summary>Packing code</summary>
+                <code id="packingCode">—</code
+                ><button id="copyCode">Copy packing code</button>
+              </details>
+              <p id="packingFamily"></p>
+              <div id="pieceIdentities"></div>
+              <details class="technical-details">
+                <summary>Facelet data</summary>
+                <code id="solvedFacelets"></code>
+              </details>
+            </div>
+          </details>
         </section>
-
-
       </div>
       <section class="facelet-debug"></section>
 

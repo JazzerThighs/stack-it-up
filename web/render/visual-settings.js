@@ -4,9 +4,11 @@ export const visualSpecs = {"solidUniform":{"min":0,"max":1,"step":1,"value":1,"
 for(const [key,value] of [['lightPieces',0],['lightCubies',1],['lightSolids',1],['lightOther',1]])
   visualSpecs[key]={min:0,max:2,step:1,value,unit:'',select:true};
 visualSpecs.jellyCornerO={min:0,max:1,step:1,value:0,checkbox:true};
-visualSpecs.jellyBevel={min:24,max:40,step:1,value:30,unit:""};
-visualSpecs.jellyOpening={min:18,max:40,step:1,value:24,unit:""};
-export function jellyStyleKey(){return [visualSettings.jellyCornerO,visualSettings.jellyBevel,visualSettings.jellyOpening].join(":");}
+visualSpecs.jellyBevel={min:1,max:41,step:1,value:15,unit:""};
+visualSpecs.jellyProfile={min:1.05,max:6,step:0.05,value:2,unit:""};
+visualSpecs.jellyElbows={min:0,max:100,step:5,value:100,unit:"%"};
+visualSpecs.jellyOpening={min:1,max:48,step:1,value:24,unit:""};
+export function jellyStyleKey(){return [visualSettings.jellyCornerO,visualSettings.jellyBevel,visualSettings.jellyOpening,visualSettings.jellyProfile,visualSettings.jellyElbows].join(":");}
 export const visualSettings = Object.fromEntries(Object.entries(visualSpecs).map(([k,s])=>[k,s.value]));
 const listeners=new Set();
 function valid(key,value) {

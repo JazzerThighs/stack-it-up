@@ -1,3 +1,4 @@
+import {angularPiece} from './angular-mesh.js';
 import {jellyStyleKey} from './visual-settings.js';
 import {visualSettings} from './visual-settings.js';
 import {gameboyPiece} from './gameboy-mesh.js';
@@ -23,7 +24,9 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly',spa
     const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+appearance+':'+bomb+':'+cornerO+':'+jellyStyleKey();
     if(colored.has(key))return colored.get(key);
     const out=[],c=rgb(hex);
-    if(appearance==='gameboy') {
+    if(appearance==='angular') {
+      for(const v of angularPiece(mask,c))out.push(v);
+    } else if(appearance==='gameboy') {
       const letter=bomb?'bomb':identifyMask(mask)||'O';
       for(const v of gameboyPiece(mask,c,letter))out.push(v);
     } else {
@@ -44,4 +47,16 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly',spa
 export function compositeMesh(board,ids,palette,generate,appearance='jelly') {
   const parts=compositeParts(board,ids,palette,generate,appearance);
   return joinMeshes(parts);
+}
+
+// Loose jelly cells use the same native surface and shaping-keyed cache as
+// connected fragments. Keep identity solids and current-piece spheres distinct.
+export function jellyCell(out,cell,color,generate,halfSize=0.465,appearance='jelly') {
+  const board=Array(27).fill(0),ids=Array(27).fill(1);board[cell]=1;
+  const mesh=compositeParts(board,ids,['','#ffffff'],generate,appearance)[0];
+  const center=xyz(cell),scale=halfSize/0.465;
+  for(let i=0;i<mesh.length;i+=9) {
+    for(let k=0;k<3;k++)out.push(center[k]+(mesh[i+k]-center[k])*scale);
+    out.push(mesh[i+3],mesh[i+4],mesh[i+5],...color);
+  }
 }

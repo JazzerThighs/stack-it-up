@@ -151,7 +151,7 @@ export function syncDisplaySettings() {
   for (const r of context.renderers) {
     const appearance = $("pieceAppearance").value || "jelly";
     r.canvas.dataset.appearance = appearance;
-    const modelShape = $("modelShape").value || "jelly";
+    const modelShape = $("modelShape").value || "angular";
     if (r.appearance !== appearance || r.modelShape !== modelShape) {
       r.appearance = appearance;
       r.modelShape = modelShape;
