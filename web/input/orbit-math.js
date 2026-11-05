@@ -40,15 +40,23 @@ export function dragRotation(dx,dy,axis,s,direction=[1,1]){
  return axisAngle([dy,dx,0],Math.hypot(dx,dy)*gain);
 }
 
-// Captured axes can follow the cube. Post-multiply for cube-local rotation;
-// pre-multiply for window-relative rotation. Uncaptured XY stays camera-relative.
+// Find the closest upright cube frame, assigning each screen axis a distinct
+// signed cube axis. Signs preserve drag direction even when upside down.
+export function viewAxisFrame(q){
+ const m=matrix(q);let best=cubeRotations[0],score=-Infinity;
+ for(const frame of cubeRotations){const fit=frame.reduce((sum,v,i)=>sum+v*m[i],0);if(fit>score){score=fit;best=frame;}}
+ return best;
+}
 export function cubeAxisEnabled(axis,s){return !!s[{X:'orbitCubeLR',Y:'orbitCubeUD',Z:'orbitCubeFB'}[axis]];}
-export function applyDragRotation(q,dx,dy,axis,s,direction){
+export function applyDragRotation(q,dx,dy,axis,s,direction,frame=viewAxisFrame(q)){
  const rotation=dragRotation(dx,dy,axis,s,direction);
- return cubeAxisEnabled(axis,s)?multiply(q,rotation):multiply(rotation,q);
+ if(!cubeAxisEnabled(axis,s))return multiply(rotation,q);
+ // Transform the screen rotation into the gesture's chosen local cube frame.
+ const local=[0,1,2].map(i=>frame[i*3]*rotation[0]+frame[i*3+1]*rotation[1]+frame[i*3+2]*rotation[2]);
+ return multiply(q,[...local,rotation[3]]);
 }
 export function axisLabel(axis,s){
- return cubeAxisEnabled(axis,s)?{X:'L-R',Y:'U-D',Z:'F-B'}[axis]:axis==='XY'?'Free XY':`Camera ${axis}`;
+ return cubeAxisEnabled(axis,s)?{X:'Left-right',Y:'Top-bottom',Z:'Front-back'}[axis]:axis==='XY'?'Free XY':`Camera ${axis}`;
 }
 // Split exactly at capture boundaries, using the same precedence as dragAxis.
 export function captureSectors(s){

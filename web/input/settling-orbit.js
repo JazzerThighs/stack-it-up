@@ -1,11 +1,11 @@
 import {showOrbitGuide} from './orbit-guide.js';
 import {orbitSettings as settings,subscribeOrbit,publishOrbitDebug} from './orbit-settings.js';
-import {quaternion,matrix,slerp,distance,snapTarget,dragAxis,applyDragRotation,axisLabel,frontFace} from './orbit-math.js';
+import {quaternion,matrix,slerp,distance,snapTarget,dragAxis,applyDragRotation,viewAxisFrame,axisLabel,frontFace} from './orbit-math.js';
 let activeController=null;
 export function stopOrbitMotion(){activeController?.();activeController=null;}
 // One animation per gesture; no idle render loop. New gestures cancel settling.
 export function createSettlingOrbit(renderer,onOrbit){
- let current,target,origin,last,axis,direction,active=false,token=0,queued=false,stamp=0,releaseAt=null,from=null,settle=null,angle=0,overlay,guide;
+ let current,target,origin,last,axis,direction,active=false,token=0,queued=false,stamp=0,releaseAt=null,from=null,settle=null,angle=0,overlay,guide,frame;
  const reduced=()=>globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  const report=phase=>{
   if(!settings.orbitDebug&&!settings.orbitDebugOverlay)return;
@@ -33,7 +33,7 @@ export function createSettlingOrbit(renderer,onOrbit){
  };
  const stop=subscribeOrbit(()=>{cancel();if(overlay)overlay.hidden=!settings.orbitDebugOverlay||!settings.orbitSettling;});
  return {
-  start(x,y){stopOrbitMotion();activeController=cancel;cancel();current=quaternion(renderer.orientation);target=current.slice();origin=last=[x,y];axis=null;angle=0;direction=[1,1];active=true;stamp=0;settle=null;guide=showOrbitGuide(renderer.canvas,x,y,settings);report('Ready');},
+  start(x,y){stopOrbitMotion();activeController=cancel;cancel();current=quaternion(renderer.orientation);target=current.slice();frame=viewAxisFrame(current);origin=last=[x,y];axis=null;angle=0;direction=[1,1];active=true;stamp=0;settle=null;guide=showOrbitGuide(renderer.canvas,x,y,settings);report('Ready');},
   move(x,y){if(!active)return;const dx=x-origin[0],dy=y-origin[1],radius=Math.hypot(dx,dy);
    angle=Math.atan2(dy,dx)*180/Math.PI;
    if(!axis){
@@ -43,7 +43,7 @@ export function createSettlingOrbit(renderer,onOrbit){
     last=[origin[0]+dx/radius*settings.orbitDeadZone,origin[1]+dy/radius*settings.orbitDeadZone];
    }
    if(!axis||!settings.orbitAxisLock){axis=dragAxis(dx,dy,settings);direction=[dx,dy];}
-   target=applyDragRotation(target,x-last[0],y-last[1],axis,settings,direction);last=[x,y];schedule();
+   target=applyDragRotation(target,x-last[0],y-last[1],axis,settings,direction,frame);last=[x,y];schedule();
   },
   release(abort=false){if(!active)return;active=false;guide?.remove();guide=null;if(abort){cancel();return;}
    if(settings.orbitSnap&&axis){settle=snapTarget(target,settings);releaseAt=0;from=null;schedule();}else if(axis)schedule();

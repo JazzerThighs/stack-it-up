@@ -618,11 +618,11 @@
 <input id="orbitAxisLock" type="checkbox" checked> Keep axis for entire drag</label>
 <label>
 <input id="orbitDiagonalRoll" type="checkbox" checked> Enable diagonal roll</label>
-<label><input id="orbitCubeUD" type="checkbox" checked> Horizontal drags: cube U-D axis</label>
-<label><input id="orbitCubeLR" type="checkbox" checked> Vertical drags: cube L-R axis</label>
-<label><input id="orbitCubeFB" type="checkbox" checked> Diagonal drags: cube F-B axis</label>
+<label><input id="orbitCubeUD" type="checkbox" checked> Horizontal drags: current top-bottom axis</label>
+<label><input id="orbitCubeLR" type="checkbox" checked> Vertical drags: current left-right axis</label>
+<label><input id="orbitCubeFB" type="checkbox" checked> Diagonal drags: current front-back axis</label>
 <label><input id="orbitDragGuide" type="checkbox" checked> Show drag capture guide</label>
-<p class="muted">Checked axes follow the cube; unchecked axes follow the window. Diagonal axis applies when diagonal roll is enabled. Outside capture ranges, rotation blends camera X/Y. The guide stays at the drag origin until release.</p>
+<p class="muted">Checked: use the face pairs nearest the window's top/bottom, left/right and front/back at drag start, regardless of face names. This mapping stays fixed during the drag. Unchecked: use exact window axes. Diagonal axis applies when diagonal roll is enabled. Outside capture ranges, rotation blends camera X/Y. The guide stays at the drag origin until release.</p>
 <label>Initial dead-zone radius <output id="orbitDeadZoneValue">24</output> px<input id="orbitDeadZone" type="range" min="0" max="96" step="2" value="24"></label>
 <p class="muted">Choose a direction inside the circle. Rotation and axis capture begin at its edge. With axis lock on, the chosen axis stays fixed until release. Zero disables the dead zone.</p>
 <label>Rotation per pixel <output id="orbitSensitivityValue">0.5</output>°<input id="orbitSensitivity" type="range" min="0.1" max="2" step="0.05" value="0.5">

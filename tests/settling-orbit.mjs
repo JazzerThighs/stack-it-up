@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {cubeRotations,quaternion,matrix,multiply,axisAngle,identity,distance,snapTarget,dragAxis,dragRotation,frontFace,applyDragRotation,captureSectors} from '../web/input/orbit-math.js';
+import {cubeRotations,quaternion,matrix,multiply,axisAngle,identity,distance,snapTarget,dragAxis,dragRotation,frontFace,applyDragRotation,captureSectors,viewAxisFrame} from '../web/input/orbit-math.js';
 import {orbitSettings as settings} from '../web/input/orbit-settings.js';
 import {createSettlingOrbit} from '../web/input/settling-orbit.js';
 import {installCubeDrag} from '../web/input/drag.js';
@@ -23,11 +23,23 @@ for(const [axis,key,column,dx,dy]of [['X','orbitCubeLR',0,0,100],['Y','orbitCube
  assert.equal(settings[key],true);
  const local=applyDragRotation(tilted,dx,dy,axis,settings,[1,1]);
  // The physical center-to-center axis remains stationary during its rotation.
- matrix(local).slice(column*3,column*3+3).forEach((v,i)=>close(v,matrix(tilted)[column*3+i]));
+ const frame=viewAxisFrame(tilted),localColumn=[0,1,2].find(i=>Math.abs(frame[i*3+column])===1);
+ matrix(local).slice(localColumn*3,localColumn*3+3).forEach((v,i)=>close(v,matrix(tilted)[localColumn*3+i]));
  const screen=applyDragRotation(tilted,dx,dy,axis,{...settings,[key]:false},[1,1]);
  close(distance(screen,multiply(dragRotation(dx,dy,axis,settings,[1,1]),tilted)),0);
  assert(distance(local,screen)>.1);
 }
+// Every upright orientation (including upside down and swapped faces) must
+// produce the same screen-space gesture direction, without tracking face names.
+for(const orientation of cubeRotations)for(const axis of ['X','Y','Z']){
+ const q=quaternion(orientation),rotation=dragRotation(40,30,axis,settings,[1,1]);
+ close(distance(applyDragRotation(q,40,30,axis,settings,[1,1]),multiply(rotation,q)),0);
+}
+// Keep the selected physical axis throughout a long drag, even across 90 degrees.
+const frame=viewAxisFrame(tilted);
+let incremental=tilted;
+for(let i=0;i<10;i++)incremental=applyDragRotation(incremental,30,0,'Y',settings,[1,0],frame);
+close(distance(incremental,applyDragRotation(tilted,300,0,'Y',settings,[1,0],frame)),0);
 for(const tolerance of [0,18,30,40])for(const roll of [false,true]){
  const config={...settings,orbitTolerance:tolerance,orbitDiagonalRoll:roll},sectors=captureSectors(config);
  close(sectors.reduce((sum,s)=>sum+s.end-s.start,0),360);
@@ -39,9 +51,9 @@ assert.equal(settings.orbitDeadZone,24);
 settings.orbitDeadZone=0;settings.orbitSettling=true;let draws=0;
 const renderer={orientation:matrix(tilted),canvas:{}},apply=(_,__,m)=>{draws++;renderer.orientation=m;};
 const controller=createSettlingOrbit(renderer,apply);
-controller.start(0,0);controller.move(100,0);const expected=snapTarget(multiply(tilted,step),settings).q;controller.release();flush();close(distance(quaternion(renderer.orientation),expected),0);
+controller.start(0,0);controller.move(100,0);const expected=snapTarget(applyDragRotation(tilted,100,0,'Y',settings),settings).q;controller.release();flush();close(distance(quaternion(renderer.orientation),expected),0);
 controller.start(0,0);controller.move(100,0);controller.release();controller.cancel();const before=draws;flush();assert.equal(draws,before);
-settings.orbitSnap=false;controller.start(0,0);controller.move(100,0);const previous=quaternion(renderer.orientation);controller.release();flush();close(distance(quaternion(renderer.orientation),multiply(previous,step)),0);
+settings.orbitSnap=false;controller.start(0,0);controller.move(100,0);const previous=quaternion(renderer.orientation);controller.release();flush();close(distance(quaternion(renderer.orientation),applyDragRotation(previous,100,0,'Y',settings)),0);
 // Direction can change inside the dead zone without moving or capturing an axis.
 settings.orbitDeadZone=24;settings.orbitAxisLock=true;
 renderer.orientation=matrix(identity);const count=draws;
