@@ -1,3 +1,4 @@
+import {bindOrbitSettings} from './orbit-settings.js';
 const key='stack-it-up.controls';
 export const controlSettings={hoverRings:true,ringLabels:false,hoverOutline:false,showArrows:false,arrowGuides:false,classicControls:false,freeOrbit:true,perspectiveCamera:true,wideTurns:false};
 try {const saved=JSON.parse(globalThis.localStorage?.getItem(key)||'{}');for(const k in controlSettings)if(typeof saved[k]==='boolean')controlSettings[k]=saved[k];}catch{}
@@ -17,5 +18,5 @@ export function bindControlSettings(root,onChange,{explorer=false}={}){
   onChange();
  };
  for(const k in controlSettings){const el=get(k);if(el)el.addEventListener('change',()=>setControlSetting(k,explorer&&k==='perspectiveCamera'?el.value==='perspective':el.checked));}
- refresh();return subscribeControls(refresh);
+ refresh();const stopOrbit=bindOrbitSettings(root),stop=subscribeControls(refresh);return()=>{stopOrbit();stop();};
 }

@@ -31,6 +31,9 @@ export function initializeExplorerSettings(root) {
   const input=page('Input',controls);unpack(input,$('explorerInputSettings'));
   const hover=page('Hover feedback',controls);unpack(hover,$('explorerHoverSettings'));
   const camera=page('Camera',controls);add(camera,$('explorerCamera').closest('label'),$('freeOrbit').closest('label'));
+  const settling=page('Smooth face alignment',camera);
+  for(const [id,name]of [['orbitGestureSettings','Drag response'],['orbitAlignmentSettings','Release alignment'],['orbitDebugSettings','Diagnostics']]){const field=$(id);unpack(page(name,settling),field);field.remove();}
+  unpack(settling,$('settlingOrbitSettings'));
   const views=page('Views',home);
   unpack(views,find('.window-controls'));
   add(views,$('targetComposite').closest('label'));

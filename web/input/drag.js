@@ -1,3 +1,5 @@
+import {orbitSettings} from './orbit-settings.js';
+import {createSettlingOrbit,stopOrbitMotion} from './settling-orbit.js';
 import {pointerRay} from "../render/camera.js";
 import { pickBand } from "./band-pick.js";
 function stickerCenter(hit) {
@@ -49,6 +51,7 @@ function sliceCandidates(r, hit, wide = false) {
 // A gesture starting on the cube never falls back to whole-cube rotation.
 function installCubeDrag(r, onOrbit, context) {
   const canvas = r.canvas;
+  const orbit = r.orbitController = createSettlingOrbit(r,onOrbit);
   let drag = null;
   let lastHover = null;
   const hover = (e) => {
@@ -100,6 +103,7 @@ function installCubeDrag(r, onOrbit, context) {
     const d = drag;
     drag = null;
     r.orbitDragging = false;
+    if (d.newOrbit) { orbit.release(cancel); return; }
     if (d.lockClick) {
       if (!cancel && !d.moved && d.lockCell >= 0) await context.lockBand(d.lockCell);
       return;
@@ -128,6 +132,8 @@ function installCubeDrag(r, onOrbit, context) {
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
   canvas.addEventListener("pointerdown", (e) => {
     if (drag) return;
+    stopOrbitMotion();
+    orbit.cancel();
     r.hover = null;
     context.invalidate();
     e.preventDefault();
@@ -138,13 +144,15 @@ function installCubeDrag(r, onOrbit, context) {
       y: e.clientY,
       lastX: e.clientX,
       lastY: e.clientY,
-      hit: e.button !== 2 && !r.orbitOnly ? hitAt(e) : null,
+      hit: e.button !== 2 && (!r.orbitOnly || orbitSettings.orbitSettling) ? hitAt(e) : null,
       wide: !!(r.wideTurns || e.shiftKey),
     };
     if (e.button !== 2 && !r.isStack && context.lockMode && drag.hit) {
       drag.lockClick = true;
       drag.lockCell = pickBand(r, e, context.state);
     }
+    drag.newOrbit = !drag.hit && orbitSettings.orbitSettling;
+    if(drag.newOrbit) orbit.start(e.clientX,e.clientY);
     r.orbitDragging = !drag.hit;
     r.arrowHover = null;
   });
@@ -160,7 +168,7 @@ function installCubeDrag(r, onOrbit, context) {
     if (d.lockClick) { d.moved ||= Math.hypot(dx, dy) > 8; return; }
     if (d.hit && !d.turn) {
       if (
-        r.isStack ||
+        r.isStack || r.orbitOnly ||
         context.busy ||
         (!r.skipGameLocks && (context.state?.[66] || context.state?.[78]))
       )
@@ -197,7 +205,8 @@ function installCubeDrag(r, onOrbit, context) {
       r.setState(context.state, { kind: "turn", move: d.move, t: d.t });
       context.invalidate();
     } else {
-      onOrbit((e.clientX - d.lastX) * 0.009, (e.clientY - d.lastY) * 0.009);
+      if(d.newOrbit) orbit.move(e.clientX,e.clientY);
+      else onOrbit((e.clientX - d.lastX) * 0.009, (e.clientY - d.lastY) * 0.009);
     }
     d.lastX = e.clientX;
     d.lastY = e.clientY;

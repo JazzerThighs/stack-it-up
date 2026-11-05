@@ -805,7 +805,51 @@
                     ><input id="freeOrbit" type="checkbox" checked />
                     Unrestricted orbit</label
                   >
-                  <fieldset class="window-controls">
+                  <fieldset id="settlingOrbitSettings">
+<legend>Smooth face alignment</legend>
+<label>
+<input id="orbitSettling" type="checkbox" > Enable smooth face alignment</label>
+<p class="muted">Full 360° orbit. Right-drag anywhere or left-drag outside the cube. Shared by both apps.</p>
+<fieldset id="orbitGestureSettings">
+<legend>Drag response</legend>
+<label>
+<input id="orbitAxisLock" type="checkbox" checked> Keep axis for entire drag</label>
+<label>
+<input id="orbitDiagonalRoll" type="checkbox" checked> Diagonal drags roll around camera Z</label>
+<p class="muted">Horizontal: camera Y. Vertical: camera X. Diagonal: camera Z. Other angles blend X and Y. Axes stay aligned with the window.</p>
+<label>Rotation per pixel <output id="orbitSensitivityValue">0.5</output>°<input id="orbitSensitivity" type="range" min="0.1" max="2" step="0.05" value="0.5">
+</label>
+<label>Axis capture angle <output id="orbitToleranceValue">18</output>°<input id="orbitTolerance" type="range" min="0" max="40" step="1" value="18">
+</label>
+<label>Drag smoothing <output id="orbitSmoothingValue">70</output> ms<input id="orbitSmoothing" type="range" min="0" max="300" step="10" value="70">
+</label>
+</fieldset>
+<fieldset id="orbitAlignmentSettings">
+<legend>Release alignment</legend>
+<label>
+<input id="orbitSnap" type="checkbox" checked> Settle toward nearest face</label>
+<p class="muted">The nearest face keeps an upright quarter-turn. Horizontal and vertical set its outward normal; roll tilts its borders around that normal. Zero angles give a straight-on face.</p>
+<label>Horizontal angle <output id="orbitHorizontalValue">-20</output>°<input id="orbitHorizontal" type="range" min="-60" max="60" step="1" value="-20">
+</label>
+<label>Vertical angle <output id="orbitVerticalValue">15</output>°<input id="orbitVertical" type="range" min="-60" max="60" step="1" value="15">
+</label>
+<label>Face roll <output id="orbitRollValue">0</output>°<input id="orbitRoll" type="range" min="-45" max="45" step="1" value="0">
+</label>
+<label>Settle duration <output id="orbitSettleTimeValue">700</output> ms<input id="orbitSettleTime" type="range" min="100" max="2500" step="50" value="700">
+</label>
+<label>Release delay <output id="orbitSettleDelayValue">80</output> ms<input id="orbitSettleDelay" type="range" min="0" max="600" step="20" value="80">
+</label>
+</fieldset>
+<fieldset id="orbitDebugSettings">
+<legend>Diagnostics</legend>
+<label>
+<input id="orbitDebug" type="checkbox" > Show diagnostic readout</label>
+<label>
+<input id="orbitDebugOverlay" type="checkbox" > Show readout over cube</label>
+<pre id="orbitDiagnostics" hidden>Drag the background or right-drag to inspect orientation.</pre>
+</fieldset>
+<button id="resetOrbitSettings" type="button">Reset camera mode settings</button>
+</fieldset><fieldset class="window-controls">
                     <legend>Visible cubes</legend>
                     <label
                       ><input type="checkbox" id="showSolved" checked /> Target

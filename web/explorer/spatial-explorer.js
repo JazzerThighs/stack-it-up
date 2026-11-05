@@ -246,6 +246,8 @@ export async function initializeSpatialExplorer(
       let result = await client.query({
         filters: f,
         position,
+        // Refilter around the selected record, not the first matching result.
+        ...(refresh && current ? { line: current.lineNumber } : {}),
         ...(action.offset && current ? { line: current.lineNumber } : {}),
         ...action,
       });
@@ -283,7 +285,9 @@ export async function initializeSpatialExplorer(
         `${total.toLocaleString()} matching packings in the local ${info.count.toLocaleString()}-packing collection.`;
       $('familySummary').textContent =
         `${counts.filter((n) => n > 0).length.toLocaleString()} matching families`;
-      if (result.record) {
+      const retained = refresh && result.record && current &&
+        result.record.lineNumber === current.lineNumber;
+      if (result.record && !retained) {
         current = remember(result.record);
         scramble = Array.from(
           { length: 20 },
@@ -295,7 +299,9 @@ export async function initializeSpatialExplorer(
       } else {
         $('packingIndex').textContent = 'No matches — previous cube retained';
       }
-      if (result.record && apply) await views.navigate(current);
+      if (retained) $('packingIndex').textContent =
+        `${position + 1} of ${total.toLocaleString()} matching - tetracubes-v2 line ${current.lineNumber}`;
+      if (result.record && apply && !retained) await views.navigate(current);
     } catch (e) {
       if (token === generation) $('status').textContent = e.message;
     }

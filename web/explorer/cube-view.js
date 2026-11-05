@@ -1,3 +1,4 @@
+import {orbitSettings} from '../input/orbit-settings.js';
 import {jellyStyleKey} from '../render/visual-settings.js';
 import {controlSettings,subscribeControls,setControlSetting} from '../input/control-settings.js';
 import {sceneDecorations} from '../render/decorations.js';
@@ -50,8 +51,9 @@ export class PackingCube extends Renderer {
       invalidate: () => view?.invalidate(),
     };
     super(canvas, labels, {
-      onOrbit: (dx, dy) => {
-        if(controlSettings.freeOrbit)view.orbit(dx,dy);
+      onOrbit: (dx, dy, orientation) => {
+        if(orientation)view.orientation=orientation.slice();
+        else if(controlSettings.freeOrbit)view.orbit(dx,dy);
         else {view.yaw=Math.atan2(Math.sin(view.yaw+dx),Math.cos(view.yaw+dx));view.pitch=Math.max(-1.4,Math.min(1.4,view.pitch+dy));view.resetOrientation();}
         view.invalidate();
       },
@@ -133,7 +135,7 @@ export class PackingCube extends Renderer {
   }
   syncControls() {
     this.wideTurns=controlSettings.wideTurns;this.perspective=controlSettings.perspectiveCamera;
-    if(!controlSettings.freeOrbit){this.pitch=Math.max(-1.4,Math.min(1.4,this.pitch));this.resetOrientation();}
+    if(!controlSettings.freeOrbit&&!orbitSettings.orbitSettling){this.pitch=Math.max(-1.4,Math.min(1.4,this.pitch));this.resetOrientation();}
     this.arrowHost.hidden=this.orbitOnly || !controlSettings.showArrows;
     this.classicGrid.hidden=this.orbitOnly || !controlSettings.classicControls;
     if(this.widthButton){this.widthButton.textContent=this.wideTurns?'Wide turns':'Regular turns';this.widthButton.setAttribute('aria-pressed',String(this.wideTurns));}
@@ -315,6 +317,7 @@ export class PackingCube extends Renderer {
     );
   }
   destroy() {
+    this.orbitController?.dispose();
     this.stopControls?.();
     unregisterRenderer(this);
     this.generation++;

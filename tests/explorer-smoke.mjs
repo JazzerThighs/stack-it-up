@@ -523,3 +523,38 @@ assert.notDeepEqual(familyView.solid.data,defaultCornerMesh);assert.deepEqual(fa
 $('jellyCornerO').checked=false;$('jellyCornerO').listeners.change();
 assert.deepEqual(familyView.solid.data,defaultCornerMesh);
 console.log('PASS: explorer corner-O toggle refreshes cached family meshes without changing cells.');
+
+// Refine around the current packing. Widening, or narrowing up to its exact
+// count, must not reset the live cube or request a different packing.
+await $('resetPackingFilters').onclick();
+const threeO=await spatial.client.query({filters:{counts:[{type:'O',min:3,max:3}]}});
+assert(threeO.record);await spatial.query({line:threeO.record.lineNumber});
+const chosenLine=spatial.current.lineNumber;
+let navigations=0;const originalNavigate=spatial.views.navigate;
+spatial.views.navigate=async(...args)=>{navigations++;return originalNavigate(...args);};
+const retainedCells=familyView.cells,retainedHistory=familyView.history;
+for(const min of [2,3,1,0]) {
+ $('countMinO').value=String(min);await $('countMinO').listeners.change();
+ assert.equal(spatial.current.lineNumber,chosenLine);assert.equal(navigations,0);
+ assert.equal(familyView.cells,retainedCells);assert.equal(familyView.history,retainedHistory);
+}
+for(const max of [4,3,6]) {
+ $('countMaxO').value=String(max);await $('countMaxO').listeners.change();
+ assert.equal(spatial.current.lineNumber,chosenLine);assert.equal(navigations,0);
+}
+$('countMinO').value='4';await $('countMinO').listeners.change();
+assert.notEqual(spatial.current.lineNumber,chosenLine);assert.equal(navigations,1);
+await $('resetPackingFilters').onclick();assert.equal(navigations,1);
+await spatial.query({line:chosenLine});navigations=0;
+$('countMaxO').value='2';await $('countMaxO').listeners.change();
+assert.notEqual(spatial.current.lineNumber,chosenLine);assert.equal(navigations,1);
+const beforeNoMatch=spatial.current.lineNumber;
+$('countMinO').value='6';$('countMaxO').value='6';$('countMinT').value='6';
+await $('countMinT').listeners.change();
+assert.equal(spatial.current.lineNumber,beforeNoMatch);assert.equal(navigations,1);
+assert.match($('packingIndex').textContent,/No matches/);
+await $('resetPackingFilters').onclick();
+assert.equal(spatial.current.lineNumber,beforeNoMatch);assert.equal(navigations,1);
+assert.doesNotMatch($('packingIndex').textContent,/No matches/);
+spatial.views.navigate=originalNavigate;
+console.log('PASS: filters retain matching selections and live history, replacing only packings outside the new range.');

@@ -1,3 +1,4 @@
+import {orbitSettings} from './input/orbit-settings.js';
 import {bindControlSettings,controlSettings,setControlSetting} from './input/control-settings.js';
 import {createFaceMap} from './ui/face-map.js';
 import {groupRequirementsText} from './ui/group-requirements.js';
@@ -800,9 +801,10 @@ document.addEventListener("visibilitychange", invalidate);
 function wrapOrbitAngle(angle) {
   return Math.atan2(Math.sin(angle), Math.cos(angle));
 }
-function orbitCamera(dx, dy) {
+function orbitCamera(dx, dy, orientation) {
   const free = $("freeOrbit").checked;
   for (const r of renderers) {
+    if (orientation) { r.orientation=orientation.slice(); continue; }
     if (free) {
       r.orbit(dx, dy);
       continue;
@@ -937,7 +939,7 @@ $("stageFaceMap").onchange=syncFaceMapLayout;
 bindControlSettings(document,()=>{
   for(const r of renderers){
     r.wideTurns=controlSettings.wideTurns;r.refreshTurnHover?.();
-    if(!controlSettings.freeOrbit){r.pitch=Math.max(-1.4,Math.min(1.4,wrapOrbitAngle(r.pitch)));r.resetOrientation();}
+    if(!controlSettings.freeOrbit&&!orbitSettings.orbitSettling){r.pitch=Math.max(-1.4,Math.min(1.4,wrapOrbitAngle(r.pitch)));r.resetOrientation();}
   }
   $("turnWidth").textContent=controlSettings.wideTurns?'Wide turns':'Regular turns';
   $("turnWidth").setAttribute('aria-pressed',String(controlSettings.wideTurns));

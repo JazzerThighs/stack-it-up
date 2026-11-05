@@ -470,6 +470,7 @@ class Renderer {
   }
 
   resetOrientation() {
+    this.orbitController?.cancel();
     const cy = Math.cos(this.yaw),
       sy = Math.sin(this.yaw),
       cp = Math.cos(this.pitch),
