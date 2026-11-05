@@ -39,3 +39,26 @@ export function dragRotation(dx,dy,axis,s,direction=[1,1]){
  if(axis==='Z'){const n=Math.hypot(...direction)||1;return axisAngle([0,0,1],-(dx*direction[0]+dy*direction[1])/n*Math.sign(direction[0]||1)*gain);}
  return axisAngle([dy,dx,0],Math.hypot(dx,dy)*gain);
 }
+
+// Captured axes can follow the cube. Post-multiply for cube-local rotation;
+// pre-multiply for window-relative rotation. Uncaptured XY stays camera-relative.
+export function cubeAxisEnabled(axis,s){return !!s[{X:'orbitCubeLR',Y:'orbitCubeUD',Z:'orbitCubeFB'}[axis]];}
+export function applyDragRotation(q,dx,dy,axis,s,direction){
+ const rotation=dragRotation(dx,dy,axis,s,direction);
+ return cubeAxisEnabled(axis,s)?multiply(q,rotation):multiply(rotation,q);
+}
+export function axisLabel(axis,s){
+ return cubeAxisEnabled(axis,s)?{X:'L-R',Y:'U-D',Z:'F-B'}[axis]:axis==='XY'?'Free XY':`Camera ${axis}`;
+}
+// Split exactly at capture boundaries, using the same precedence as dragAxis.
+export function captureSectors(s){
+ const bounds=new Set([0,360]);
+ for(const a of [0,45,90,135,180,225,270,315])for(const d of [-s.orbitTolerance,s.orbitTolerance])bounds.add(((a+d)%360+360)%360);
+ const ordered=[...bounds].sort((a,b)=>a-b),segments=[];
+ for(let i=1;i<ordered.length;i++){
+  const start=ordered[i-1],end=ordered[i],mid=(start+end)/2*Math.PI/180;
+  const axis=dragAxis(Math.cos(mid),Math.sin(mid),s),prev=segments.at(-1);
+  if(s.orbitTolerance>0&&prev?.axis===axis)prev.end=end;else segments.push({start,end,axis});
+ }
+ return segments;
+}
