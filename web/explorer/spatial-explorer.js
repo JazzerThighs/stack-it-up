@@ -1,3 +1,4 @@
+import {refreshRangeCards} from './filter-range-ui.js';
 import { countSpecs, countLimits, presetCounts } from './filter-counts.js';
 import { packingPresentation } from './presentation.js';
 import { createPackingClient } from './data-client.js';
@@ -218,14 +219,16 @@ export async function initializeSpatialExplorer(
     }
   }
   async function query(action = {}, refresh = false, apply = true) {
+    const invalidRanges=refreshRangeCards(root);
     const token = ++generation;
+    if(invalidRanges){$('status').textContent='Correct the marked count ranges to filter packings.';return;}
     $('status').textContent = 'Filtering local index…';
     try {
       const f = filters();
       $('filterFamilyStatus').textContent = f.family
         ? `Family ${f.family}`
         : 'All families';
-      $('clearFilterFamily').hidden = !f.family;
+      $('clearFilterFamily').disabled = !f.family;
       if (
         f.counts.some(
           (c) =>
@@ -342,6 +345,10 @@ export async function initializeSpatialExplorer(
     $('filterPreset').value = '';
     return applyPreset('all');
   };
+  $('resetPieceFilters').onclick = () => {
+    $('filterPreset').value = '';
+    return applyPreset('pieces');
+  };
   $('clearFilterFamily').onclick = () => {
     $('familySelect').value = '';
     $('filterPreset').value = '';
@@ -350,6 +357,7 @@ export async function initializeSpatialExplorer(
   for (const id of types.flatMap((t) => ['countMin' + t, 'countMax' + t]))
     $(id).addEventListener('input', () => {
       $('filterPreset').value = '';
+      refreshRangeCards(root);
     });
   function collectionChanged() {
     const classic = $('datasetSelect').value === 'classic';
@@ -423,6 +431,11 @@ export async function initializeSpatialExplorer(
       paint();
     };
   for (const id of ['showSolved', 'showScrambled']) $(id).onchange = paint;
+  const picker=$('packingPicker');
+  $('closePackingPicker').onclick=()=>{picker.open=false;picker.querySelector('summary')?.focus();};
+  picker.addEventListener('keydown',e=>{if(e.key==='Escape'){picker.open=false;picker.querySelector('summary')?.focus();}});
+  picker.addEventListener('toggle',()=>{if(picker.open)$('settingsPanel').open=false;});
+  $('settingsPanel').addEventListener('toggle',()=>{if($('settingsPanel').open)picker.open=false;});
   $('closeSettings').onclick = () => {
     $('settingsPanel').open = false;
   };

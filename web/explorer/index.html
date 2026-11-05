@@ -17,11 +17,13 @@
             ><button id="next" aria-label="Next packing">→</button>
           </div>
 
-          <details class="packing-picker">
+          <details class="packing-picker" id="packingPicker">
             <summary>Choose packing</summary>
-            <div class="packing-picker-content">
-              <div class="explorer-section-body">
-                <label
+            <div class="packing-picker-content" aria-label="Choose packing"><header class="picker-heading"><div><span class="settings-eyebrow">PACKING EXPLORER</span><h2>Choose packing</h2><p>Browse the collection or narrow it to your next puzzle.</p></div><button id="resetPackingFilters" class="reset-all" type="button" title="Clear every packing filter and family restriction">Reset all</button><button id="closePackingPicker" type="button" aria-label="Close packing chooser">Close</button></header><div class="picker-scroll"><div class="picker-results"><div class="status-row">
+              <span id="status" role="status">Loading…</span
+              ><span id="colorStatus" role="status"></span>
+            </div><p id="familySummary" role="status"></p></div><div class="explorer-section-body picker-browse">
+                <h2>Find a packing</h2><label
                   >Packing family
                   <select id="familySelect">
                     <option value="">All families</option>
@@ -51,8 +53,7 @@
                   /><button type="submit">Go</button
                   ><span id="jumpStatus" role="status"></span>
                 </form>
-              </div>
-              <div id="practiceNavigation" hidden>
+              <div class="picker-family-status"><p id="filterFamilyStatus" role="status">All families</p><button id="clearFilterFamily" class="reset-families" type="button" title="Remove only the family restriction">Reset families</button></div></div><div id="practiceNavigation" hidden>
                 <label id="navigationTargetLabel" hidden
                   >Change cube<select id="navigationTarget">
                     <option value="start">Start</option>
@@ -84,8 +85,453 @@
                   inspect it. Colors identify physical pieces, not their current
                   letters. Random pairs respect the explorer filters.
                 </p>
-              </div>
-            </div>
+              </div><section id="countFilterPanel" class="picker-filters" aria-label="Packing filters"><div class="picker-section-heading"><div><span class="settings-eyebrow">REFINE THE COLLECTION</span><h2>Packing filters</h2></div></div><label class="picker-preset">Preset<select id="filterPreset">
+                        <option value="">Custom counts</option>
+                        <option value="planar">Planar Tetrominos Only</option>
+                        <option value="spatial">Spatial Tetrominos Only</option>
+                        <option value="surface">Surfacebound Only</option>
+                        <option value="nonface">
+                          Non-Facebound Surface Only
+                        </option>
+                        <option value="face">Facebound Only</option>
+                        <option value="core">Non-Surfacebound Only</option>
+                        <option value="placements">All Placement Types</option>
+                        <option value="six">
+                          All-6 Planar Tetrominos (JLOTSZ Bag)
+                        </option>
+                        <option value="faceSix">Facebound + All-6 Bag</option>
+                        <option value="official">
+                          Tetris × Rubik’s Cube Compatible (Family 562)
+                        </option>
+                        <option value="soma">
+                          Soma Cube (J/L, S/Z, T, B, D, F, V Bag)
+                        </option>
+                        <option value="sloth">
+                          Slothouber–Graatsma puzzle (OOOOOO Bag)
+                        </option>
+                      </select></label><p class="settings-help">Presets update the counts below. Every limit applies together; 0–0 excludes a shape.</p><p id="rangeFilterSummary" class="range-filter-summary" role="status"></p><div class="picker-count-groups"><section class="picker-count-group"><div class="count-group-heading"><h3>Planar pieces</h3><button id="resetPieceFilters" class="reset-pieces" type="button" title="Clear planar and spatial piece counts; keep extra and placement limits">Reset pieces</button></div><div class="packing-counts"><div class="count-row" id="rangeCardO"><div class="range-card-heading"><span>O</span><output id="rangeStateO">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="O minimum"
+                            id="countMinO"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="O maximum"
+                            id="countMaxO"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickO0">0</span><span id="rangeTickO1">1</span><span id="rangeTickO2">2</span><span id="rangeTickO3">3</span><span id="rangeTickO4">4</span><span id="rangeTickO5">5</span><span id="rangeTickO6">6</span></div></div><div class="count-row" id="rangeCardT"><div class="range-card-heading"><span>T</span><output id="rangeStateT">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="T minimum"
+                            id="countMinT"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="T maximum"
+                            id="countMaxT"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickT0">0</span><span id="rangeTickT1">1</span><span id="rangeTickT2">2</span><span id="rangeTickT3">3</span><span id="rangeTickT4">4</span><span id="rangeTickT5">5</span><span id="rangeTickT6">6</span></div></div><div class="count-row" id="rangeCardJ"><div class="range-card-heading"><span>Specifically J</span><output id="rangeStateJ">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Specifically J minimum"
+                            id="countMinJ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Specifically J maximum"
+                            id="countMaxJ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickJ0">0</span><span id="rangeTickJ1">1</span><span id="rangeTickJ2">2</span><span id="rangeTickJ3">3</span><span id="rangeTickJ4">4</span><span id="rangeTickJ5">5</span><span id="rangeTickJ6">6</span></div></div><div class="count-row" id="rangeCardL"><div class="range-card-heading"><span>Specifically L</span><output id="rangeStateL">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Specifically L minimum"
+                            id="countMinL"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Specifically L maximum"
+                            id="countMaxL"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickL0">0</span><span id="rangeTickL1">1</span><span id="rangeTickL2">2</span><span id="rangeTickL3">3</span><span id="rangeTickL4">4</span><span id="rangeTickL5">5</span><span id="rangeTickL6">6</span></div></div><div class="count-row" id="rangeCardS"><div class="range-card-heading"><span>Specifically S</span><output id="rangeStateS">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Specifically S minimum"
+                            id="countMinS"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Specifically S maximum"
+                            id="countMaxS"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickS0">0</span><span id="rangeTickS1">1</span><span id="rangeTickS2">2</span><span id="rangeTickS3">3</span><span id="rangeTickS4">4</span><span id="rangeTickS5">5</span><span id="rangeTickS6">6</span></div></div><div class="count-row" id="rangeCardZ"><div class="range-card-heading"><span>Specifically Z</span><output id="rangeStateZ">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Specifically Z minimum"
+                            id="countMinZ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Specifically Z maximum"
+                            id="countMaxZ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickZ0">0</span><span id="rangeTickZ1">1</span><span id="rangeTickZ2">2</span><span id="rangeTickZ3">3</span><span id="rangeTickZ4">4</span><span id="rangeTickZ5">5</span><span id="rangeTickZ6">6</span></div></div><div class="count-row" id="rangeCardJL"><div class="range-card-heading"><span>J/L Free Tetromino</span><output id="rangeStateJL">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="J/L Free Tetromino minimum"
+                            id="countMinJL"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="J/L Free Tetromino maximum"
+                            id="countMaxJL"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickJL0">0</span><span id="rangeTickJL1">1</span><span id="rangeTickJL2">2</span><span id="rangeTickJL3">3</span><span id="rangeTickJL4">4</span><span id="rangeTickJL5">5</span><span id="rangeTickJL6">6</span></div></div><div class="count-row" id="rangeCardSZ"><div class="range-card-heading"><span>S/Z Free Tetromino</span><output id="rangeStateSZ">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="S/Z Free Tetromino minimum"
+                            id="countMinSZ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="S/Z Free Tetromino maximum"
+                            id="countMaxSZ"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickSZ0">0</span><span id="rangeTickSZ1">1</span><span id="rangeTickSZ2">2</span><span id="rangeTickSZ3">3</span><span id="rangeTickSZ4">4</span><span id="rangeTickSZ5">5</span><span id="rangeTickSZ6">6</span></div></div></div></section>
+<section class="picker-count-group"><h3>Spatial pieces</h3><div class="packing-counts"><div class="count-row" id="rangeCardB"><div class="range-card-heading"><span>Branch</span><output id="rangeStateB">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Branch minimum"
+                            id="countMinB"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Branch maximum"
+                            id="countMaxB"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickB0">0</span><span id="rangeTickB1">1</span><span id="rangeTickB2">2</span><span id="rangeTickB3">3</span><span id="rangeTickB4">4</span><span id="rangeTickB5">5</span><span id="rangeTickB6">6</span></div></div><div class="count-row" id="rangeCardF"><div class="range-card-heading"><span>Left Screw</span><output id="rangeStateF">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Left Screw minimum"
+                            id="countMinF"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Left Screw maximum"
+                            id="countMaxF"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickF0">0</span><span id="rangeTickF1">1</span><span id="rangeTickF2">2</span><span id="rangeTickF3">3</span><span id="rangeTickF4">4</span><span id="rangeTickF5">5</span><span id="rangeTickF6">6</span></div></div><div class="count-row" id="rangeCardD"><div class="range-card-heading"><span>Right Screw</span><output id="rangeStateD">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Right Screw minimum"
+                            id="countMinD"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Right Screw maximum"
+                            id="countMaxD"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickD0">0</span><span id="rangeTickD1">1</span><span id="rangeTickD2">2</span><span id="rangeTickD3">3</span><span id="rangeTickD4">4</span><span id="rangeTickD5">5</span><span id="rangeTickD6">6</span></div></div></div></section>
+<section class="picker-count-group"><h3>Extra shapes</h3><div class="packing-counts"><div class="count-row" id="rangeCardExtraSingle"><div class="range-card-heading"><span>1-Fragment Extra Cubie</span><output id="rangeStateExtraSingle">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="1-Fragment Extra Cubie minimum"
+                            id="countMinExtraSingle"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="1-Fragment Extra Cubie maximum"
+                            id="countMaxExtraSingle"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="3"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickExtraSingle0">0</span><span id="rangeTickExtraSingle1">1</span><span id="rangeTickExtraSingle2">2</span><span id="rangeTickExtraSingle3">3</span></div></div><div class="count-row" id="rangeCardExtraDomino"><div class="range-card-heading"><span>2-fragment Extra Cubie</span><output id="rangeStateExtraDomino">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="2-fragment Extra Cubie minimum"
+                            id="countMinExtraDomino"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="2-fragment Extra Cubie maximum"
+                            id="countMaxExtraDomino"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickExtraDomino0">0</span><span id="rangeTickExtraDomino1">1</span></div></div><div class="count-row" id="rangeCardExtraV"><div class="range-card-heading"><span>V-piece (Soma)</span><output id="rangeStateExtraV">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="V-piece (Soma) minimum"
+                            id="countMinExtraV"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="V-piece (Soma) maximum"
+                            id="countMaxExtraV"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickExtraV0">0</span><span id="rangeTickExtraV1">1</span></div></div><div class="count-row" id="rangeCardExtraBar"><div class="range-card-heading"><span>Straight 3-Fragment</span><output id="rangeStateExtraBar">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Straight 3-Fragment minimum"
+                            id="countMinExtraBar"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Straight 3-Fragment maximum"
+                            id="countMaxExtraBar"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickExtraBar0">0</span><span id="rangeTickExtraBar1">1</span></div></div></div></section>
+<section class="picker-count-group"><h3>Extra locations</h3><div class="packing-counts"><div class="count-row" id="rangeCardExtraCore"><div class="range-card-heading"><span>Extra Cubies in Core</span><output id="rangeStateExtraCore">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Extra Cubies in Core minimum"
+                            id="countMinExtraCore"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Extra Cubies in Core maximum"
+                            id="countMaxExtraCore"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickExtraCore0">0</span><span id="rangeTickExtraCore1">1</span></div></div><div class="count-row" id="rangeCardExtraCenters"><div class="range-card-heading"><span>Extra Cubies in Centers</span><output id="rangeStateExtraCenters">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Extra Cubies in Centers minimum"
+                            id="countMinExtraCenters"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Extra Cubies in Centers maximum"
+                            id="countMaxExtraCenters"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="3"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickExtraCenters0">0</span><span id="rangeTickExtraCenters1">1</span><span id="rangeTickExtraCenters2">2</span><span id="rangeTickExtraCenters3">3</span></div></div><div class="count-row" id="rangeCardExtraEdges"><div class="range-card-heading"><span>Extra Cubies in Edges</span><output id="rangeStateExtraEdges">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Extra Cubies in Edges minimum"
+                            id="countMinExtraEdges"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Extra Cubies in Edges maximum"
+                            id="countMaxExtraEdges"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="3"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickExtraEdges0">0</span><span id="rangeTickExtraEdges1">1</span><span id="rangeTickExtraEdges2">2</span><span id="rangeTickExtraEdges3">3</span></div></div><div class="count-row" id="rangeCardExtraCorners"><div class="range-card-heading"><span>Extra Cubies in Corners</span><output id="rangeStateExtraCorners">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Extra Cubies in Corners minimum"
+                            id="countMinExtraCorners"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Extra Cubies in Corners maximum"
+                            id="countMaxExtraCorners"
+                            type="number"
+                            min="0"
+                            max="3"
+                            value="3"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickExtraCorners0">0</span><span id="rangeTickExtraCorners1">1</span><span id="rangeTickExtraCorners2">2</span><span id="rangeTickExtraCorners3">3</span></div></div></div></section>
+<section class="picker-count-group"><h3>Piece placement</h3><div class="packing-counts"><div class="count-row" id="rangeCardFacebound"><div class="range-card-heading"><span>Facebound pieces</span><output id="rangeStateFacebound">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Facebound pieces minimum"
+                            id="countMinFacebound"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Facebound pieces maximum"
+                            id="countMaxFacebound"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickFacebound0">0</span><span id="rangeTickFacebound1">1</span><span id="rangeTickFacebound2">2</span><span id="rangeTickFacebound3">3</span><span id="rangeTickFacebound4">4</span><span id="rangeTickFacebound5">5</span><span id="rangeTickFacebound6">6</span></div></div><div class="count-row" id="rangeCardSurfaceNonface"><div class="range-card-heading"><span>Non-facebound surface pieces</span><output id="rangeStateSurfaceNonface">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Non-facebound surface pieces minimum"
+                            id="countMinSurfaceNonface"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Non-facebound surface pieces maximum"
+                            id="countMaxSurfaceNonface"
+                            type="number"
+                            min="0"
+                            max="6"
+                            value="6"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickSurfaceNonface0">0</span><span id="rangeTickSurfaceNonface1">1</span><span id="rangeTickSurfaceNonface2">2</span><span id="rangeTickSurfaceNonface3">3</span><span id="rangeTickSurfaceNonface4">4</span><span id="rangeTickSurfaceNonface5">5</span><span id="rangeTickSurfaceNonface6">6</span></div></div><div class="count-row" id="rangeCardCorePieces"><div class="range-card-heading"><span>Core-occupying pieces</span><output id="rangeStateCorePieces">Any</output></div><label
+                          ><span class="count-label">Minimum</span
+                          ><input
+                            aria-label="Core-occupying pieces minimum"
+                            id="countMinCorePieces"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="0" /></label
+                        ><label
+                          ><span class="count-label">Maximum</span
+                          ><input
+                            aria-label="Core-occupying pieces maximum"
+                            id="countMaxCorePieces"
+                            type="number"
+                            min="0"
+                            max="1"
+                            value="1"
+                        /></label>
+                      <div class="range-strip" aria-hidden="true"><span id="rangeTickCorePieces0">0</span><span id="rangeTickCorePieces1">1</span></div></div></div></section></div></section></div></div>
           </details>
         </div>
         <details class="settings" id="settingsPanel">
@@ -131,541 +577,7 @@
                       <option value="">All piece mixes</option>
                     </select></label
                   >
-                  <div id="countFilterPanel">
-                    <button id="resetPackingFilters" type="button">
-                      All packings / Reset</button
-                    ><label
-                      >Preset<select id="filterPreset">
-                        <option value="">Custom counts</option>
-                        <option value="planar">Planar Tetrominos Only</option>
-                        <option value="spatial">Spatial Tetrominos Only</option>
-                        <option value="pieces">All Tetrominos</option>
-                        <option value="surface">Surfacebound Only</option>
-                        <option value="nonface">
-                          Non-Facebound Surface Only
-                        </option>
-                        <option value="face">Facebound Only</option>
-                        <option value="core">Non-Surfacebound Only</option>
-                        <option value="placements">All Placement Types</option>
-                        <option value="six">
-                          All-6 Planar Tetrominos (JLOTSZ Bag)
-                        </option>
-                        <option value="faceSix">Facebound + All-6 Bag</option>
-                        <option value="official">
-                          Tetris × Rubik’s Cube Compatible (Family 562)
-                        </option>
-                        <option value="soma">
-                          Soma Cube (J/L, S/Z, T, B, D, F, V Bag)
-                        </option>
-                        <option value="sloth">
-                          Slothouber–Graatsma puzzle (OOOOOO Bag)
-                        </option>
-                      </select></label
-                    >
-                    <p class="settings-help">
-                      Only filters and fixed bags set incompatible counts to
-                      0–0. Family 562 changes only the family. All tetrominos
-                      and All placement types remove limits in their own
-                      category. All packings resets everything.
-                    </p>
-                    <p id="filterFamilyStatus" role="status">All families</p>
-                    <button id="clearFilterFamily" type="button">
-                      All families
-                    </button>
-                    <div class="packing-counts">
-                      <div class="count-row">
-                        <span>O</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="O minimum"
-                            id="countMinO"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="O maximum"
-                            id="countMaxO"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>T</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="T minimum"
-                            id="countMinT"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="T maximum"
-                            id="countMaxT"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Specifically S</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Specifically S minimum"
-                            id="countMinS"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Specifically S maximum"
-                            id="countMaxS"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Specifically Z</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Specifically Z minimum"
-                            id="countMinZ"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Specifically Z maximum"
-                            id="countMaxZ"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Specifically J</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Specifically J minimum"
-                            id="countMinJ"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Specifically J maximum"
-                            id="countMaxJ"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Specifically L</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Specifically L minimum"
-                            id="countMinL"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Specifically L maximum"
-                            id="countMaxL"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>J/L Free Tetromino</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="J/L Free Tetromino minimum"
-                            id="countMinJL"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="J/L Free Tetromino maximum"
-                            id="countMaxJL"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>S/Z Free Tetromino</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="S/Z Free Tetromino minimum"
-                            id="countMinSZ"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="S/Z Free Tetromino maximum"
-                            id="countMaxSZ"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Branch</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Branch minimum"
-                            id="countMinB"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Branch maximum"
-                            id="countMaxB"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Left Screw</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Left Screw minimum"
-                            id="countMinF"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Left Screw maximum"
-                            id="countMaxF"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Right Screw</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Right Screw minimum"
-                            id="countMinD"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Right Screw maximum"
-                            id="countMaxD"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>1-Fragment Extra Cubie</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="1-Fragment Extra Cubie minimum"
-                            id="countMinExtraSingle"
-                            type="number"
-                            min="0"
-                            max="3"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="1-Fragment Extra Cubie maximum"
-                            id="countMaxExtraSingle"
-                            type="number"
-                            min="0"
-                            max="3"
-                            value="3"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>2-fragment Extra Cubie</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="2-fragment Extra Cubie minimum"
-                            id="countMinExtraDomino"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="2-fragment Extra Cubie maximum"
-                            id="countMaxExtraDomino"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="1"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>V-piece (Soma)</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="V-piece (Soma) minimum"
-                            id="countMinExtraV"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="V-piece (Soma) maximum"
-                            id="countMaxExtraV"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="1"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Straight 3-Fragment</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Straight 3-Fragment minimum"
-                            id="countMinExtraBar"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Straight 3-Fragment maximum"
-                            id="countMaxExtraBar"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="1"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Extra Cubies in Core</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Extra Cubies in Core minimum"
-                            id="countMinExtraCore"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Extra Cubies in Core maximum"
-                            id="countMaxExtraCore"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="1"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Extra Cubies in Centers</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Extra Cubies in Centers minimum"
-                            id="countMinExtraCenters"
-                            type="number"
-                            min="0"
-                            max="3"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Extra Cubies in Centers maximum"
-                            id="countMaxExtraCenters"
-                            type="number"
-                            min="0"
-                            max="3"
-                            value="3"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Extra Cubies in Edges</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Extra Cubies in Edges minimum"
-                            id="countMinExtraEdges"
-                            type="number"
-                            min="0"
-                            max="3"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Extra Cubies in Edges maximum"
-                            id="countMaxExtraEdges"
-                            type="number"
-                            min="0"
-                            max="3"
-                            value="3"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Extra Cubies in Corners</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Extra Cubies in Corners minimum"
-                            id="countMinExtraCorners"
-                            type="number"
-                            min="0"
-                            max="3"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Extra Cubies in Corners maximum"
-                            id="countMaxExtraCorners"
-                            type="number"
-                            min="0"
-                            max="3"
-                            value="3"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Facebound pieces</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Facebound pieces minimum"
-                            id="countMinFacebound"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Facebound pieces maximum"
-                            id="countMaxFacebound"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Non-facebound surface pieces</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Non-facebound surface pieces minimum"
-                            id="countMinSurfaceNonface"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Non-facebound surface pieces maximum"
-                            id="countMaxSurfaceNonface"
-                            type="number"
-                            min="0"
-                            max="6"
-                            value="6"
-                        /></label>
-                      </div>
-                      <div class="count-row">
-                        <span>Core-occupying pieces</span
-                        ><label
-                          ><span class="count-label">Min</span
-                          ><input
-                            aria-label="Core-occupying pieces minimum"
-                            id="countMinCorePieces"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="0" /></label
-                        ><label
-                          ><span class="count-label">Max</span
-                          ><input
-                            aria-label="Core-occupying pieces maximum"
-                            id="countMaxCorePieces"
-                            type="number"
-                            min="0"
-                            max="1"
-                            value="1"
-                        /></label>
-                      </div>
-                    </div>
-                    <p class="settings-help">
-                      J/L and S/Z are combined totals, including non-facebound
-                      forms. Specific J, L, S and Z count their facebound
-                      identities. Extra shapes count complete face-connected
-                      groups, without overlap. Non-facebound surface means at
-                      least one such piece and no piece in the core.
-                    </p>
-                  </div>
+
                   <fieldset id="spatialFilters" hidden>
                     <legend>Spatial pieces and composition</legend>
                     <p class="muted">
@@ -796,7 +708,7 @@
                       </select></label
                     >
                   </div>
-                  <p id="familySummary" role="status"></p>
+
                 </fieldset>
               </div>
             </details>
@@ -1333,10 +1245,7 @@
                 </fieldset>
               </div>
             </details>
-            <div class="status-row">
-              <span id="status" role="status">Loading…</span
-              ><span id="colorStatus" role="status"></span>
-            </div>
+
           </div>
         </details>
       </section>

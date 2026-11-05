@@ -4,7 +4,7 @@ export function initializeExplorerSettings(root) {
   if(!content || content.dataset.paged)return;
   content.dataset.paged='true';
   const $=id=>root.getElementById(id),find=s=>content.querySelector(s);
-  const heading=find('.settings-heading'),status=find('.status-row');
+  const heading=find('.settings-heading');
   heading.querySelector('p')?.remove();
   const title=heading.querySelector('strong');title.tabIndex=-1;
   const pages=[],buttons=[];
@@ -22,12 +22,10 @@ export function initializeExplorerSettings(root) {
   const home=page('Settings');
   const mode=page('Explorer mode',home);unpack(mode,find('.explorer-modes'));
   help(mode,'Turn both modes off to browse target and scrambled cubes.');
-  const filters=page('Packing filters',home);
-  add(filters,$('countFilterPanel'),$('familySummary'));
   // Retain old controls for saved integrations, but expose only editable counts.
   const legacy=document.createElement('div');legacy.hidden=true;
   for(const node of [$('datasetSelect').closest('label'),$('familyBag').closest('label'),$('spatialFilters'),find('.filter-flags'),$('puzzleShapeFilters'),find('.extra-filters')])if(node)legacy.append(node);
-  add(filters,legacy);
+  $('packingPicker').append(legacy);
   const controls=page('Controls',home);
   help(controls,'Shared with the game. Changes apply to both apps.');
   const input=page('Input',controls);unpack(input,$('explorerInputSettings'));
@@ -51,7 +49,7 @@ export function initializeExplorerSettings(root) {
   const lightClasses=page('Lighting by element',tuning.lightAzimuth);
   const classes=body.querySelector('#lightingClasses');
   unpack(lightClasses,classes);classes.remove();
-  const info=page('Collection status',home);add(info,status);
+
   let current=home;
   function refresh() {
     const family=$('familyExploreMode').checked,practice=$('practiceMode').checked;

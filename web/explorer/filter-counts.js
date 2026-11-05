@@ -89,7 +89,6 @@ export function indexedCounts(flags, spatial, core, span, gaps, extras) {
 export const filterPresets = [
   ['planar', 'Planar tetrominos only'],
   ['spatial', 'Spatial tetrominos only'],
-  ['pieces', 'All tetrominos'],
   ['surface', 'Surfacebound only'],
   ['nonface', 'Non-facebound surface only'],
   ['face', 'Facebound only'],
@@ -102,70 +101,252 @@ export const filterPresets = [
   ['sloth', 'Slothouber–Graatsma puzzle (OOOOOO)'],
 ];
 export function presetCounts(name, current = {}, currentFamily = 0) {
-  if (name === 'faceSix') {
-    const six = presetCounts('six', current, currentFamily);
-    return presetCounts('face', six.ranges, six.family);
-  }
+  /* EDITING TEMPLATE
+   * Each case below is deliberately self-contained. Repeated assignments make
+   * it possible to edit one preset without changing another preset's behavior.
+   * Start from the current counts/family; omitted rows keep their current values.
+   * Missing rows start unrestricted (0 through the maximum in countSpecs).
+   *
+   * Copy a case and use these operations:
+   *   case 'myPreset':
+   *     ranges.T = { min: 1, max: 1 }; // Require exactly one T.
+   *     ranges.O = { min: 0, max: 0 }; // Exclude O entirely.
+   *     ranges.B = { min: 2, max: 6 }; // Require at least two branches.
+   *     ranges.JL = { min: 0, max: 6 }; // Remove this row's restriction.
+   *     // Omit ranges.ExtraV to preserve the player's current V restriction.
+   *     family = 562; // Restrict to this family; 0 means all families.
+   *     // Omit family to preserve the player's current family restriction.
+   *     break;
+   *
+   * Keys and allowed maxima are listed in countSpecs above. Min/max are inclusive.
+   * Keep 0 <= min <= max <= that row's maximum. This function does not clamp values.
+   * All count restrictions AND together; incompatible choices yield no matches.
+   * JL counts J + L + non-facebound j; SZ counts S + Z + non-facebound s.
+   * Therefore an all-six bag needs JL=2 and SZ=2, not 1. Individual J/L/S/Z
+   * rows count only their facebound identities. B=branch, D=right screw, F=left screw.
+   * Extras shape rows count whole connected components, not overlapping subshapes.
+   * Facebound + SurfaceNonface + CorePieces always totals six.
+   *
+   * To add a selectable preset, also add its ID/label to filterPresets above and
+   * to #filterPreset in web/explorer/index.html. 'all' is the separate Reset button.
+   * This function returns { ranges, family }; it does not run the database query.
+   */
   const ranges = Object.fromEntries(
     countSpecs.map(([id, , max]) => [id, { min: 0, max }]),
   );
-  const resetAll = name === 'all';
-  if (!resetAll)
-    for (const [id, value] of Object.entries(current))
-      if (ranges[id]) ranges[id] = { ...value };
-  const reset = (ids) => {
-    for (const id of ids) ranges[id] = { min: 0, max: countLimits[id] };
-  };
-  if (['planar', 'spatial', 'pieces', 'six', 'soma', 'sloth'].includes(name))
-    reset(pieceCountTypes);
-  if (['surface', 'nonface', 'face', 'core', 'placements'].includes(name))
-    reset(['Facebound', 'SurfaceNonface', 'CorePieces', 'ExtraCore']);
-  if (['six', 'soma', 'sloth'].includes(name))
-    reset(['ExtraSingle', 'ExtraDomino', 'ExtraV', 'ExtraBar']);
-  const exact = (id, n) => (ranges[id] = { min: n, max: n });
-  let family =
-    resetAll || ['six', 'soma', 'sloth'].includes(name) ? 0 : currentFamily;
-  if (name === 'planar') for (const id of ['B', 'D', 'F']) exact(id, 0);
-  if (name === 'spatial')
-    for (const id of ['O', 'T', 'J', 'L', 'S', 'Z', 'JL', 'SZ']) exact(id, 0);
-  if (['surface', 'nonface', 'face'].includes(name)) {
-    exact('CorePieces', 0);
-    exact('ExtraCore', 1);
+  // Copy, rather than mutate, the caller's existing range objects.
+  for (const [id, value] of Object.entries(current)) {
+    if (ranges[id]) ranges[id] = { ...value };
   }
-  if (name === 'nonface') {
-    ranges.SurfaceNonface.min = 1;
-    ranges.Facebound.max = 5;
+  let family = currentFamily;
+
+  switch (name) {
+    case 'all':
+      // Reset every count and remove the family restriction.
+      ranges.O = { min: 0, max: 6 };
+      ranges.T = { min: 0, max: 6 };
+      ranges.S = { min: 0, max: 6 };
+      ranges.Z = { min: 0, max: 6 };
+      ranges.J = { min: 0, max: 6 };
+      ranges.L = { min: 0, max: 6 };
+      ranges.JL = { min: 0, max: 6 };
+      ranges.SZ = { min: 0, max: 6 };
+      ranges.B = { min: 0, max: 6 };
+      ranges.F = { min: 0, max: 6 };
+      ranges.D = { min: 0, max: 6 };
+      ranges.ExtraSingle = { min: 0, max: 3 };
+      ranges.ExtraDomino = { min: 0, max: 1 };
+      ranges.ExtraV = { min: 0, max: 1 };
+      ranges.ExtraBar = { min: 0, max: 1 };
+      ranges.ExtraCore = { min: 0, max: 1 };
+      ranges.ExtraCenters = { min: 0, max: 3 };
+      ranges.ExtraEdges = { min: 0, max: 3 };
+      ranges.ExtraCorners = { min: 0, max: 3 };
+      ranges.Facebound = { min: 0, max: 6 };
+      ranges.SurfaceNonface = { min: 0, max: 6 };
+      ranges.CorePieces = { min: 0, max: 1 };
+      family = 0;
+          break;
+      
+    case 'family0':
+      // Reset to family 0.
+      family = 0;
+          break;
+
+    case 'planar':
+      // Reset piece counts; exclude spatial pieces. Preserve placement, extras and family.
+      ranges.O = { min: 0, max: 6 };
+      ranges.T = { min: 0, max: 6 };
+      ranges.S = { min: 0, max: 6 };
+      ranges.Z = { min: 0, max: 6 };
+      ranges.J = { min: 0, max: 6 };
+      ranges.L = { min: 0, max: 6 };
+      ranges.JL = { min: 0, max: 6 };
+      ranges.SZ = { min: 0, max: 6 };
+      ranges.B = { min: 0, max: 0 };
+      ranges.F = { min: 0, max: 0 };
+      ranges.D = { min: 0, max: 0 };
+      break;
+
+    case 'spatial':
+      // Reset piece counts; exclude planar pieces. Preserve placement, extras and family.
+      ranges.O = { min: 0, max: 0 };
+      ranges.T = { min: 0, max: 0 };
+      ranges.S = { min: 0, max: 0 };
+      ranges.Z = { min: 0, max: 0 };
+      ranges.J = { min: 0, max: 0 };
+      ranges.L = { min: 0, max: 0 };
+      ranges.JL = { min: 0, max: 0 };
+      ranges.SZ = { min: 0, max: 0 };
+      ranges.B = { min: 0, max: 6 };
+      ranges.F = { min: 0, max: 6 };
+      ranges.D = { min: 0, max: 6 };
+      break;
+
+    case 'pieces':
+      // Remove only piece-count restrictions.
+      ranges.O = { min: 0, max: 6 };
+      ranges.T = { min: 0, max: 6 };
+      ranges.S = { min: 0, max: 6 };
+      ranges.Z = { min: 0, max: 6 };
+      ranges.J = { min: 0, max: 6 };
+      ranges.L = { min: 0, max: 6 };
+      ranges.JL = { min: 0, max: 6 };
+      ranges.SZ = { min: 0, max: 6 };
+      ranges.B = { min: 0, max: 6 };
+      ranges.F = { min: 0, max: 6 };
+      ranges.D = { min: 0, max: 6 };
+      break;
+
+    case 'surface':
+      // All pieces stay on the surface; the core must be an extra.
+      ranges.Facebound = { min: 0, max: 6 };
+      ranges.SurfaceNonface = { min: 0, max: 6 };
+      ranges.CorePieces = { min: 0, max: 1 };
+      ranges.ExtraCore = { min: 1, max: 1 };
+      break;
+
+    case 'nonface':
+      // Surface-only, with at least one piece spanning faces.
+      ranges.Facebound = { min: 0, max: 5 };
+      ranges.SurfaceNonface = { min: 1, max: 6 };
+      ranges.CorePieces = { min: 0, max: 1 };
+      ranges.ExtraCore = { min: 1, max: 1 };
+      break;
+
+    case 'face':
+      // All six pieces lie on outer faces.
+      ranges.Facebound = { min: 6, max: 6 };
+      ranges.SurfaceNonface = { min: 0, max: 6 };
+      ranges.CorePieces = { min: 0, max: 1 };
+      ranges.ExtraCore = { min: 1, max: 1 };
+      break;
+
+    case 'core':
+      // Exactly one piece occupies the core; it cannot also be an extra.
+      ranges.Facebound = { min: 0, max: 6 };
+      ranges.SurfaceNonface = { min: 0, max: 6 };
+      ranges.CorePieces = { min: 1, max: 1 };
+      ranges.ExtraCore = { min: 0, max: 1 };
+      break;
+
+    case 'placements':
+      // Remove only placement-type and extra-core restrictions.
+      ranges.Facebound = { min: 0, max: 6 };
+      ranges.SurfaceNonface = { min: 0, max: 6 };
+      ranges.CorePieces = { min: 0, max: 1 };
+      ranges.ExtraCore = { min: 0, max: 1 };
+      break;
+
+    case 'six':
+      // One of each planar piece. Reset extra shapes and family; preserve placement limits.
+      ranges.O = { min: 1, max: 6 };
+      ranges.T = { min: 1, max: 6 };
+      ranges.S = { min: 0, max: 6 };
+      ranges.Z = { min: 0, max: 6 };
+      ranges.J = { min: 0, max: 6 };
+      ranges.L = { min: 0, max: 6 };
+      ranges.JL = { min: 2, max: 6 };
+      ranges.SZ = { min: 2, max: 6 };
+      ranges.B = { min: 0, max: 6 };
+      ranges.F = { min: 0, max: 6 };
+      ranges.D = { min: 0, max: 6 };
+      ranges.ExtraSingle = { min: 0, max: 3 };
+      ranges.ExtraDomino = { min: 0, max: 1 };
+      ranges.ExtraV = { min: 0, max: 1 };
+      ranges.ExtraBar = { min: 0, max: 1 };
+      break;
+
+    case 'faceSix':
+      // Independent all-six facebound preset: edit here without changing the six or face cases.
+      ranges.O = { min: 1, max: 6 };
+      ranges.T = { min: 1, max: 6 };
+      ranges.S = { min: 1, max: 6 };
+      ranges.Z = { min: 1, max: 6 };
+      ranges.J = { min: 1, max: 6 };
+      ranges.L = { min: 1, max: 6 };
+      ranges.JL = { min: 0, max: 6 };
+      ranges.SZ = { min: 0, max: 6 };
+      ranges.B = { min: 0, max: 6 };
+      ranges.F = { min: 0, max: 6 };
+      ranges.D = { min: 0, max: 6 };
+      ranges.ExtraSingle = { min: 0, max: 3 };
+      ranges.ExtraDomino = { min: 0, max: 1 };
+      ranges.ExtraV = { min: 0, max: 1 };
+      ranges.ExtraBar = { min: 0, max: 1 };
+      ranges.Facebound = { min: 6, max: 6 };
+      ranges.SurfaceNonface = { min: 0, max: 6 };
+      ranges.CorePieces = { min: 0, max: 1 };
+      ranges.ExtraCore = { min: 0, max: 1 };
+      break;
+
+    case 'official':
+      // Change only the family; preserve every current count.
+      family = 562;
+      break;
+
+    case 'soma':
+      // Soma bag and V-shaped extras. Preserve placement and extra-coordinate limits.
+      ranges.O = { min: 0, max: 6 };
+      ranges.T = { min: 1, max: 6 };
+      ranges.S = { min: 0, max: 6 };
+      ranges.Z = { min: 0, max: 6 };
+      ranges.J = { min: 0, max: 6 };
+      ranges.L = { min: 0, max: 6 };
+      ranges.JL = { min: 1, max: 6 };
+      ranges.SZ = { min: 1, max: 6 };
+      ranges.B = { min: 1, max: 6 };
+      ranges.F = { min: 1, max: 6 };
+      ranges.D = { min: 1, max: 6 };
+      ranges.ExtraSingle = { min: 0, max: 3 };
+      ranges.ExtraDomino = { min: 0, max: 1 };
+      ranges.ExtraV = { min: 1, max: 1 };
+      ranges.ExtraBar = { min: 0, max: 1 };
+      break;
+
+    case 'sloth':
+      // Six O pieces. Reset extra shapes and family; preserve placement limits.
+      ranges.O = { min: 6, max: 6 };
+      ranges.T = { min: 0, max: 6 };
+      ranges.S = { min: 0, max: 6 };
+      ranges.Z = { min: 0, max: 6 };
+      ranges.J = { min: 0, max: 6 };
+      ranges.L = { min: 0, max: 6 };
+      ranges.JL = { min: 0, max: 6 };
+      ranges.SZ = { min: 0, max: 6 };
+      ranges.B = { min: 0, max: 6 };
+      ranges.F = { min: 0, max: 6 };
+      ranges.D = { min: 0, max: 6 };
+      ranges.ExtraSingle = { min: 0, max: 3 };
+      ranges.ExtraDomino = { min: 0, max: 1 };
+      ranges.ExtraV = { min: 0, max: 1 };
+      ranges.ExtraBar = { min: 0, max: 1 };
+      family = 2570;
+      break;
+
+    default:
+      // Unknown/custom preset: preserve the current counts and family.
+      break;
   }
-  if (name === 'face') {
-    exact('Facebound', 6);
-    exact('SurfaceNonface', 0);
-  }
-  if (name === 'core') {
-    exact('CorePieces', 1);
-    exact('ExtraCore', 0);
-    ranges.Facebound.max = 5;
-    ranges.SurfaceNonface.max = 5;
-  }
-  if (name === 'six') {
-    for (const id of ['O', 'T', 'J', 'L', 'S', 'Z']) exact(id, 1);
-    exact('JL', 2);
-    exact('SZ', 2);
-    for (const id of ['B', 'D', 'F']) exact(id, 0);
-  }
-  if (name === 'soma') {
-    for (const id of ['T', 'JL', 'SZ', 'B', 'D', 'F']) exact(id, 1);
-    for (const id of ['J', 'L', 'S', 'Z']) ranges[id].max = 1;
-    exact('O', 0);
-    exact('ExtraV', 1);
-    exact('ExtraSingle', 0);
-    exact('ExtraDomino', 0);
-    exact('ExtraBar', 0);
-  }
-  if (name === 'sloth') {
-    exact('O', 6);
-    for (const id of ['T', 'J', 'L', 'S', 'Z', 'JL', 'SZ', 'B', 'D', 'F'])
-      exact(id, 0);
-  }
-  if (name === 'official') family = 562;
   return { ranges, family };
 }

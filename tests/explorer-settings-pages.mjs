@@ -55,7 +55,8 @@ const pages=doc.querySelectorAll('.explorer-settings-page');
 assert.equal(pages.filter(p=>!p.hidden).length,1);
 const links=doc.querySelectorAll('.explorer-page-link');
 const go=name=>links.find(b=>b.textContent===name+' ›').onclick();
-go('Packing filters');
+assert(!links.some(b=>b.textContent==='Packing filters >'));
+for(const id of ['countFilterPanel','familySelect','status'])assert(doc.getElementById(id).closest('.packing-picker'));
 for(const id of ['D','J','S','ExtraV','ExtraCore','Facebound']){assert(!doc.getElementById('countMin'+id).closest('section').hidden);assert.equal(doc.getElementById('countMin'+id).closest('section'),doc.getElementById('countMax'+id).closest('section'));}
 
 doc.getElementById('familyExploreMode').checked=true;

@@ -390,7 +390,7 @@ $('spatialComposition').value='only';await spatial.query({position:0},true);
 assert(spatial.current.identities.every(c=>'BDF'.includes(c.toUpperCase())));
 await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
 await $('practiceRandom').onclick();assert.match($('practiceStatus').textContent,/Reachable pair/);
-$('countMinB').value='7';await spatial.query();assert.match($('status').textContent,/whole-number counts/);
+$('countMinB').value='7';await spatial.query();assert.match($('status').textContent,/marked count ranges/);assert.equal($('rangeCardB').dataset.rangeState,'invalid');
 $('countMinB').value='0';
 console.log('PASS: expanded explorer startup, full collection, spatial-only filters, detected family metadata, practice pairs and invalid counts.');
 
@@ -490,17 +490,30 @@ controls.setControlSetting('showArrows',true);assert(!hoverView.arrowHost.hidden
 hoverView.upload=hoverOriginalUpload;
 console.log('PASS: explorer rings/labels, suppressed orbit feedback, shared wide turns, classic controls and clickable arrows.');
 
-$('filterPreset').value='planar';await $('filterPreset').onchange();
-assert.equal($('countMaxB').value,'0');assert.equal($('countMaxD').value,'0');
-$('filterPreset').value='surface';await $('filterPreset').onchange();
-assert.equal($('countMaxB').value,'0');assert.equal($('countMaxCorePieces').value,'0');
-$('filterPreset').value='official';await $('filterPreset').onchange();
-assert.equal($('familySelect').value,'562');assert.equal($('filterFamilyStatus').textContent,'Family 562');
-$('filterPreset').value='soma';await $('filterPreset').onchange();
-assert.equal($('countMinExtraV').value,'1');assert.equal($('countMaxJL').value,'1');
-$('filterPreset').value='all';await $('filterPreset').onchange();
-assert.equal($('familySelect').value,'');assert.equal($('countMaxExtraCore').value,'1');assert.equal($('countMaxExtraSingle').value,'3');
-console.log('PASS: editable count presets combine shape/placement constraints, expose family selection and reset all ranges.');
+// Check UI wiring against the editable preset definitions, rather than freezing
+// old preset policy into the layout test.
+const {presetCounts,countSpecs}=await import(new URL('explorer/filter-counts.js',assetRoot));
+for(const name of ['planar','surface','official','soma','all']) {
+  const current=Object.fromEntries(countSpecs.map(([id])=>[id,{min:Number($('countMin'+id).value),max:Number($('countMax'+id).value)}]));
+  const expected=presetCounts(name,current,+$('familySelect').value||0);
+  if(name==='all')await $('resetPackingFilters').onclick();
+  else {$('filterPreset').value=name;await $('filterPreset').onchange();}
+  for(const [id,r] of Object.entries(expected.ranges)) {
+    assert.equal($('countMin'+id).value,String(r.min));
+    assert.equal($('countMax'+id).value,String(r.max));
+  }
+  assert.equal($('familySelect').value,expected.family?String(expected.family):'');
+}
+$('countMinT').value='2';$('countMaxExtraCore').value='0';$('familySelect').value='562';
+await $('resetPieceFilters').onclick();
+assert.equal($('countMinT').value,'0');assert.equal($('countMaxT').value,'6');
+assert.equal($('countMaxExtraCore').value,'0');assert.equal($('familySelect').value,'562');
+await $('clearFilterFamily').onclick();assert.equal($('familySelect').value,'');assert.equal($('countMaxExtraCore').value,'0');
+assert.equal($('clearFilterFamily').disabled,true);
+await $('resetPackingFilters').onclick();assert.equal($('countMaxExtraCore').value,'1');
+assert.equal($('rangeFilterSummary').textContent,'All counts unrestricted');
+$('packingPicker').open=true;$('closePackingPicker').onclick();assert.equal($('packingPicker').open,false);
+console.log('PASS: chooser presets use the current custom rules; standalone reset and close controls work.');
 
 familyView.modelShape='jelly';familyView.familyExploration=true;
 const cornerCells=Array(27).fill(null);for(const i of [0,1,3,4])cornerCells[i]={piece:0,color:'y'};
