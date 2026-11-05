@@ -33,9 +33,15 @@ export function createSettlingOrbit(renderer,onOrbit){
  };
  const stop=subscribeOrbit(()=>{cancel();if(overlay)overlay.hidden=!settings.orbitDebugOverlay||!settings.orbitSettling;});
  return {
-  start(x,y){stopOrbitMotion();activeController=cancel;cancel();current=quaternion(renderer.orientation);target=current.slice();origin=last=[x,y];axis=null;direction=[1,1];active=true;stamp=0;settle=null;guide=showOrbitGuide(renderer.canvas,x,y,settings);report('Ready');},
-  move(x,y){if(!active)return;const dx=x-origin[0],dy=y-origin[1];if(!axis&&Math.hypot(dx,dy)<4)return;
+  start(x,y){stopOrbitMotion();activeController=cancel;cancel();current=quaternion(renderer.orientation);target=current.slice();origin=last=[x,y];axis=null;angle=0;direction=[1,1];active=true;stamp=0;settle=null;guide=showOrbitGuide(renderer.canvas,x,y,settings);report('Ready');},
+  move(x,y){if(!active)return;const dx=x-origin[0],dy=y-origin[1],radius=Math.hypot(dx,dy);
    angle=Math.atan2(dy,dx)*180/Math.PI;
+   if(!axis){
+    if(radius<=settings.orbitDeadZone){report('Choosing direction');return;}
+    // Ignore the approach inside the circle; only motion beyond its edge rotates.
+    // Once captured, retain the normal drag response, including reversals.
+    last=[origin[0]+dx/radius*settings.orbitDeadZone,origin[1]+dy/radius*settings.orbitDeadZone];
+   }
    if(!axis||!settings.orbitAxisLock){axis=dragAxis(dx,dy,settings);direction=[dx,dy];}
    target=applyDragRotation(target,x-last[0],y-last[1],axis,settings,direction);last=[x,y];schedule();
   },

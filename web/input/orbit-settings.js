@@ -2,6 +2,7 @@ const storageKey='stack-it-up.settling-orbit';
 export const orbitSpecs={
  orbitSettling:{value:false},orbitSnap:{value:true},orbitDiagonalRoll:{value:true},orbitAxisLock:{value:true},orbitDebug:{value:false},orbitDebugOverlay:{value:false},
  orbitCubeUD:{value:true},orbitCubeLR:{value:true},orbitCubeFB:{value:true},orbitDragGuide:{value:true},
+ orbitDeadZone:{value:24,min:0,max:96,step:2},
  orbitSensitivity:{value:0.5,min:0.1,max:2,step:0.05},orbitTolerance:{value:18,min:0,max:40,step:1},
  orbitSmoothing:{value:70,min:0,max:300,step:10},orbitSettleTime:{value:700,min:100,max:2500,step:50},orbitSettleDelay:{value:80,min:0,max:600,step:20},
  orbitHorizontal:{value:-20,min:-60,max:60,step:1},orbitVertical:{value:15,min:-60,max:60,step:1},orbitRoll:{value:0,min:-45,max:45,step:1},

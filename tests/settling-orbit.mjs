@@ -35,12 +35,26 @@ for(const tolerance of [0,18,30,40])for(const roll of [false,true]){
 }
 let frames=[],clock=0;globalThis.requestAnimationFrame=fn=>frames.push(fn);globalThis.document={hidden:false,addEventListener(){}};
 const flush=()=>{let n=0;while(frames.length){assert(n++<400);clock+=16;const batch=frames;frames=[];batch.forEach(f=>f(clock));}};
-settings.orbitSettling=true;let draws=0;
+assert.equal(settings.orbitDeadZone,24);
+settings.orbitDeadZone=0;settings.orbitSettling=true;let draws=0;
 const renderer={orientation:matrix(tilted),canvas:{}},apply=(_,__,m)=>{draws++;renderer.orientation=m;};
 const controller=createSettlingOrbit(renderer,apply);
 controller.start(0,0);controller.move(100,0);const expected=snapTarget(multiply(tilted,step),settings).q;controller.release();flush();close(distance(quaternion(renderer.orientation),expected),0);
 controller.start(0,0);controller.move(100,0);controller.release();controller.cancel();const before=draws;flush();assert.equal(draws,before);
 settings.orbitSnap=false;controller.start(0,0);controller.move(100,0);const previous=quaternion(renderer.orientation);controller.release();flush();close(distance(quaternion(renderer.orientation),multiply(previous,step)),0);
+// Direction can change inside the dead zone without moving or capturing an axis.
+settings.orbitDeadZone=24;settings.orbitAxisLock=true;
+renderer.orientation=matrix(identity);const count=draws;
+controller.start(0,0);controller.move(20,0);controller.move(0,24);flush();assert.equal(draws,count);
+controller.release();flush();assert.equal(draws,count);
+controller.start(0,0);controller.move(20,0);controller.move(0,25);flush();
+close(distance(quaternion(renderer.orientation),dragRotation(0,1,'X',settings)),0);
+// Horizontal input after capture cannot switch the locked vertical axis.
+const captured=renderer.orientation.slice();controller.move(40,25);flush();
+renderer.orientation.forEach((v,i)=>close(v,captured[i]));controller.cancel();
+// A large first event rotates only the distance outside the circle.
+renderer.orientation=matrix(identity);controller.start(0,0);controller.move(100,0);controller.release();flush();
+close(distance(quaternion(renderer.orientation),dragRotation(76,0,'Y',settings)),0);
 controller.dispose();settings.orbitSnap=true;
 function gesture(hit,button,readOnly=false){const events={},r={canvas:{style:{},addEventListener:(t,f)=>events[t]=f,setPointerCapture(){}},orientation:matrix(identity),pickHit:()=>hit,orbitOnly:readOnly,unit:100,setState(){},sliceCandidates:()=>[{base:0,baseSign:1,vx:1,vy:0}]};let turns=0,orbits=0;
  installCubeDrag(r,(_,__,m)=>{orbits++;r.orientation=m;},{state:[],invalidate(){},setBusy(){},play:async()=>turns++,animate:async(_,f)=>f(1)});
@@ -55,7 +69,7 @@ document.createElementNS=(_,name)=>({name,attrs:{},style:{},classList:{add(){}},
 const host={scrollLeft:0,scrollTop:0,getBoundingClientRect:()=>({left:10,top:20}),append:el=>nodes.push(el)};
 const canvas={parentElement:host,getBoundingClientRect:()=>({left:10,top:20,width:500,height:500})};
 const guided=createSettlingOrbit({canvas,orientation:matrix(identity)},()=>{});
-guided.start(200,220);assert.equal(nodes.length,1);assert(nodes[0].children.some(n=>n.name==='line'));
+guided.start(200,220);assert.equal(nodes.length,1);assert(nodes[0].children.some(n=>n.name==='line'));assert.equal(nodes[0].children.find(n=>n.attrs['data-orbit-dead-zone']==='true').attrs.r,'24');
 guided.move(250,220);flush();assert.equal(nodes.length,1);guided.release();assert(nodes[0].removed);flush();
 guided.start(200,220);guided.cancel();assert(nodes[1].removed);
 settings.orbitDragGuide=false;guided.start(200,220);assert.equal(nodes.length,2);guided.dispose();settings.orbitDragGuide=true;
