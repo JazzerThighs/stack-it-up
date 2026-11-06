@@ -1,3 +1,5 @@
+import {assemblyKind} from '../render/assembly.js';
+import {joinMeshes} from '../render/cell-fragments.js';
 import {gameboyCell} from '../render/gameboy-mesh.js';
 import {tagCoverage} from '../render/transparency.js';
 import {identitySolid,identityGray,solidColor} from '../render/identity-solids.js';
@@ -9,12 +11,13 @@ import {compositeParts,jellyCell} from '../render/piece-mesh.js';
 import {balloon,box,xyz,rgb,rotateCell} from '../render/geometry.js';
 import {clipMesh} from '../render/slice-mesh.js';
 
-export function explorationMeshes(cells,generate,appearance,solidIdentities=false,gray=true,fixedColors=false) {
-  const detected=new Map(detectPieces(cells).filter(p=>p.letter).map(p=>[p.id,p.letter]));
+export function explorationMeshes(cells,generate,appearance,solidIdentities=false,gray=true,fixedColors=false,individual=false,filters={},allSolids=false,assembly=null) {
+  const detected=new Map(detectPieces(cells,filters).filter(p=>p.letter).map(p=>[p.id,p.letter]));
+  const kind=cell=>assembly?assemblyKind(assembly,detected.has(cell.piece),cell.piece<0):cell.piece<0?'cubies':allSolids?'solids':detected.has(cell.piece)?individual?'cubies':'whole':solidIdentities?'solids':'cubies';
   const groups=new Map();
   cells.forEach((cell,i)=>{
     if(!cell)return;
-    const id=detected.has(cell.piece)?cell.piece:i+100;
+    const id=kind(cell)==='whole'?cell.piece:i+100;
     if(!groups.has(id))groups.set(id,[]);
     groups.get(id).push(i);
   });
@@ -22,17 +25,18 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
     if(indices.length===4) {
       const board=Array(27).fill(0),ids=Array(27).fill(1);
       indices.forEach(i=>board[i]=fixedColors?cells[i].color:detectedColor(detected.get(cells[i].piece),cells[i].color));
-      return compositeParts(board,ids,PALETTE,generate,appearance)[0];
+      return joinMeshes(compositeParts(board,ids,PALETTE,generate,appearance,false,0,individual));
     }
     const out=[];
     for(const i of indices) {
-      const color=rgb(PALETTE[cells[i].color]||PALETTE.d);
-      if(solidIdentities && cells[i].piece>=0) identitySolid(out,xyz(i),.465,solidColor(cells[i].piece,color,gray),cells[i].piece,cells[i].solidRotation);
+      const key=!fixedColors&&detected.has(cells[i].piece)?detectedColor(detected.get(cells[i].piece),cells[i].color):cells[i].color;
+      const color=rgb(PALETTE[key]||PALETTE.d);
+      if(kind(cells[i])==='solids') identitySolid(out,xyz(i),.465,cells[i].piece<0?color:solidColor(cells[i].piece,color,gray),cells[i].piece<0?5:cells[i].piece,cells[i].solidRotation);
       else if(['jelly','angular'].includes(appearance))jellyCell(out,i,color,generate,.465,appearance);
-      else (appearance==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,color,cells[i].piece<0?'bomb':'O');
+      else (appearance==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,color,cells[i].piece<0?'bomb':'loose');
     }
     const mesh=tagCoverage(new Float32Array(out),xyz(indices[0]));
-    if(solidIdentities && cells[indices[0]].piece>=0)Object.defineProperty(mesh,"identityCell",{value:indices[0]});
+    if(kind(cells[indices[0]])==='solids')Object.defineProperty(mesh,"identityCell",{value:indices[0]});
     return mesh;
   });
 }

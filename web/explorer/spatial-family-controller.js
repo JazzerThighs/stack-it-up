@@ -6,7 +6,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   let view,source,family,generation=0,lookupGeneration=0;
   try{const saved=localStorage.getItem('stack-it-up.family-solids');if(saved!==null)$('familySolidIdentities').checked=saved==='true';}catch{}
   async function changed(cube) {
-    const token=++lookupGeneration,group=detectPieces(cube.cells),count=group.filter(p=>p.letter).length;
+    const token=++lookupGeneration,group=detectPieces(cube.cells,cube.detectionFilters),count=group.filter(p=>p.letter).length;
     $('familyExploreProgress').textContent=`${count}/6 tetracubes${count===6?' — Checking packing…':''}`;
     $('familyExploreLetters').textContent=group.map(p=>`Piece ${p.id+1}: ${p.letter||'separated'}`).join(' · ');
     const host=$('familyExploreMatches');host.replaceChildren();
@@ -27,7 +27,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     ++generation;++lookupGeneration;source=p;family=p.familyId;
     $('familyExploreTitle').textContent=`Family ${family} · Line ${p.lineNumber}`;
     view=get('familyExploreCube',{onChange:changed});view.familyExploration=true;
-    view.explorationSolids=$('familySolidIdentities').checked;const shown=data.presentation(source);view.fixedPieceColors=shown.fixed;view.setCells(shown.cells);
+    const shown=data.presentation(source);view.fixedPieceColors=shown.fixed;view.setCells(shown.cells);
   }
   function refreshColors() {
     if(!view||!source)return;
@@ -40,7 +40,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   function enter() {if(!source||source.lineNumber!==getSelected()?.lineNumber)load(getSelected());}
   $('familySolidIdentities').onchange=()=>{
     try{localStorage.setItem('stack-it-up.family-solids',String($('familySolidIdentities').checked));}catch{}
-    if(view){view.explorationSolids=$('familySolidIdentities').checked;view.setState(view.cells,view.currentAnimation);changed(view);}
+    if(view){view.setState(view.cells,view.currentAnimation);changed(view);}
   };
   return {enter,load,refreshColors,refresh(){if($('familyExploreMode').checked)load(getSelected());}};
 }

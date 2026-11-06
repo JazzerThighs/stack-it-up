@@ -1,4 +1,4 @@
-import {orbitSettings} from './orbit-settings.js';
+import {orbitSettings,pointerOrbitAction} from './orbit-settings.js';
 import {createSettlingOrbit,stopOrbitMotion} from './settling-orbit.js';
 import {pointerRay} from "../render/camera.js";
 import { pickBand } from "./band-pick.js";
@@ -130,8 +130,10 @@ function installCubeDrag(r, onOrbit, context) {
     }
   };
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
-  canvas.addEventListener("pointerdown", (e) => {
+  const beginDrag = (e) => {
     if (drag) return;
+    const {action,outside,chord}=pointerOrbitAction(e);
+    if(action==='off')return;
     stopOrbitMotion();
     orbit.cancel();
     r.hover = null;
@@ -144,25 +146,38 @@ function installCubeDrag(r, onOrbit, context) {
       y: e.clientY,
       lastX: e.clientX,
       lastY: e.clientY,
-      hit: e.button !== 2 && (!r.orbitOnly || orbitSettings.orbitSettling) ? hitAt(e) : null,
+      hit: action==='turn' ? hitAt(e) : null,
       wide: !!(r.wideTurns || e.shiftKey),
     };
-    if (e.button !== 2 && !r.isStack && context.lockMode && drag.hit) {
+    if (action==='turn' && !r.isStack && context.lockMode && drag.hit) {
       drag.lockClick = true;
       drag.lockCell = pickBand(r, e, context.state);
     }
-    drag.newOrbit = !drag.hit && orbitSettings.orbitSettling;
-    if(drag.newOrbit) orbit.start(e.clientX,e.clientY);
+    drag.chord=chord;
+    const cameraAction=action==='turn'?outside:action;
+    drag.newOrbit = !drag.hit && cameraAction==='xyz';
+    if(drag.newOrbit) orbit.start(e.clientX,e.clientY,cameraAction==='xyz');
     r.orbitDragging = !drag.hit;
     r.arrowHover = null;
-  });
+  };
+  canvas.addEventListener("pointerdown",beginDrag);
   canvas.addEventListener("pointermove", (e) => {
     const d = drag;
     if (!d) {
+      if(orbitSettings.mouseBothEnabled&&(e.buttons&3)===3){beginDrag(e);return;}
       if (e.pointerType !== "touch") hover(e);
       return;
     }
     if (d.id !== e.pointerId) return;
+    // Pointer Events reports an added mouse button as pointermove, not pointerdown.
+    if(orbitSettings.mouseBothEnabled&&(e.buttons&3)===3&&!d.chord){
+      stopOrbitMotion();
+      if(d.turn){r.setState(context.state);context.setBusy(false);}
+      const action=orbitSettings.mouseBoth;
+      Object.assign(d,{chord:true,newOrbit:action!=='free',hit:null,turn:false,lockClick:false,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY});
+      r.hover=null;r.orbitDragging=true;if(d.newOrbit)orbit.start(e.clientX,e.clientY,action==='xyz');context.invalidate();return;
+    }
+    if(d.chord&&e.buttons!==undefined&&(e.buttons&3)!==3){finish(false);return;}
     const dx = e.clientX - d.x,
       dy = e.clientY - d.y;
     if (d.lockClick) { d.moved ||= Math.hypot(dx, dy) > 8; return; }

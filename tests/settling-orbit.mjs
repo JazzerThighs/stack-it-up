@@ -3,6 +3,8 @@ import {cubeRotations,quaternion,matrix,multiply,axisAngle,identity,distance,sna
 import {orbitSettings as settings} from '../web/input/orbit-settings.js';
 import {createSettlingOrbit} from '../web/input/settling-orbit.js';
 import {installCubeDrag} from '../web/input/drag.js';
+assert.equal(settings.orbitConfined,true);assert.equal(settings.orbitSettling,true);
+settings.orbitConfined=false;
 const close=(a,b,e=1e-6)=>assert(Math.abs(a-b)<e,`${a} != ${b}`);
 assert.equal(cubeRotations.length,24);
 for(const m of cubeRotations)matrix(quaternion(m)).forEach((v,i)=>close(v,m[i]));
@@ -40,6 +42,11 @@ const frame=viewAxisFrame(tilted);
 let incremental=tilted;
 for(let i=0;i<10;i++)incremental=applyDragRotation(incremental,30,0,'Y',settings,[1,0],frame);
 close(distance(incremental,applyDragRotation(tilted,300,0,'Y',settings,[1,0],frame)),0);
+for(const roll of [false,true]){
+ const config={...settings,orbitConfined:true,orbitDiagonalRoll:roll};
+ for(let angle=0;angle<360;angle+=.5){const radians=angle*Math.PI/180;assert.notEqual(dragAxis(Math.cos(radians),Math.sin(radians),config),'XY');}
+ for(const sector of captureSectors(config)){assert.notEqual(sector.axis,'XY');const mid=(sector.start+sector.end)/2*Math.PI/180;assert.equal(dragAxis(Math.cos(mid),Math.sin(mid),config),sector.axis);}
+}
 for(const tolerance of [0,18,30,40])for(const roll of [false,true]){
  const config={...settings,orbitTolerance:tolerance,orbitDiagonalRoll:roll},sectors=captureSectors(config);
  close(sectors.reduce((sum,s)=>sum+s.end-s.start,0),360);
@@ -75,6 +82,30 @@ assert.equal(gesture({axis:2,p:[0,0,1.5]},0).turns,1);
 assert.equal(gesture({axis:2,p:[0,0,1.5]},0).orbits,0);
 assert(gesture(null,0).orbits>0);assert(gesture({axis:2,p:[0,0,1.5]},2).orbits>0);
 assert.equal(gesture({axis:2,p:[0,0,1.5]},0,true).orbits,0);
+// Mouse chord is reported by pointermove when the second button is pressed.
+settings.orbitSettling=true;settings.orbitConfined=true;settings.orbitSnap=false;settings.orbitSmoothing=0;
+function orbitGesture(type,chord,touchConfined=true){
+ settings.orbitConfined=touchConfined;settings.mouseRight='xyz';
+ const events={},r={canvas:{style:{},addEventListener:(t,f)=>events[t]=f,setPointerCapture(){}},orientation:matrix(identity),pickHit:()=>({axis:2,p:[0,0,1.5]}),unit:100,setState(){}};
+ let turns=0;
+ installCubeDrag(r,(_,__,m)=>r.orientation=m,{state:[],invalidate(){},setBusy(){},play:async()=>turns++});
+ // Touch background hit; mouse chord starts as a sticker left-click.
+ if(type==='touch')r.pickHit=()=>null;
+ const e={button:chord?0:2,buttons:chord?1:2,pointerType:type,pointerId:1,clientX:0,clientY:0,preventDefault(){}};
+ events.pointerdown(e);
+ if(chord)events.pointermove({...e,buttons:3});
+ events.pointermove({...e,buttons:chord?3:2,clientX:100,clientY:40});flush();
+ const final=r.orientation.slice();events.pointerup(e);flush();r.orbitController.dispose();assert.equal(turns,0);return quaternion(final);
+}
+const d=1-24/Math.hypot(100,40),confinedExpected=applyDragRotation(identity,100*d,40*d,'Y',settings,[100,40]);
+const freeExpected=applyDragRotation(identity,100*d,40*d,'Y',settings,[100,40]);
+close(distance(orbitGesture('mouse',true),confinedExpected),0);
+close(distance(orbitGesture('mouse',false),confinedExpected),0);
+close(distance(orbitGesture('mouse',false,false),freeExpected),0);
+close(distance(orbitGesture('mouse',true,false),confinedExpected),0);
+close(distance(orbitGesture('touch',false,true),confinedExpected),0);
+close(distance(orbitGesture('touch',false,false),freeExpected),0);
+settings.orbitConfined=false;settings.orbitSnap=true;
 // Guide is static at the start point and removed on release/cancel.
 const nodes=[];
 document.createElementNS=(_,name)=>({name,attrs:{},style:{},classList:{add(){}},children:[],setAttribute(k,v){this.attrs[k]=v;},append(el){this.children.push(el);},remove(){this.removed=true;}});

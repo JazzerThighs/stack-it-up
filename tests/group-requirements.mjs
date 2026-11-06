@@ -8,5 +8,5 @@ state.rebuildIds[1]=2;state.groupRequirements[1]=1<<20;
 state.rebuildIds[2]=3;state.groupRequirements[2]=1<<17;
 state.rebuildIds[3]=4;state.groupRequirements[3]=1<<16;
 const text=groupRequirementsText(state,{rebuildSolidIdentities:true});
-for(const part of ['Current spheres: J / L.','Tetrahedron: V.','Cube: bar.','Octahedron: no reconstruction.','Dodecahedron: any connected shape.'])assert(text.includes(part),text);
+for(const part of ['Current piece: J / L.','Tetrahedron: V.','Cube: bar.','Octahedron: no reconstruction.','Dodecahedron: any connected shape.'])assert(text.includes(part),text);
 console.log('PASS: current free-choice piece and per-solid V/bar/connected/scattered status.');

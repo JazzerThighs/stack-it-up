@@ -60,9 +60,9 @@ for(const id of ['countFilterPanel','familySelect','status'])assert(doc.getEleme
 for(const id of ['D','J','S','ExtraV','ExtraCore','Facebound']){assert(!doc.getElementById('countMin'+id).closest('section').hidden);assert.equal(doc.getElementById('countMin'+id).closest('section'),doc.getElementById('countMax'+id).closest('section'));}
 
 doc.getElementById('familyExploreMode').checked=true;
-doc.getElementById('familySolidIdentities').checked=true;
+doc.getElementById('familyPieces').value='solids';
 doc.getElementById('solidUniform').checked=true;
-go('Piece identity shapes');
+go('Balls & Platonic Solids');
 assert(!doc.getElementById('solidColor').disabled);assert(doc.getElementById('solidGray').disabled);
 assert(doc.getElementById('showSolved').disabled);
 doc.getElementById('pieceAppearance').value='ascii';go('Appearance');

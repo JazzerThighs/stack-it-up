@@ -13,7 +13,9 @@ export function gameboyPattern(letter='O') {
     // All perimeters meet on the same base cube; only the motif rises above it.
     const edge=Math.min(x,y,7-x,7-y);let h=0;
     if(edge>0) {
-      if(letter==='bomb')h=bombRows[y][x]==='#'?0:.032;
+      // Raised pixel X: loose cubies have no square-ring or tetracube motif.
+      if(letter==='loose')h=(x===y||x+y===7)?.032:0;
+      else if(letter==='bomb')h=bombRows[y][x]==='#'?0:.032;
       else if(letter==='L')h=.018;
       else if(letter==='Z')h=(x>=3&&x<=4&&y>=3&&y<=4)?0:.028;
       else if(letter==='O')h=edge===1?.032:0;
@@ -63,7 +65,7 @@ function unitMesh(letter) {
   }
   const mesh=new Float32Array(out);cache.set(letter,mesh);return mesh;
 }
-export function gameboyCell(out,p,h,color,letter='O') {
+export function gameboyCell(out,p,h,color,letter='loose') {
   const mesh=unitMesh(letter),scale=h/.487;
   for(let i=0;i<mesh.length;i+=9)out.push(...p.map((v,a)=>v+mesh[i+a]*scale),...mesh.subarray(i+3,i+6),...color.map((v,a)=>{const tone=mesh[i+6+a];return tone>1?v*(2-tone)+(tone-1):v*tone;}));
 }

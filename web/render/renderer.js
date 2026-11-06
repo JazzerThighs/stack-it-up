@@ -1,3 +1,7 @@
+import {assemblyKind,assemblyUsesSolids} from './assembly.js';
+import {identifyMask} from '../explorer/family-exploration.js';
+import {sliceForTurn,animateSlices} from '../explorer/exploration-mesh.js';
+import {displaySettings} from '../ui/display-settings.js';
 import {angularPiece} from './angular-mesh.js';
 import {jellyStyleKey} from './visual-settings.js';
 import {visualSettings} from './visual-settings.js';
@@ -194,12 +198,13 @@ class Renderer {
     this.stackPackets=null;
     this.stackEvent=null;
     this.sourceMesh = data;
-    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true) : [data];
+    const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true,0,displaySettings.stackPieces) : [data];
     this.upload(this.stackMesh,joinMeshes(parts));
   }
   setState(s, animation = null) {
     this.gridKey = null;
     this.state = s;
+    this.rebuildSolidIdentities=assemblyUsesSolids(displaySettings.activePieces);
     this.rebuildSlots=rebuildSlots(s,this.rebuildSlots);
     this.animation = animation;
     this.onState?.(s,animation);
@@ -215,6 +220,35 @@ class Renderer {
       preview = [],
       centers = [],
       overlaps = [];
+    this.cellGenerator=(m,o)=>context.engine.bandMesh(m,o);
+    let assembledMask=0;
+    this.activeKinds=Array(27).fill('cubies');
+    if(!this.isStack) {
+      const groups=new Map();
+      for(let i=0;i<27;i++)if((s[S.ACTIVE]|s[S.FLOATING])&(1<<i)) {
+        const floating=!!(s[S.FLOATING]&(1<<i));
+        const id=floating?(s.rebuildIds?.[i]?'rebuild:'+s.rebuildIds[i]:s[S.BAND_IDS+i]?'band:'+s[S.BAND_IDS+i]:'extra:'+i):'current';
+        groups.set(id,(groups.get(id)||0)|(1<<i));
+      }
+      for(const [id,mask] of groups) {
+        const kind=assemblyKind(displaySettings.activePieces,!!identifyMask(mask),id.startsWith('extra:'));
+        for(let i=0;i<27;i++)if(mask&(1<<i))this.activeKinds[i]=kind;
+        if(kind!=='whole')continue;
+        assembledMask|=mask;
+        const board=Array.from({length:27},(_,i)=>mask&(1<<i)?((s[S.FLOATING]&(1<<i))?(s[S.REBUILD_COLORS+i]||1):activePieceColor(s[S.PIECE],s[S.ACTIVE],i)):0);
+        const palette=colors.slice();if(!(mask&s[S.ACTIVE])&&!board.some((c,i)=>c&&s[S.REBUILD_COLORS+i]))palette[1]='#ffffff';
+        const parts=compositeParts(board,Array(27).fill(1),palette,(m,o)=>context.engine.bandMesh(m,o),this.modelShape);
+        let mesh;
+        if(animation?.kind==='turn') {
+          this.activeSliceCache??=new Map();
+          const key=[mask,this.modelShape,board.join(','),palette.join(','),jellyStyleKey(),animation.move].join(':');
+          if(!this.activeSliceCache.has(key)){if(this.activeSliceCache.size>=64)this.activeSliceCache.delete(this.activeSliceCache.keys().next().value);this.activeSliceCache.set(key,sliceForTurn(parts,animation.move));}
+          mesh=animateSlices(this.activeSliceCache.get(key),animation.move,animation.t);
+        } else mesh=joinMeshes(parts);
+        const dest=(mask&s[S.ACTIVE])?activeGeometry:floatingGeometry;
+        for(const v of mesh)dest.push(v);
+      }
+    }
     if (!this.isStack) surfaceGrid(grid);
     if (this.isStack) wire(lines, [0, 0, 0], 1.5, [0.29, 0.38, 0.4]);
     else
@@ -232,7 +266,7 @@ class Renderer {
           startActiveLine = activeLines.length;
         if (active) wire(activeLines, p, 0.445, [1, 0.95, 0.77]);
         if (active) {
-          if (!s[S.BAND_IDS + i]) activeCubie(
+          if (!(assembledMask & (1<<i))) activeCubie(
             !floating && p.filter((v) => v !== 0).length === 1
               ? centers
               : solid,
@@ -257,31 +291,11 @@ class Renderer {
             [activeLines, startActiveLine],
           ])
             rotateCell(out, start, i, animation.move, animation.t);
-        const identity=this.rebuildSolidIdentities && (s.rebuildIds?.[i] || s[S.REBUILD_COLORS+i]);
+        const identity=this.activeKinds[i]==='solids' && (s.rebuildIds?.[i] || s[S.REBUILD_COLORS+i]);
         const destination = identity?identityGeometry:floating && !s[S.REBUILD_COLORS+i] ? floatingGeometry : activeGeometry;
         for (let j=startSolid;j<solid.length;j++) destination.push(solid[j]);
       }
     const bands = [],bandCoverage=[];
-    if (!this.isStack && s.slice(S.BAND_IDS,S.BAND_IDS+27).some(Boolean)) {
-      const groups = new Map();
-      for (let i=0;i<27;i++) if (s[S.BAND_IDS+i] && (s[S.FLOATING] & (1<<i)))
-        groups.set(s[S.BAND_IDS+i], (groups.get(s[S.BAND_IDS+i]) || 0) | (1<<i));
-      for (const mask of groups.values()) {
-        const cornerO=this.modelShape==='jelly' && !!visualSettings.jellyCornerO;
-        const bandKey=this.modelShape+':'+mask+':'+cornerO+':'+jellyStyleKey();
-        if (!this.bandCache.has(bandKey)) {
-          if (this.bandCache.size >= 128) this.bandCache.delete(this.bandCache.keys().next().value);
-          this.bandCache.set(bandKey, this.modelShape==='angular'?angularPiece(mask):this.modelShape==='gameboy'?gameboyPiece(mask,[1,1,1],'O'):context.engine.bandMesh(mask,cornerO));
-        }
-        const start = bands.length;
-        for (const value of this.bandCache.get(bandKey)) bands.push(value);
-        for(let j=start;j<bands.length;j+=9)bandCoverage.push(...xyz(31-Math.clz32(mask&-mask)));
-        if (animation?.kind === "turn") {
-          const cell = 31 - Math.clz32(mask & -mask);
-          rotateCell(bands, start, cell, animation.move, animation.t);
-        }
-      }
-    }
     this.upload(this.bandMesh, withCoverage(new Float32Array(bands),new Float32Array(bandCoverage)));
     this.upload(this.identityMesh,new Float32Array(identityGeometry));
     this.upload(this.activeLines, new Float32Array(activeLines));
@@ -312,7 +326,7 @@ class Renderer {
     if(this.stackEvent===event)return;
     this.stackEvent=event;
     const source=event.kind===2?from:to;
-    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true);
+    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true,0,displaySettings.stackPieces);
     const fragments=mergeFragments(parts);
     this.stackCellBuffers ??= Array.from({length:81},()=>this.buffer());
     for(let phase=0;phase<3;phase++) {
@@ -370,7 +384,8 @@ class Renderer {
     // Canvas bounds exclude the HUD and toolbar in both viewing modes.
     const margin = document.getElementById("showArrows").checked ? 6.4 : 5.8;
     const verticalPadding = 24;
-    const unit = (this.unit = Math.max(
+    const zoom=displaySettings[this.isStack?'gameStackSize':'gameActiveSize']/100;
+    const unit = (this.unit = zoom*Math.max(
       8,
       Math.min((rect.width - 24) / margin, (rect.height - verticalPadding) / margin),
     ));

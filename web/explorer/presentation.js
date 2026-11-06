@@ -6,6 +6,7 @@ const FULL=(1<<27)-1;
 const officialKeys=[...'brogym']; // J, Z, L, S, O, T in the reference frame.
 export function packingPresentation(p,mode='canonical') {
   const official=p.familyId===562;
+  if(mode==='officialMulticolor')mode=official?'official':'multicolor';
   const palette=Array(27).fill('w');palette[13]='l';
   const center=cellsOf(p.extras).find(i=>[Math.floor(i/9),Math.floor(i/3)%3,i%3].filter(v=>v!==1).length===1);
   if(center!==undefined)palette[center]='k';

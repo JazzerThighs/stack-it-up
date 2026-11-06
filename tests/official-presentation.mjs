@@ -38,3 +38,10 @@ for(const [mesh,key]of [[fixedMesh,'r'],[canonicalMesh,'m']]) {
  for(let i=0;i<mesh.length;i+=9)for(let k=0;k<3;k++)assert(Math.abs(mesh[i+6+k]-rgb[k])<1e-6);
 }
 console.log('PASS: fixed piece colors reach completed meshes; canonical mode still recolors by detected shape.');
+
+assert.deepEqual(packingPresentation(official,'officialMulticolor'),off);
+const distinctFallback=packingPresentation(duplicate,'officialMulticolor');
+assert(distinctFallback.fixed);
+assert.equal(new Set(distinctFallback.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
+assert.deepEqual(distinctFallback,packingPresentation(duplicate,'multicolor'));
+console.log('PASS: Official-Compatible / Multicolor fallback preserves official colors and distinct identities outside family 562.');

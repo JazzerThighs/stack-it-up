@@ -28,9 +28,9 @@ export function snapTarget(q,settings){
  return {q:best,face,error};
 }
 export function dragAxis(dx,dy,s){
- const angle=Math.atan2(dy,dx)*180/Math.PI,a=((angle%180)+180)%180,t=s.orbitTolerance;
- if(Math.min(a,180-a)<=t)return 'Y';if(Math.abs(a-90)<=t)return 'X';
- if(s.orbitDiagonalRoll&&Math.min(Math.abs(a-45),Math.abs(a-135))<=t)return 'Z';return 'XY';
+ const angle=Math.atan2(dy,dx)*180/Math.PI,a=((angle%180)+180)%180;
+ if(s.orbitDiagonalRoll&&Math.min(Math.abs(a-45),Math.abs(a-135))<22.5)return 'Z';
+ return Math.min(a,180-a)<=45?'Y':'X';
 }
 export function dragRotation(dx,dy,axis,s,direction=[1,1]){
  const gain=s.orbitSensitivity*Math.PI/180;
@@ -60,13 +60,12 @@ export function axisLabel(axis,s){
 }
 // Split exactly at capture boundaries, using the same precedence as dragAxis.
 export function captureSectors(s){
- const bounds=new Set([0,360]);
- for(const a of [0,45,90,135,180,225,270,315])for(const d of [-s.orbitTolerance,s.orbitTolerance])bounds.add(((a+d)%360+360)%360);
+ const bounds=new Set([0,22.5,45,67.5,112.5,135,157.5,202.5,225,247.5,292.5,315,337.5,360]);
  const ordered=[...bounds].sort((a,b)=>a-b),segments=[];
  for(let i=1;i<ordered.length;i++){
   const start=ordered[i-1],end=ordered[i],mid=(start+end)/2*Math.PI/180;
   const axis=dragAxis(Math.cos(mid),Math.sin(mid),s),prev=segments.at(-1);
-  if(s.orbitTolerance>0&&prev?.axis===axis)prev.end=end;else segments.push({start,end,axis});
+  if(prev?.axis===axis)prev.end=end;else segments.push({start,end,axis});
  }
  return segments;
 }

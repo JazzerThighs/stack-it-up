@@ -137,6 +137,27 @@ const settle=async predicate=>{for(let n=0;n<200&&!predicate();n++)await new Pro
 const initial=await initializeExplorer({getElementById:getExplorerElement},{client});
 await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
 assert.match($('status').textContent,/matching packings/);
+if(process.env.INSPECTION_ONLY){
+  assert($('familyInspectFilters').checked);
+  const inspected=observed.get($('familyExploreCube')).view,cells=inspected.cells,history=inspected.history,line=initial.current.lineNumber;
+  const {detectPieces:detect}=await import(new URL('explorer/family-exploration.js',assetRoot));
+  $('familyPieces').value='wholeSolids';$('familyPieces').listeners.change();
+  $('countMinO').value='0';$('countMaxO').value='0';await $('countMaxO').listeners.change();
+  assert.equal(initial.current.lineNumber,line);assert.equal(inspected.cells,cells);assert.equal(inspected.history,history);
+  assert(!detect(cells,inspected.detectionFilters).some(p=>p.letter==='O'));
+  assert(inspected.explorationGeometry.some(m=>m.identityCell!==undefined));
+  await $('resetPackingFilters').onclick();assert.equal(inspected.cells,cells);assert(detect(cells,inspected.detectionFilters).some(p=>p.letter==='O'));
+  const next=await client.query({filters:{family:562},line,offset:1});
+  await initial.query({line:next.record.lineNumber},true);assert.equal(initial.current.lineNumber,next.record.lineNumber);assert.notEqual(inspected.cells,cells);
+  const duplicate=await client.query({filters:{counts:[{type:'O',min:6,max:6}]}});
+  await initial.query({line:duplicate.record.lineNumber});
+  $('officialMulticolor').checked=true;$('officialMulticolor').onchange();
+  assert(inspected.fixedPieceColors);assert.equal(new Set(inspected.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
+  console.log('PASS: default live inspection, excluded/re-enabled O geometry, explicit source navigation, and distinct fallback colors.');
+  process.exit(0);
+}
+assert($('familyInspectFilters').checked);
+$('familyInspectFilters').checked=false;$('familyInspectFilters').onchange();
 assert.equal(initial.current.lineNumber,50152);assert.equal(initial.current.familyId,562);
 assert.deepEqual(initial.current.masks,[0xf,0xf0,0x40e00,0x780000,0x3018000,0x4024100]);
 assert.equal($('sourceLine').value,50152);
@@ -164,14 +185,19 @@ await $("practiceMode").onchange();
 flush();
 assert(!$("practicePanel").hidden);
 assert($("cubeLayout").hidden);
-assert.match($("practiceStatus").textContent, /Reachable pair/);
+assert.match($("practiceStatus").textContent, /Compatible pair/);
 await $('practiceRandom').onclick();
 assert.notEqual($('practiceA').value,$('practiceB').value);
+await $('practiceDemonstrate').onclick();assert.equal($('practiceProgress').textContent,'Target matched!');assert.match($('practiceStatus').textContent,/Verified path/);
 $("practiceA").value = String(official.lineNumber);
 $("practiceB").value = String(official.lineNumber);
 await $("practiceLoad").onsubmit({ preventDefault() {} });
 flush();
 assert.equal($("practiceProgress").textContent, "Target matched!");
+const practiceTarget=observed.get($('practiceRight')).view.cells.slice();
+await $('practiceScramble').onclick();assert.deepEqual(observed.get($('practiceRight')).view.cells,practiceTarget);
+await $('practiceDemonstrate').onclick();assert.equal($('practiceProgress').textContent,'Target matched!');
+console.log('PASS: arbitrary compatible pair demonstration, target-preserving scramble, and verified return path.');
 
 const { practicePair, turn } = await import(new URL("explorer/model.js",assetRoot));
 const host = element(),
@@ -236,8 +262,8 @@ const source=observed.get($('scrambledCube')).view;
 const target=observed.get($('solvedCube')).view;
 assert(target.orbitOnly);assert(target.connected);assert(target.meshGenerator);
 const composite=target.solid.data.slice();assert(composite.every(Number.isFinite));
-$('targetComposite').checked=false;$('targetComposite').listeners.change();assert(!target.connected);assert.notEqual(target.solid.data.length,composite.length);
-$('targetComposite').checked=true;$('targetComposite').listeners.change();assert.deepEqual(target.solid.data,composite);
+$('practiceTargetPieces').value='cubies';$('practiceTargetPieces').listeners.change();assert(target.individualPieces);assert.notEqual(target.solid.data.length,composite.length);
+$('practiceTargetPieces').value='whole';$('practiceTargetPieces').listeners.change();assert.deepEqual(target.solid.data,composite);
 $('targetTransparency').value='25';$('targetTransparency').listeners.input();assert.equal(target.opacity,.75);
 console.log('PASS: two views, native seamless target composites, cubie toggle, and transparency.');
 flush();applicationPage.hidden=true;assert(!source.isVisible());
@@ -308,9 +334,9 @@ const {detectPieces}=await import(new URL("explorer/family-exploration.js",asset
 const splitMove=Array.from({length:30},(_,i)=>i).find(m=>detectPieces(turn(familyView.cells,m)).some(p=>!p.letter));
 assert.notEqual(splitMove,undefined);
 await familyView.play(splitMove);flush();
-$("familySolidIdentities").checked=false;$("familySolidIdentities").onchange();
+$('familyPieces').value='whole';$('familyPieces').listeners.change();
 const beforeShapes=structuredClone(familyView.cells),roundMesh=familyView.solid.data.slice();
-$("familySolidIdentities").checked=true;$("familySolidIdentities").onchange();flush();
+$('familyPieces').value='solids';$('familyPieces').listeners.change();flush();
 assert(familyView.explorationSolids);
 assert.deepEqual(familyView.cells,beforeShapes);
 assert.notDeepEqual(familyView.solid.data,roundMesh);
@@ -321,7 +347,7 @@ familyView.setState(familyView.cells);
 await $('random').onclick();
 assert(familyView.explorationSolids,'solid identities survive packing reloads');
 assert.equal(new Set(familyView.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
-$("familySolidIdentities").checked=false;$("familySolidIdentities").onchange();
+$('familyPieces').value='whole';$('familyPieces').listeners.change();
 assert(!familyView.explorationSolids);
 console.log('PASS: family startup and solid-identity setting, live geometry changes and reload retention.');
 
@@ -340,7 +366,7 @@ console.log('PASS: 120 family turn frames reuse static GPU geometry with zero up
 $('targetTransparency').value='65';$('targetTransparency').listeners.input();
 for(const id of ['familyExploreCube','solvedCube','scrambledCube','practiceLeft','practiceRight'])assert(Math.abs(observed.get($(id)).view.opacity-.35)<1e-6,`${id} receives opacity`);
 $('targetTransparency').value='0';$('targetTransparency').listeners.input();assert.equal(familyView.opacity,1);
-$('familySolidIdentities').checked=true;$('familySolidIdentities').onchange();
+$('familyPieces').value='solids';$('familyPieces').listeners.change();
 const greyMove=Array.from({length:30},(_,i)=>i).find(m=>detectPieces(turn(familyView.cells,m)).some(p=>!p.letter));
 await familyView.play(greyMove);
 assert.equal(visual.visualSettings.solidUniform,1);
@@ -389,7 +415,7 @@ await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'
 $('spatialComposition').value='only';await spatial.query({position:0},true);
 assert(spatial.current.identities.every(c=>'BDF'.includes(c.toUpperCase())));
 await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
-await $('practiceRandom').onclick();assert.match($('practiceStatus').textContent,/Reachable pair/);
+await $('practiceRandom').onclick();assert.match($('practiceStatus').textContent,/Compatible pair/);
 $('countMinB').value='7';await spatial.query();assert.match($('status').textContent,/marked count ranges/);assert.equal($('rangeCardB').dataset.rangeState,'invalid');
 $('countMinB').value='0';
 console.log('PASS: expanded explorer startup, full collection, spatial-only filters, detected family metadata, practice pairs and invalid counts.');
@@ -516,6 +542,8 @@ $('packingPicker').open=true;$('closePackingPicker').onclick();assert.equal($('p
 console.log('PASS: chooser presets use the current custom rules; standalone reset and close controls work.');
 
 familyView.modelShape='jelly';familyView.familyExploration=true;
+$('familyPieces').value='whole';$('familyPieces').listeners.change();
+await $('resetPackingFilters').onclick();
 const cornerCells=Array(27).fill(null);for(const i of [0,1,3,4])cornerCells[i]={piece:0,color:'y'};
 familyView.setCells(cornerCells);const defaultCornerMesh=familyView.solid.data.slice();
 $('jellyCornerO').checked=true;$('jellyCornerO').listeners.change();
@@ -558,3 +586,34 @@ assert.equal(spatial.current.lineNumber,beforeNoMatch);assert.equal(navigations,
 assert.doesNotMatch($('packingIndex').textContent,/No matches/);
 spatial.views.navigate=originalNavigate;
 console.log('PASS: filters retain matching selections and live history, replacing only packings outside the new range.');
+
+// New display controls rebuild only geometry, preserving the current puzzle.
+const keptCells=familyView.cells,keptHistory=familyView.history,joinedMesh=familyView.solid.data.slice();
+$('familyPieces').value='cubies';$('familyPieces').listeners.change();
+assert(familyView.individualPieces);assert.equal(familyView.cells,keptCells);assert.equal(familyView.history,keptHistory);
+assert.notDeepEqual(familyView.solid.data,joinedMesh);
+$('familyPieces').value='whole';$('familyPieces').listeners.change();assert(!familyView.individualPieces);
+$('familySize').value='135';$('familySize').listeners.input();assert.equal(familyView.zoomScale,1.35);assert.equal(familyView.cells,keptCells);
+$('familySize').value='100';$('familySize').listeners.input();
+console.log('PASS: family assembly and independent viewport size change visuals without altering cells/history.');
+
+// Inspection keeps the exact working cube, even when new filters exclude it.
+const inspectedView=observed.get($("familyExploreCube")).view;
+await $('resetPackingFilters').onclick();
+$('familyInspectFilters').checked=true;$('familyInspectFilters').onchange();
+$('familyPieces').value='wholeSolids';$('familyPieces').listeners.change();
+const inspectionLine=spatial.current.lineNumber,inspectionCells=inspectedView.cells,inspectionHistory=inspectedView.history;
+const recognized=detectPieces(inspectedView.cells).find(p=>p.letter);assert(recognized);
+const excludedType=recognized.letter.replace('/','');
+$('countMin'+excludedType).value='0';$('countMax'+excludedType).value='0';
+await $('countMax'+excludedType).listeners.change();
+assert.equal(spatial.current.lineNumber,inspectionLine);assert.equal(inspectedView.cells,inspectionCells);assert.equal(inspectedView.history,inspectionHistory);
+assert.equal(detectPieces(inspectedView.cells,inspectedView.detectionFilters).find(p=>p.id===recognized.id).letter,null);
+assert.match($('packingIndex').textContent,/Inspecting/);
+assert(inspectedView.explorationGeometry.some(m=>m.identityCell!==undefined));
+await $('resetPackingFilters').onclick();
+assert.equal(inspectedView.cells,inspectionCells);assert.equal(inspectedView.history,inspectionHistory);
+assert(detectPieces(inspectedView.cells,inspectedView.detectionFilters).find(p=>p.id===recognized.id).letter);
+$('officialMulticolor').checked=true;$('officialMulticolor').onchange();
+assert(inspectedView.fixedPieceColors);assert.equal(new Set(inspectedView.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
+console.log('PASS: default inspection preserves the live cube/history across exclusions and resets; recognition and distinct colors update in place.');

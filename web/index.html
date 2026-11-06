@@ -93,7 +93,7 @@
 <div class="stage-tools">
                 <span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option><option value="10">J/L - Either shape</option><option value="11">S/Z - Either shape</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
                 <button id="turnWidth" aria-pressed="false" title="Face turns: regular or two layers. Hold Shift while dragging for wide turns.">Regular turns</button>
-                <button id="resetView" title="Reset camera">↺ View</button
+                <button id="orbitDragToggle" class="touch-orbit-toggle" type="button">XYZ Orbit</button><button id="resetView" title="Reset camera">↺ View</button
                 ><button
                   id="viewMode"
                   aria-pressed="false"
@@ -605,58 +605,117 @@
 <legend>Camera</legend>
 <label><input id="perspectiveCamera" type="checkbox" checked /> Perspective camera</label>
 <label
-              ><input id="freeOrbit" type="checkbox" checked /> Unrestricted orbit</label
+              ><input id="freeOrbit" type="checkbox" checked /> Allow upside-down views (Free drag)</label
             >
 <p class="muted">Free rotation allows upside-down views.</p><fieldset id="settlingOrbitSettings">
-<legend>Smooth face alignment</legend>
+<legend>Orbit controls</legend>
+<input id="orbitSettling" type="checkbox" checked hidden>
+<label>Touch camera mode<select id="orbitMode">
+<option value="classic">Classic free orbit</option>
+
+<option value="confined" selected>XYZ Orbit</option>
+</select>
+</label>
+<p id="orbitModeHelp" class="muted">XYZ Orbit uses only X/Y/Z zones.</p>
+<p class="muted">Touch: drag a sticker to turn; drag the background to orbit. The viewport toggle changes only touch orbit. Configure mouse buttons below.</p>
+<fieldset id="orbitMouseSettings">
+<legend>Mouse buttons</legend>
+<label>Left click<select id="mouseLeft">
+<option value="turn" selected>Cube turns / free drag outside</option>
+<option value="free" >Free drag</option>
+
+<option value="xyz" >XYZ Orbit</option>
+<option value="off" >Disabled</option>
+</select>
+</label>
+<label>Right click<select id="mouseRight">
+<option value="turn" >Cube turns / free drag outside</option>
+<option value="free" selected>Free drag</option>
+
+<option value="xyz" >XYZ Orbit</option>
+<option value="off" >Disabled</option>
+</select>
+</label>
 <label>
-<input id="orbitSettling" type="checkbox" > Enable smooth face alignment</label>
-<p class="muted">Full 360° orbit. Right-drag anywhere or left-drag outside the cube. Shared by both apps.</p>
+<input id="mouseBothEnabled" type="checkbox" checked> Enable left + right together</label>
+<label>Both buttons<select id="mouseBoth">
+<option value="free" >Free drag</option>
+
+<option value="xyz" selected>XYZ Orbit</option>
+</select>
+</label>
+<p class="muted">Both buttons override the first button while held. When disabled, the first button keeps its assigned action. Touch controls are separate.</p>
+</fieldset>
 <fieldset id="orbitGestureSettings">
 <legend>Drag response</legend>
+<label class="camera-range">
+<span>Rotation per pixel <output id="orbitSensitivityValue">0.5</output> degrees</span>
+<input id="orbitSensitivity" type="range" min="0.1" max="2" step="0.05" value="0.5">
+</label>
+<label class="camera-range">
+<span>Drag smoothing <output id="orbitSmoothingValue">70</output> ms</span>
+<input id="orbitSmoothing" type="range" min="0" max="300" step="10" value="70">
+</label>
+<label class="camera-range">
+<span>Initial dead-zone radius <output id="orbitDeadZoneValue">24</output> px</span>
+<input id="orbitDeadZone" type="range" min="0" max="96" step="2" value="24">
+</label>
 <label>
-<input id="orbitAxisLock" type="checkbox" checked> Keep axis for entire drag</label>
+<input id="orbitAxisLock" type="checkbox" checked> Keep chosen axis until release</label>
 <label>
-<input id="orbitDiagonalRoll" type="checkbox" checked> Enable diagonal roll</label>
-<label><input id="orbitCubeUD" type="checkbox" checked> Horizontal drags: current top-bottom axis</label>
-<label><input id="orbitCubeLR" type="checkbox" checked> Vertical drags: current left-right axis</label>
-<label><input id="orbitCubeFB" type="checkbox" checked> Diagonal drags: current front-back axis</label>
-<label><input id="orbitDragGuide" type="checkbox" checked> Show drag capture guide</label>
-<p class="muted">Checked: use the face pairs nearest the window's top/bottom, left/right and front/back at drag start, regardless of face names. This mapping stays fixed during the drag. Unchecked: use exact window axes. Diagonal axis applies when diagonal roll is enabled. Outside capture ranges, rotation blends camera X/Y. The guide stays at the drag origin until release.</p>
-<label>Initial dead-zone radius <output id="orbitDeadZoneValue">24</output> px<input id="orbitDeadZone" type="range" min="0" max="96" step="2" value="24"></label>
-<p class="muted">Choose a direction inside the circle. Rotation and axis capture begin at its edge. With axis lock on, the chosen axis stays fixed until release. Zero disables the dead zone.</p>
-<label>Rotation per pixel <output id="orbitSensitivityValue">0.5</output>°<input id="orbitSensitivity" type="range" min="0.1" max="2" step="0.05" value="0.5">
-</label>
-<label>Axis capture angle <output id="orbitToleranceValue">18</output>°<input id="orbitTolerance" type="range" min="0" max="40" step="1" value="18">
-</label>
-<label>Drag smoothing <output id="orbitSmoothingValue">70</output> ms<input id="orbitSmoothing" type="range" min="0" max="300" step="10" value="70">
-</label>
+<input id="orbitDragGuide" type="checkbox" checked> Show angle wheel</label>
+<p class="muted">Choose your direction inside the dead zone; rotation starts at its edge. Zero disables the dead zone.</p>
+</fieldset>
+<fieldset id="orbitAxesSettings">
+<legend>Axis zones</legend>
+<label>
+<input id="orbitDiagonalRoll" type="checkbox" checked> Enable diagonal Z rotation</label>
+
+
+<label>
+<input id="orbitCubeUD" type="checkbox" checked> Horizontal: current top-bottom face axis</label>
+<label>
+<input id="orbitCubeLR" type="checkbox" checked> Vertical: current left-right face axis</label>
+<label>
+<input id="orbitCubeFB" type="checkbox" checked> Diagonal: current front-back face axis</label>
+<p class="muted">Checked: follow the nearest face pair at drag start. Unchecked: use the exact camera axis. With diagonal rotation off, XYZ Orbit uses only X/Y zones.</p>
 </fieldset>
 <fieldset id="orbitAlignmentSettings">
 <legend>Release alignment</legend>
 <label>
 <input id="orbitSnap" type="checkbox" checked> Settle toward nearest face</label>
-<p class="muted">The nearest face keeps an upright quarter-turn. Horizontal and vertical set its outward normal; roll tilts its borders around that normal. Zero angles give a straight-on face.</p>
-<label>Horizontal angle <output id="orbitHorizontalValue">-20</output>°<input id="orbitHorizontal" type="range" min="-60" max="60" step="1" value="-20">
+<p id="orbitSnapHelp" class="muted">
+</p>
+<label class="camera-range">
+<span>Face normal: horizontal <output id="orbitHorizontalValue">-20</output> degrees</span>
+<input id="orbitHorizontal" type="range" min="-60" max="60" step="1" value="-20">
 </label>
-<label>Vertical angle <output id="orbitVerticalValue">15</output>°<input id="orbitVertical" type="range" min="-60" max="60" step="1" value="15">
+<label class="camera-range">
+<span>Face normal: vertical <output id="orbitVerticalValue">15</output> degrees</span>
+<input id="orbitVertical" type="range" min="-60" max="60" step="1" value="15">
 </label>
-<label>Face roll <output id="orbitRollValue">0</output>°<input id="orbitRoll" type="range" min="-45" max="45" step="1" value="0">
+<label class="camera-range">
+<span>Face roll <output id="orbitRollValue">0</output> degrees</span>
+<input id="orbitRoll" type="range" min="-45" max="45" step="1" value="0">
 </label>
-<label>Settle duration <output id="orbitSettleTimeValue">700</output> ms<input id="orbitSettleTime" type="range" min="100" max="2500" step="50" value="700">
+<label class="camera-range">
+<span>Settle duration <output id="orbitSettleTimeValue">700</output> ms</span>
+<input id="orbitSettleTime" type="range" min="100" max="2500" step="50" value="700">
 </label>
-<label>Release delay <output id="orbitSettleDelayValue">80</output> ms<input id="orbitSettleDelay" type="range" min="0" max="600" step="20" value="80">
+<label class="camera-range">
+<span>Release delay <output id="orbitSettleDelayValue">80</output> ms</span>
+<input id="orbitSettleDelay" type="range" min="0" max="600" step="20" value="80">
 </label>
 </fieldset>
 <fieldset id="orbitDebugSettings">
 <legend>Diagnostics</legend>
 <label>
-<input id="orbitDebug" type="checkbox" > Show diagnostic readout</label>
+<input id="orbitDebug" type="checkbox" > Enable orientation diagnostics</label>
 <label>
-<input id="orbitDebugOverlay" type="checkbox" > Show readout over cube</label>
-<pre id="orbitDiagnostics" hidden>Drag the background or right-drag to inspect orientation.</pre>
+<input id="orbitDebugOverlay" type="checkbox" > Show diagnostics over viewport</label>
+<pre id="orbitDiagnostics" hidden>Drag to inspect direction, axis, orientation and target error.</pre>
 </fieldset>
-<button id="resetOrbitSettings" type="button">Reset camera mode settings</button>
+<button id="resetOrbitSettings" type="button">Reset orbit settings</button>
 </fieldset>
 </fieldset>
 <p class="muted">Drag a sticker to turn. Shift-drag for wide turns. Drag outside the cube or right-drag to orbit. C: hold.</p>
@@ -719,17 +778,16 @@
 </fieldset>
 <fieldset>
 <legend>Freed-piece shapes</legend>
-<label
-              ><input id="activeSpheres" type="checkbox" /> Loose fragment spheres</label
+<label hidden><input id="activeSpheres" type="checkbox" /> Loose fragment spheres</label
             >
-<div class="setting-dependency">
+<div class="setting-dependency" hidden>
 <p class="setting-reason" id="rebuildShapeOptionsReason">Available when release is enabled or freed cubies are in play.</p>
 <fieldset id="rebuildShapeOptions" aria-describedby="rebuildShapeOptionsReason">
-<label><input id="rebuildSolidIdentities" type="checkbox" checked /> Distinct solids for freed groups</label>
+<label hidden><input id="rebuildSolidIdentities" type="checkbox" checked /> Distinct solids for freed groups</label>
 </fieldset>
 </div>
 <div class="setting-dependency">
-<p class="setting-reason" id="solidOptionsReason">Enable group identities to edit their appearance.</p>
+<p class="setting-reason" id="solidOptionsReason">Choose Balls &amp; Platonic Solids in Piece assembly.</p>
 <fieldset id="solidOptions" aria-describedby="solidOptionsReason">
 <label><input id="solidFixed" type="checkbox" /> Keep solids aligned during turns <output id="solidFixedValue">Off</output>
 </label>
@@ -764,9 +822,9 @@
 </label><input id="lightIntensity" type="range" min="0" max="3" step="0.05" value="1" />
 <label for="lightAmbient">Fill light<output id="lightAmbientValue">0.35</output>
 </label><input id="lightAmbient" type="range" min="0" max="1" step="0.05" value="0.35" />
-<fieldset id="lightingClasses"><legend>Lighting by element</legend><p class="muted">Model default uses positional light for Gameboy, surface light otherwise. Unlit guides stay unlit.</p><label>Placed pieces & packing blocks<select id="lightPieces"><option value="0" selected>Model default</option><option value="1">Surface angle</option><option value="2">Light proximity</option></select></label><label>Active cubies & loose fragments<select id="lightCubies"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Identity solids<select id="lightSolids"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Other lit elements<select id="lightOther"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label></fieldset><button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button>
+<fieldset id="lightingClasses"><legend>Lighting by element</legend><p class="muted">Model default uses positional light for Gameboy, surface light otherwise. Unlit guides stay unlit.</p><label>Placed pieces & packing blocks<select id="lightPieces"><option value="0" selected>Model default</option><option value="1">Surface angle</option><option value="2">Light proximity</option></select></label><label>Active cubies & loose fragments<select id="lightCubies"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Balls &amp; Platonic Solids<select id="lightSolids"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Other lit elements<select id="lightOther"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label></fieldset><button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button>
 </details>
-<fieldset id="jellyShaping"><legend>Jelly shaping</legend><label><input id="jellyCornerO" type="checkbox" checked > O rings (Jelly / Angular) <output id="jellyCornerOValue">On</output></label><p class="muted">Smooth beveled ring with a rounded-square opening. Cosmetic only.</p><label>Bevel width <input id="jellyBevel" type="range" min="1" max="48" step="1" value="15"><output id="jellyBevelValue">15</output></label><p class="muted">Higher: bevels start closer to the face centers.</p><label>Bevel profile <input id="jellyProfile" type="range" min="1.05" max="6" step="0.05" value="2"><output id="jellyProfileValue">2</output></label><p class="muted">Low: nearly straight chamfer. Middle: rounded. High: near-square corner. Width stays independent.</p><label>Elbow smoothing <input id="jellyElbows" type="range" min="0" max="100" step="5" value="100"><output id="jellyElbowsValue">100%</output></label><p class="muted">Lower values keep inside corners sharper. Angular models use flat faces and straight bevels; width and O-ring controls apply.</p><label>O opening <input id="jellyOpening" type="range" min="18" max="40" step="1" value="24"><output id="jellyOpeningValue">24</output></label><p class="muted">Opening size when rounded-square O rings are enabled.</p></fieldset>
+<fieldset id="pieceAssemblySettings"><legend>Piece assembly</legend><label>Family Explorer<select id="familyPieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><label>Start Cube (Two-Cube Practice)<select id="practiceStartPieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><label>Target Cube (Two-Cube Practice)<select id="practiceTargetPieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><label>Active Pieces<select id="activePieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><label>Stack<select id="stackPieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><p class="muted">Tetracubes are complete, valid groups of four. Fragments belong to incomplete or excluded groups; extra cubies stay cubes. Explorer detection follows the packing filters.</p></fieldset><fieldset id="cubeSizeSettings"><legend>Cube sizes</legend><label class="camera-range"><span>Family Explorer <output id="familySizeValue">100%</output></span><input id="familySize" type="range" min="50" max="160" step="1" value="100"></label><label class="camera-range"><span>Start Cube (Two-Cube Practice) <output id="practiceStartSizeValue">100%</output></span><input id="practiceStartSize" type="range" min="50" max="160" step="1" value="100"></label><label class="camera-range"><span>Target Cube (Two-Cube Practice) <output id="practiceTargetSizeValue">100%</output></span><input id="practiceTargetSize" type="range" min="50" max="160" step="1" value="100"></label><label class="camera-range"><span>Active Pieces <output id="gameActiveSizeValue">100%</output></span><input id="gameActiveSize" type="range" min="50" max="160" step="1" value="100"></label><label class="camera-range"><span>Stack <output id="gameStackSizeValue">100%</output></span><input id="gameStackSize" type="range" min="50" max="160" step="1" value="100"></label><p class="muted">100% uses automatic fit. Active Pieces also sizes the combined game cube; Stack sizes the separate stack view. Larger sizes may crop corners.</p></fieldset><fieldset id="interfaceSettings"><legend>Interface theme</legend><label>Color theme<select id="uiTheme"><option value="teal">Teal</option><option value="slate">Slate blue</option><option value="violet">Violet</option><option value="amber">Amber</option></select></label><p class="muted">Shared by both apps. Piece colors are unchanged.</p></fieldset><fieldset id="jellyShaping"><legend>Jelly shaping</legend><label><input id="jellyCornerO" type="checkbox" checked > O rings (Jelly / Angular) <output id="jellyCornerOValue">On</output></label><p class="muted">Smooth beveled ring with a rounded-square opening. Cosmetic only.</p><label>Bevel width <input id="jellyBevel" type="range" min="1" max="48" step="1" value="15"><output id="jellyBevelValue">15</output></label><p class="muted">Higher: bevels start closer to the face centers.</p><label>Bevel profile <input id="jellyProfile" type="range" min="1.05" max="6" step="0.05" value="2"><output id="jellyProfileValue">2</output></label><p class="muted">Low: nearly straight chamfer. Middle: rounded. High: near-square corner. Width stays independent.</p><label>Elbow smoothing <input id="jellyElbows" type="range" min="0" max="100" step="5" value="100"><output id="jellyElbowsValue">100%</output></label><p class="muted">Lower values keep inside corners sharper. Angular models use flat faces and straight bevels; width and O-ring controls apply.</p><label>O opening <input id="jellyOpening" type="range" min="18" max="40" step="1" value="24"><output id="jellyOpeningValue">24</output></label><p class="muted">Opening size when rounded-square O rings are enabled.</p></fieldset>
 <details class="visual-tuning">
 <summary>Dither tuning</summary>
 <div class="setting-dependency">

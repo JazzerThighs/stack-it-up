@@ -1,4 +1,4 @@
-import {orbitSettings} from './input/orbit-settings.js';
+import {orbitSettings,bindOrbitToggle} from './input/orbit-settings.js';
 import {bindControlSettings,controlSettings,setControlSetting} from './input/control-settings.js';
 import {createFaceMap} from './ui/face-map.js';
 import {groupRequirementsText} from './ui/group-requirements.js';
@@ -544,6 +544,7 @@ $("turnWidth").onclick = () => {
   renderers.forEach(r => { r.wideTurns = wide; r.refreshTurnHover?.(); });
   invalidate();
 };
+bindOrbitToggle($("orbitDragToggle"));
 $("resetView").onclick = () => {
   renderers.forEach((r) => {
     r.yaw = Math.PI - 0.55;

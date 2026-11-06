@@ -1,3 +1,4 @@
+import {assemblyUsesSolids} from '../render/assembly.js';
 // Explorer settings keep their original controls/listeners; only their layout moves.
 export function initializeExplorerSettings(root) {
   const content=root.querySelector?.('.settings-content');
@@ -31,18 +32,21 @@ export function initializeExplorerSettings(root) {
   const input=page('Input',controls);unpack(input,$('explorerInputSettings'));
   const hover=page('Hover feedback',controls);unpack(hover,$('explorerHoverSettings'));
   const camera=page('Camera',controls);add(camera,$('explorerCamera').closest('label'),$('freeOrbit').closest('label'));
-  const settling=page('Smooth face alignment',camera);
-  for(const [id,name]of [['orbitGestureSettings','Drag response'],['orbitAlignmentSettings','Release alignment'],['orbitDebugSettings','Diagnostics']]){const field=$(id);unpack(page(name,settling),field);field.remove();}
+  const settling=page('Orbit controls',camera);
+  for(const [id,name]of [['orbitMouseSettings','Mouse buttons'],['orbitGestureSettings','Drag response'],['orbitAxesSettings','Axis zones'],['orbitAlignmentSettings','Release alignment'],['orbitDebugSettings','Diagnostics']]){const field=$(id);unpack(page(name,settling),field);field.remove();}
   unpack(settling,$('settlingOrbitSettings'));
   const views=page('Views',home);
   unpack(views,find('.window-controls'));
-  add(views,$('targetComposite').closest('label'));
+  $('targetComposite').closest('label').hidden=true;add(views,$('targetComposite').closest('label'));
+  unpack(page('Cube sizes',views),$('cubeSizeSettings'));
   help(views,'Visible-cube switches apply to standard browsing. Family and practice modes use their own views.');
   const appearance=page('Appearance',home);add(appearance,$('modelShape').closest('label'),$('pieceAppearance').closest('label'));
+  unpack(page('Piece assembly',appearance),$('pieceAssemblySettings'));
+  unpack(page('Interface theme',appearance),$('interfaceSettings'));
   const colors=page('Colors',appearance);unpack(colors,find('.color-controls'));
-  help(colors,'Official colors apply to family 562; other families use canonical colors. Multicolor distinguishes piece IDs.');
+  help(colors,'Official uses canonical colors outside family 562. Official-Compatible / Multicolor fallback keeps distinct piece colors in every family.');
   const palette=page('Tetromino palette',colors);unpack(palette,find('.piece-colors'));
-  const solids=page('Piece identity shapes',appearance);
+  const solids=page('Balls & Platonic Solids',appearance);
   const solidField=$('familySolidIdentities').closest('fieldset');unpack(solids,solidField);
   const tuning={};
   for(const [name,id]of [['Transparency','ditherTransparency'],['Lighting','lightAzimuth'],['Dither tuning','ditherLevels'],['ASCII tuning','asciiSize']]) {
@@ -58,7 +62,7 @@ export function initializeExplorerSettings(root) {
     const family=$('familyExploreMode').checked,practice=$('practiceMode').checked;
     for(const id of ['showSolved','showScrambled'])$(id).disabled=family||practice;
     $('targetComposite').disabled=family;
-    const solidsOn=family&&$('familySolidIdentities').checked;
+    const solidsOn=['familyPieces','practiceStartPieces','practiceTargetPieces','activePieces','stackPieces'].some(id=>assemblyUsesSolids($(id).value));
     $('familySolidIdentities').disabled=!family;
     for(const id of ['solidUniform','solidFixed'])$(id).disabled=!solidsOn;
     $('solidColor').disabled=!solidsOn||!$('solidUniform').checked;

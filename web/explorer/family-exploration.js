@@ -37,10 +37,27 @@ export function identifyMask(mask) {
   }
   return null;
 }
-export function detectPieces(cells) {
+// Per-piece exclusions come from the same count categories as the catalog.
+// Minimum counts constrain complete packings, not an individual four-cell group.
+export function allowedDetectedPiece(mask,letter,filters={}) {
+  if(!letter)return false;
+  const limits=new Map((filters.counts||[]).map(c=>[c.type,c.max]));
+  const permits=type=>!limits.has(type)||limits.get(type)>0;
+  const type=letter.replace('/',''),core=!!(mask&(1<<13));
+  const facebound=faces.some(face=>cellsOf(mask).every(i=>face.includes(i)));
+  const spatial='BDF'.includes(letter),placement=core?'CorePieces':facebound?'Facebound':'SurfaceNonface';
+  if(!permits(type)||!permits(placement))return false;
+  if('JL'.includes(letter)&&!permits('JL')||'SZ'.includes(letter)&&!permits('SZ'))return false;
+  if(filters.spatial==='none'&&spatial||filters.spatial==='only'&&!spatial)return false;
+  if(filters.allSurfaceIdentities&&!facebound||filters.surfaceOnly&&core||filters.nonFaceboundSurface&&(core||facebound))return false;
+  if(filters.planar==='none'&&!spatial&&!facebound)return false;
+  if(core&&filters.coreType&&!filters.coreType.toUpperCase().includes(letter[0]))return false;
+  return true;
+}
+export function detectPieces(cells,filters={}) {
   const groups=new Map();
   cells.forEach((cell,i)=>{if(cell?.piece>=0) groups.set(cell.piece,(groups.get(cell.piece)||0)|(1<<i));});
-  return [...groups].sort(([a],[b])=>a-b).map(([id,mask])=>({id,mask,letter:identifyMask(mask)}));
+  return [...groups].sort(([a],[b])=>a-b).map(([id,mask])=>({id,mask,letter:allowedDetectedPiece(mask,identifyMask(mask),filters)?identifyMask(mask):null}));
 }
 export const maskKey = masks => [...masks].sort((a,b)=>a-b).join(',');
 const rotateMask=(mask,rotation)=>cellsOf(mask).reduce((m,i)=>m|(1<<rotation[i]),0);

@@ -1,3 +1,5 @@
+import {displaySettings} from '../ui/display-settings.js';
+import {jellyCell} from './piece-mesh.js';
 import {turnTransform,movedCell,transformPoint} from './transforms.js';
 import {S} from '../engine/snapshot.js';
 import {cubieShape} from './geometry.js';
@@ -10,8 +12,8 @@ export function rebuildSlots(state,previous=new Map()) {
   return slots;
 }
 export function activeCubie(out,p,h,color,cell,state,renderer) {
-  if(renderer.rebuildSolidIdentities && (state.rebuildIds?.[cell] || state[S.REBUILD_COLORS+cell])) {
-    const slot=renderer.rebuildSlots?.get(state.rebuildIds?.[cell]) ?? state[S.REBUILD_COLORS+cell]-1;
+  if((renderer.activeKinds?.[cell]||displaySettings.activePieces)==='solids' && (state[S.FLOATING]&(1<<cell))) {
+    const slot=renderer.rebuildSlots?.get(state.rebuildIds?.[cell]) ?? Math.max(0,(state[S.BAND_IDS+cell]||state[S.REBUILD_COLORS+cell]||1)-1);
     const start=out.length;
     identitySolid(out,p,h,solidColor(slot,color),slot,state.solidRotations?.[cell]);
     const animation=renderer.animation;
@@ -22,5 +24,7 @@ export function activeCubie(out,p,h,color,cell,state,renderer) {
         for(let a=0;a<3;a++){out[i+a]=p[a]+q[a];out[i+3+a]=n[a];}
       }
     }
-  } else cubieShape(!(state[S.FLOATING]&(1<<cell)),!!state[S.REBUILD_COLORS+cell],renderer.activeSpheres)(out,p,h,color);
+  } else if((renderer.activeKinds?.[cell]||displaySettings.activePieces)==='solids')cubieShape(true,false,true)(out,p,h,color);
+  else if(renderer.cellGenerator)jellyCell(out,cell,color,renderer.cellGenerator,h,renderer.modelShape);
+  else cubieShape(false,false,false)(out,p,h,color);
 }

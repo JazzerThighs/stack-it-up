@@ -1,3 +1,5 @@
+import {assemblyUsesSolids} from '../render/assembly.js';
+import {displaySettings} from './display-settings.js';
 import {S} from '../engine/snapshot.js';
 const checks = {scienceMode:0,clearFullFace:1,clearRingFace:2,clearFullSlice:3,clearRingSlice:4,gravityEnabled:5,freedomEnabled:9,freeSize1:10,freeSize2:11,freeSize3:12,freeSize4:13,fragmentsConnected:14,rebuildQueueShapes:21,rebuildOriginalShape:22,fallOneCell:20,planeGravity:24};
 const radios = {gravityDirection:[6,4],gravityOccurrence:[8,2],freedomEvent:[16,3],freedomMethod:[18,4]};
@@ -49,7 +51,7 @@ export function refreshGameplay(root=document,{starting=false,busy=false,state=n
   $('activeSpheres').disabled=!rebuild||$('rebuildSolidIdentities').checked;
   $('activeSpheres').title=$('rebuildSolidIdentities').checked?'Turn off distinct solids to change loose-fragment shapes.':'';
   $('rebuildShapeOptions').disabled=!rebuild;$('rebuildShapeOptionsReason').hidden=rebuild;
-  $('solidOptions').disabled=!rebuild||!$('rebuildSolidIdentities').checked;
+  $('solidOptions').disabled=!['activePieces','stackPieces'].some(k=>assemblyUsesSolids(displaySettings[k]));
   $('solidOptionsReason').hidden=!$('solidOptions').disabled;
 }
 export function initializeGameplay(context) {

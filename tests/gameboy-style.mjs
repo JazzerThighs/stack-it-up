@@ -3,7 +3,7 @@ import {gameboyCell,gameboyPiece,gameboyPattern} from '../web/render/gameboy-mes
 import {compositeParts} from '../web/render/piece-mesh.js';
 import {appearances} from '../web/render/appearance.js';
 assert(appearances.some(([id])=>id==='gameboy'));
-for(const letter of ['O','T','J','L','S','Z','B','D','F','bomb']) {
+for(const letter of ['O','T','J','L','S','Z','B','D','F','bomb','loose']) {
  const out=[];gameboyCell(out,[0,0,0],.487,[.2,.5,.8],letter);
  assert(out.length>0&&out.length%27===0);assert(out.every(Number.isFinite));
  for(let i=0;i<out.length;i+=9) {
@@ -131,3 +131,14 @@ const bombPlane=gameboyPattern('bomb');
 assert.deepEqual([...new Set(bombPlane)].sort((a,b)=>a-b),[0,.032],'bomb uses only the perimeter plane and raised colored field');
 for(const [x,y]of [[0,3],[1,3],[0,4],[1,4],[4,0],[4,1]])assert.equal(bombPlane[y*8+x],0,'dark bomb motif meets its frame without a step');
 console.log('PASS: bomb extras have no intermediate dark relief plane at the perimeter seam.');
+
+for(const letter of ['O','T','J','L','S','Z','B','D','F','bomb'])assert.notDeepEqual(gameboyPattern('loose'),gameboyPattern(letter));
+const looseBoard=Array(27).fill(0);looseBoard[13]=1;
+const looseMesh=compositeParts(looseBoard,ids,['','#ffffff'],()=>{},'gameboy')[0];
+assert.deepEqual(Array.from(looseMesh),gameboyPiece(1<<13,[1,1,1],'loose'));
+const {jellyCell}=await import('../web/render/piece-mesh.js');
+const activeLoose=[],expectedLoose=[];
+jellyCell(activeLoose,13,[.2,.5,.8],()=>{},.438,'gameboy');
+gameboyCell(expectedLoose,[0,0,0],.438,[.2,.5,.8],'loose');
+assert.deepEqual(activeLoose,expectedLoose);
+console.log('PASS: loose cubies use a unique raised X motif in stack and active rendering, preserving relief colors.');

@@ -1,3 +1,5 @@
+import {assemblyUsesSolids} from '../render/assembly.js';
+import {displaySettings} from './display-settings.js';
 import {S} from '../engine/snapshot.js';
 
 // Disable containers, never rewrite preferences or the engine-owned control locks.
@@ -26,7 +28,7 @@ export function refreshSettingsAvailability(root = document, state = null) {
   enabled('arrowOptions', checked('showArrows'));
   enabled('ringOptions', checked('hoverRings'));
   enabled('rebuildShapeOptions', rebuilding);
-  enabled('solidOptions', rebuilding && checked('rebuildSolidIdentities'));
+  enabled('solidOptions', ['activePieces','stackPieces'].some(k=>assemblyUsesSolids(displaySettings[k])));
   enabled('solidColorOptions', checked('solidUniform'));
   enabled('solidGrayOptions', !checked('solidUniform'));
   enabled('ditherTuning', value('pieceAppearance') === 'dither');

@@ -1,3 +1,5 @@
+import {assemblyUsesSolids} from '../render/assembly.js';
+import {displaySettings,initializeDisplayControls,viewPreferences,setDisplaySetting} from '../ui/display-settings.js';
 import {jellyStyleKey} from '../render/visual-settings.js';
 import {bindControlSettings} from '../input/control-settings.js';
 import {solidStyleKey} from '../render/identity-solids.js';
@@ -23,6 +25,9 @@ export function createExplorerViews({
 }) {
   const $ = id => root.getElementById(id);
   const cubes = new Map();
+  function display(view,id){const [pieces,size]=viewPreferences[id]||['practiceTargetPieces','practiceTargetSize'];view.displayId=id;view.assembly=displaySettings[pieces];view.individualPieces=view.assembly==='cubies';view.explorationSolids=assemblyUsesSolids(view.assembly);view.connected=true;view.detectionFilters=data.filters?.()||{};view.zoomScale=displaySettings[size]/100;}
+  initializeDisplayControls(root,key=>{for(const [id,cube]of cubes){display(cube,id);if(key.endsWith('Pieces'))cube.setState(cube.cells,cube.currentAnimation);cube.invalidate();}});
+  data.refreshDetection=()=>{for(const cube of cubes.values()){cube.detectionFilters=data.filters?.()||{};cube.setState(cube.cells,cube.currentAnimation);cube.onChange?.(cube);}};
   let cornerO=jellyStyleKey();
   initializeVisualControls(root,()=>{
     if(cornerO!==jellyStyleKey()){cornerO=jellyStyleKey();for(const cube of cubes.values())cube.setState(cube.cells,cube.currentAnimation);}
@@ -40,6 +45,22 @@ export function createExplorerViews({
     playback = 0,
     sourcePacking,
     targetPacking;
+  let practiceRun=0,practiceBusy=false,practiceWorker=null,cancelJob=null,pairCompatible=false;
+  function cancelPractice(){
+    practiceRun++;practiceWorker?.terminate();practiceWorker=null;cancelJob?.();cancelJob=null;practiceBusy=false;
+    const cube=cubes.get('practiceLeft');if(cube){cube.generation++;cube.busy=false;cube.orbitOnly=false;cube.playbackMs=null;cube.setState(cube.cells);}
+    $('practiceDemonstrate').textContent='Demonstrate path';
+  }
+  function findPracticePath(source,target){
+    if(typeof Worker==='undefined')return import('./practice-path.js').then(m=>m.planPracticePath(source,target));
+    return new Promise((resolve,reject)=>{
+      practiceWorker=new Worker(new URL('./practice-worker.js',import.meta.url),{type:'module'});
+      cancelJob=()=>reject(Error('Playback cancelled'));
+      practiceWorker.onmessage=({data})=>{practiceWorker?.terminate();practiceWorker=null;cancelJob=null;data.error?reject(Error(data.error)):resolve(data.moves);};
+      practiceWorker.onerror=()=>{practiceWorker?.terminate();practiceWorker=null;cancelJob=null;reject(Error('Could not construct the practice path'));};
+      practiceWorker.postMessage({source,target});
+    });
+  }
   const get = (id, options = {}) => {
     if (!cubes.has(id)) {
       const view = new PackingCube($(id), options);
@@ -52,6 +73,7 @@ export function createExplorerViews({
       view.solidStyle=solidStyleKey();
       view.opacity=1-Number($("targetTransparency").value)/100;
       view.connected = (id === "solvedCube" || id === "practiceRight") && $("targetComposite").checked;
+      display(view,id);
       cubes.set(id, view);
     }
     return cubes.get(id);
@@ -69,6 +91,7 @@ export function createExplorerViews({
       cube.connected=$("targetComposite").checked;
       cube.setState(cube.cells,cube.currentAnimation);
     }
+    setDisplaySetting('practiceTargetPieces',$('targetComposite').checked?'whole':'cubies');
     refreshTransparency();
   }
   function showCube(id, packing, colors, moves = []) {
@@ -100,6 +123,7 @@ export function createExplorerViews({
     for (const cube of cubes.values()) {
       cube.appearance = $("pieceAppearance").value;
       cube.modelShape = $("modelShape").value || "angular";
+      display(cube,cube.displayId);
       cube.setState(cube.cells,cube.currentAnimation);
     }
   });
@@ -143,6 +167,9 @@ export function createExplorerViews({
     const cube = cubes.get("practiceLeft");
     if (!cube || !targetCells) return;
     const match = matchesTarget(cube.cells, targetCells);
+    $('practiceDemonstrate').disabled=!pairCompatible&&!practiceBusy;
+    $('practiceScramble').disabled=practiceBusy||!match;
+    $('practiceScramble').title=match?'Scramble the Start cube; keep the Target unchanged.':'Match the target before generating a fresh scramble.';
     $("practiceProgress").textContent = match
       ? "Target matched!"
       : `${cube.history.length} turns · Keep going`;
@@ -154,15 +181,17 @@ export function createExplorerViews({
         "Enter two valid source line numbers from the packing database.";
       return;
     }
+    cancelPractice();
     sourcePacking = a;
     targetPacking = b;
     const pair = practicePair(data.presentation(a).packing, data.presentation(b).packing);
+    pairCompatible=pair.compatible;
     targetCells = pair.right;
     $("practiceA").value = a.lineNumber;
     $("practiceB").value = b.lineNumber;
     const family=a.familyId, same=family!=null&&family===b.familyId;
     $("practiceStatus").textContent = pair.compatible
-      ? `Reachable pair${same ? ` · Family ${family}` : ""}. Colors follow physical pieces; their letter shapes may change.`
+      ? `Compatible pair${same ? ` · Family ${family}` : ""}. Colors follow physical pieces; their letter shapes may change.`
       : "Comparison only: these packings do not share the same physical piece and center configuration. A turn sequence is not guaranteed.";
     $("practiceLeftTitle").textContent = `Start · line ${a.lineNumber}`;
     $("practiceRightTitle").textContent = `Target · line ${b.lineNumber}`;
@@ -181,6 +210,29 @@ export function createExplorerViews({
   };
   $("practiceSwap").onclick = async () => {
     if (sourcePacking && targetPacking) {loadPair(targetPacking, sourcePacking);await syncSelection();}
+  };
+  $('practiceScramble').onclick=async()=>{
+    const cube=cubes.get('practiceLeft');if(!cube||cube.busy||!matchesTarget(cube.cells,targetCells))return;
+    cancelPractice();cube.setCells(targetCells);const token=practiceRun;practiceBusy=true;cube.playbackMs=55;
+    try{let last=-1;for(let i=0;i<20;i++){let move;do{move=Math.floor(Math.random()*30);}while(move%15===last);last=move%15;if(token!==practiceRun)break;cube.orbitOnly=false;const task=cube.play(move);cube.orbitOnly=true;await task;}}
+    finally{if(token===practiceRun){practiceBusy=false;cube.orbitOnly=false;cube.playbackMs=null;updatePractice();}}
+  };
+  $('practiceDemonstrate').onclick=async()=>{
+    if(practiceBusy){cancelPractice();updatePractice();return;}
+    const cube=cubes.get('practiceLeft');if(!cube||cube.busy||!pairCompatible)return;
+    await selectPracticeView('start');const token=++practiceRun;practiceBusy=true;cube.orbitOnly=true;
+    $('practiceDemonstrate').textContent='Stop demonstration';$('practiceScramble').disabled=true;
+    $('practiceStatus').textContent='Constructing and verifying a legal path...';
+    try{
+      const moves=await findPracticePath(cube.cells.map(c=>c.piece),targetCells.map(c=>c.piece));if(token!==practiceRun)return;
+      $('practiceStatus').textContent=`Verified path: ${moves.length} quarter-turns. Physical piece identities are preserved.`;cube.playbackMs=45;
+      for(let i=0;i<moves.length;i++){
+        if(token!==practiceRun||!$('practiceMode').checked)break;
+        cube.orbitOnly=false;const task=cube.play(moves[i]);cube.orbitOnly=true;await task;
+        $('practiceProgress').textContent=`Demonstrating ${i+1} / ${moves.length}`;
+      }
+    }catch(error){if(token===practiceRun)$('practiceStatus').textContent=error.message;}
+    finally{if(token===practiceRun){practiceBusy=false;cube.orbitOnly=false;cube.playbackMs=null;$('practiceDemonstrate').textContent='Demonstrate path';updatePractice();}}
   };
   const familyExplorer=createFamilyExplorer({$,get,getSelected:()=>selected,data});
   async function syncSelection() {return data.selectionChanged?.($('navigationTarget').value==='target'?targetPacking:sourcePacking);}
@@ -204,6 +256,7 @@ export function createExplorerViews({
   }
   async function updateMode() {
     const family=$("familyExploreMode").checked, practice=$("practiceMode").checked;
+    if(!practice&&practiceBusy)cancelPractice();
     $("familyExplorePanel").hidden=!family;
     $("practicePanel").hidden=!practice;
     $("cubeLayout").hidden=family || practice;

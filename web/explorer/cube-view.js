@@ -1,4 +1,4 @@
-import {orbitSettings} from '../input/orbit-settings.js';
+import {orbitSettings,bindOrbitToggle} from '../input/orbit-settings.js';
 import {jellyStyleKey} from '../render/visual-settings.js';
 import {controlSettings,subscribeControls,setControlSetting} from '../input/control-settings.js';
 import {sceneDecorations} from '../render/decorations.js';
@@ -101,6 +101,7 @@ export class PackingCube extends Renderer {
       this.resetOrientation();
       this.invalidate();
     });
+    const orbitToggle=button('XYZ Orbit',()=>{});orbitToggle.className='touch-orbit-toggle';this.stopOrbitToggle=bindOrbitToggle(orbitToggle);
     toolbar.append(this.status);
     host.append(toolbar);
     this.arrowHost=document.createElement('div');this.arrowHost.className='packing-arrow-controls';host.append(this.arrowHost);
@@ -144,7 +145,7 @@ export class PackingCube extends Renderer {
   hoverCellGeometry(i) {
     const out=[];
     if(['jelly','angular'].includes(this.modelShape) && this.meshGenerator)jellyCell(out,i,[1,1,1],this.meshGenerator,.465,this.modelShape);
-    else (this.modelShape==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,[1,1,1],this.cells[i]?.piece<0?'bomb':'O');
+    else (this.modelShape==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,[1,1,1],this.cells[i]?.piece<0?'bomb':'loose');
     return out;
   }
   setCells(cells) {
@@ -159,11 +160,11 @@ export class PackingCube extends Renderer {
   setState(cells, animation = null) {
     this.currentAnimation = animation;
     const out = [];
-    if (this.familyExploration && this.meshGenerator) {
-      const signature=JSON.stringify([cells,cells.map(c=>c?.solidRotation),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,solidStyleKey(),jellyStyleKey(),PALETTE]);
+    if ((this.familyExploration||this.connected) && this.meshGenerator) {
+      const signature=JSON.stringify([this.familyExploration,cells,cells.map(c=>c?.solidRotation),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,this.individualPieces,this.assembly,this.detectionFilters,solidStyleKey(),jellyStyleKey(),PALETTE]);
       if(signature!==this.explorationSignature) {
         this.explorationSignature=signature;
-        this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors);
+        this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.familyExploration?this.fixedPieceColors:true,this.individualPieces,this.detectionFilters,this.assembly==='solids',this.assembly);
         const fixed=visualSettings.solidFixed;
         {
           this.fixedSolidBuffers ??= Array.from({length:27},()=>this.buffer());
@@ -195,7 +196,7 @@ export class PackingCube extends Renderer {
       if (!cell) return;
       const start = out.length;
       if(['jelly','angular'].includes(this.modelShape) && this.meshGenerator)jellyCell(out,i,rgb(PALETTE[cell.color] || PALETTE.d),this.meshGenerator,.465,this.modelShape);
-      else (this.modelShape==='gameboy'?gameboyCell:balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d),cell.piece<0?'bomb':'O');
+      else (this.modelShape==='gameboy'?gameboyCell:balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d),cell.piece<0?'bomb':'loose');
       if (animation?.kind === "turn") rotateCell(out, start, i, animation.move, animation.t);
     });
     this.upload(this.solid, new Float32Array(out));
@@ -234,7 +235,7 @@ export class PackingCube extends Renderer {
     this.busy = true;
     const generation = this.generation,
       from = this.cells.slice();
-    await this.animate(180 * (1 - start), (t) =>
+    await this.animate((this.playbackMs||180) * (1 - start), (t) =>
       this.setState(from, { kind: "turn", move, t: start + (1 - start) * t }),
     );
     if (generation !== this.generation) return;
@@ -245,13 +246,13 @@ export class PackingCube extends Renderer {
     this.changed();
   }
   undo() {
-    if (this.busy || !this.history.length) return;
+    if (this.orbitOnly || this.busy || !this.history.length) return;
     this.cells = this.history.pop().cells;
     this.setState(this.cells);
     this.changed();
   }
   reset() {
-    if (this.initial) this.setCells(this.initial);
+    if (!this.orbitOnly && this.initial) this.setCells(this.initial);
   }
   isVisible() {
     return !document.hidden && !document.getElementById("explorerPage")?.hidden;
@@ -277,7 +278,7 @@ export class PackingCube extends Renderer {
       this.canvas.width = w;
       this.canvas.height = h;
     }
-    this.unit = Math.max(8, Math.min(rect.width - 32, rect.height - 120) / (this.fitScale || 6.0));
+    this.unit = (this.zoomScale||1)*Math.max(8, Math.min(rect.width - 32, rect.height - 120) / (this.fitScale || 6.0));
     gl.viewport(0, 0, w, h);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -291,13 +292,13 @@ export class PackingCube extends Renderer {
     );
     gl.disable(gl.CULL_FACE);
     let packets=[{id:'packing',target:this.solid,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1}];
-    if(this.familyExploration && this.currentAnimation?.kind==='turn' && this.currentAnimation.t>0) {
+    if((this.familyExploration||this.connected) && this.currentAnimation?.kind==='turn' && this.currentAnimation.t>0) {
       const {move,t}=this.currentAnimation,[,axis,layer,side]=CubeStack.moves[move%15];
       const rotation=turnTransform(move,t);
       packets=[0,1,2].map(i=>({id:'packing',target:this.explorationLayers[(axis*5+(layer==='wide'?(side===0?3:4):layer))*3+i],type:gl.TRIANGLES,
         opacity:this.opacity,unlit:false,breathe:1,rotation:(layer==='wide'?i!==2-side:i===layer)?rotation:undefined}));
     }
-    if(this.familyExploration)for(let cell=0;cell<27;cell++) {
+    if(this.familyExploration||this.connected)for(let cell=0;cell<27;cell++) {
       const target=this.fixedSolidBuffers?.[cell];if(!target?.count)continue;
       const animation=this.currentAnimation;
       packets.push({id:'packing',target,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1,lightingClass:'Solids',fixedShape:!!visualSettings.solidFixed,
@@ -318,6 +319,7 @@ export class PackingCube extends Renderer {
   }
   destroy() {
     this.orbitController?.dispose();
+    this.stopOrbitToggle?.();
     this.stopControls?.();
     unregisterRenderer(this);
     this.generation++;

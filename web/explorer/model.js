@@ -155,7 +155,7 @@ export function practicePair(source, target) {
       group.forEach(
         (i) =>
           (right[displayIndex(rotation[i])] = {
-            color: target.cellColors?.[i] || "bymogr"[mapping[k]],
+            color: left.find(c=>c.piece===mapping[k]).color,
             piece: mapping[k],
           }),
       ),
@@ -171,7 +171,7 @@ export function practicePair(source, target) {
 }
 export function matchesTarget(cells, target) {
   return ROTATIONS.some((rotation) =>
-    cells.every((cell, i) => cell.color === target[rotation[i]].color),
+    cells.every((cell, i) => cell.piece === target[rotation[i]].piece),
   );
 }
 export function randomFamilyPair(packings, familyByLine, random = Math.random) {

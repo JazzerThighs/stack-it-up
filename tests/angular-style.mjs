@@ -46,3 +46,13 @@ for(const ring of [0,1]) {
 }
 resetVisualSettings('jelly');
 console.log('PASS: joined angular solids and O rings have closed ray-tested surfaces.');
+
+// Ring O must share the solid O's outer bounds for every shaping setting.
+const bounds=mesh=>[0,1,2].map(k=>{const values=[];for(let i=k;i<mesh.length;i+=9)values.push(mesh[i]);return [Math.min(...values),Math.max(...values)];});
+for(const mask of [27,1539,4617])for(const bevel of [15,30,48])for(const opening of [18,24,40]){
+ setVisualSetting('jellyBevel',bevel);setVisualSetting('jellyOpening',opening);
+ setVisualSetting('jellyCornerO',false);const solid=bounds(angularPiece(mask));
+ setVisualSetting('jellyCornerO',true);const ring=bounds(angularPiece(mask));
+ ring.flat().forEach((v,i)=>assert(Math.abs(v-solid.flat()[i])<1e-6,`O bounds differ: ${mask}, ${bevel}, ${opening}`));
+}
+resetVisualSettings('jelly');console.log('PASS: Tengen ring O matches solid-piece outer dimensions across bevel/opening settings.');

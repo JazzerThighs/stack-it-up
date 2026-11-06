@@ -1,3 +1,4 @@
+import {setDisplaySetting} from '../web/ui/display-settings.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {refreshSettingsAvailability} from '../web/ui/settings-availability.js';
@@ -12,6 +13,7 @@ const check=(id,v)=>el(id).checked=v;
 const val=(id,v)=>el(id).value=String(v);
 const refresh=state=>refreshSettingsAvailability(root,state);
 const disabled=(id,v)=>assert.equal(el(id).disabled,v,id);
+setDisplaySetting('activePieces','cubies');setDisplaySetting('stackPieces','whole');
 val('gravityMode',1);val('pieceAppearance','jelly');check('combined',true);refresh();
 for(const id of ['gravityOptions0','gravityOptions1','brokenOptions0','brokenOptions1','randomReleaseOptions0','selectionOptions0','scatteredOptions0','earlyLockOptions0','arrowOptions','ringOptions','solidOptions','ditherTuning','asciiTuning','splitGridOptions','rearGridOptions','layerOptions']) disabled(id,true);
 disabled('combinedGridOptions',false);
@@ -20,7 +22,7 @@ check('gravityOneStep',true);val('gravityMode',0);refresh();disabled('gravityOpt
 check('fragmentPerk',true);check('bandagedFragments',true);check('randomCubies',true);refresh();
 for(const id of ['brokenOptions0','brokenOptions1','selectionOptions0','earlyLockOptions0']) disabled(id,false);
 check('fragmentPerk',false);val('rebuildMode',1);refresh();disabled('selectionOptions0',true);disabled('scatteredOptions0',false);
-val('rebuildMode',2);check('rebuildSolidIdentities',true);check('solidUniform',true);refresh();disabled('selectionOptions0',false);disabled('solidOptions',false);disabled('solidColorOptions',false);disabled('solidGrayOptions',true);
+val('rebuildMode',2);setDisplaySetting('activePieces','solids');check('rebuildSolidIdentities',true);check('solidUniform',true);refresh();disabled('selectionOptions0',false);disabled('solidOptions',false);disabled('solidColorOptions',false);disabled('solidGrayOptions',true);
 check('solidUniform',false);refresh();disabled('solidGrayOptions',false);disabled('solidColorOptions',true);
 val('rebuildMode',0);val('releaseTrigger',2);check('releaseBandaged',true);refresh();disabled('randomReleaseOptions0',false);disabled('earlyLockOptions0',false);
 val('releaseTrigger',0);const state=new Uint32Array(226);state[S.FLOATING_COUNT]=4;state[S.REBUILD_MASK]=15;state[S.BAND_IDS]=1;refresh(state);disabled('earlyLockOptions0',false);disabled('rebuildShapeOptions',false);disabled('scatteredOptions0',false);

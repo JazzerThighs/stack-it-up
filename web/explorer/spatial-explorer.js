@@ -57,6 +57,8 @@ export async function initializeSpatialExplorer(
   ])
     $(id).checked = false;
   $('spatialFilters').hidden = false;
+  try{const saved=localStorage.getItem('stack-it-up.family-inspect');if(saved!==null)$('familyInspectFilters').checked=saved!=='false';}catch{}
+  $('familyInspectFilters').onchange=()=>{try{localStorage.setItem('stack-it-up.family-inspect',String($('familyInspectFilters').checked));}catch{}};
   function filters() {
     const f = Object.fromEntries(flags.map((id) => [id, $(id).checked]));
     for (const id of ['extraEdges', 'extraCorners', 'extraCenters'])
@@ -92,9 +94,14 @@ export async function initializeSpatialExplorer(
     return p;
   }
   const provider = {
+    filters,
     presentation: (p) => packingPresentation(p, colorMode()),
     record: async (id) => remember(await client.record(id)),
-    lookup: (f, m) => client.lookup(f, m),
+    lookup: async (f, m) => {
+      const matches=await client.lookup(f,m),criteria=filters(),accepted=[];
+      for(const p of matches){const result=await client.query({filters:criteria,line:p.lineNumber});if(result.record?.lineNumber===p.lineNumber)accepted.push(p);}
+      return accepted;
+    },
     randomPair: async () => {
       const pair = await client.pair(filters());
       return pair?.map(remember);
@@ -142,9 +149,9 @@ export async function initializeSpatialExplorer(
   );
   $('familyBag').disabled = false;
   function colorMode() {
-    return $('officialColors').checked
+    return $('officialMulticolor').checked?'officialMulticolor':$('officialColors').checked
       ? 'official'
-      : $('positionalColors').checked
+      : ($('positionalColors').checked||$('officialMulticolor').checked)
         ? 'multicolor'
         : 'canonical';
   }
@@ -165,9 +172,9 @@ export async function initializeSpatialExplorer(
       .map((c, i) => `${i + 1}: ${c}`)
       .join(' · ');
     $('colorStatus').textContent =
-      $('officialColors').checked && current.familyId === info.officialFamily
+      ($('officialColors').checked||$('officialMulticolor').checked) && current.familyId === info.officialFamily
         ? 'Official-compatible colors'
-        : $('positionalColors').checked
+        : ($('positionalColors').checked||$('officialMulticolor').checked)
           ? 'Distinct physical-piece colors'
           : 'Canonical shape colors';
     $('scrambleText').textContent = scramble.join(' ');
@@ -225,6 +232,7 @@ export async function initializeSpatialExplorer(
     $('status').textContent = 'Filtering local index…';
     try {
       const f = filters();
+      provider.refreshDetection?.();
       $('filterFamilyStatus').textContent = f.family
         ? `Family ${f.family}`
         : 'All families';
@@ -285,7 +293,8 @@ export async function initializeSpatialExplorer(
         `${total.toLocaleString()} matching packings in the local ${info.count.toLocaleString()}-packing collection.`;
       $('familySummary').textContent =
         `${counts.filter((n) => n > 0).length.toLocaleString()} matching families`;
-      const retained = refresh && result.record && current &&
+      const inspecting=refresh&&current&&!action.line&&!action.offset&&!action.random&&$('familyExploreMode').checked&&$('familyInspectFilters').checked;
+      const retained = inspecting || refresh && result.record && current &&
         result.record.lineNumber === current.lineNumber;
       if (result.record && !retained) {
         current = remember(result.record);
@@ -299,7 +308,8 @@ export async function initializeSpatialExplorer(
       } else {
         $('packingIndex').textContent = 'No matches — previous cube retained';
       }
-      if (retained) $('packingIndex').textContent =
+      if (inspecting) $('packingIndex').textContent=`Inspecting tetracubes-v2 line ${current.lineNumber} - ${total.toLocaleString()} matching packings`;
+      else if (retained) $('packingIndex').textContent =
         `${position + 1} of ${total.toLocaleString()} matching - tetracubes-v2 line ${current.lineNumber}`;
       if (result.record && apply && !retained) await views.navigate(current);
     } catch (e) {
@@ -402,12 +412,13 @@ export async function initializeSpatialExplorer(
       return query({ line: current.lineNumber }, true);
     }
   };
-  for (const id of ['canonicalColors', 'officialColors', 'positionalColors'])
+  for (const id of ['canonicalColors', 'officialColors', 'positionalColors','officialMulticolor'])
     $(id).onchange = () => {
       for (const other of [
         'canonicalColors',
         'officialColors',
         'positionalColors',
+        'officialMulticolor',
       ])
         $(other).checked = other === id;
       paint();

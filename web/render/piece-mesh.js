@@ -1,7 +1,9 @@
+import {assemblyKind} from './assembly.js';
+import {identitySolid,solidColor} from './identity-solids.js';
 import {angularPiece} from './angular-mesh.js';
 import {jellyStyleKey} from './visual-settings.js';
 import {visualSettings} from './visual-settings.js';
-import {gameboyPiece} from './gameboy-mesh.js';
+import {gameboyPiece,gameboyCell} from './gameboy-mesh.js';
 import {identifyMask} from '../explorer/family-exploration.js';
 import {placedTetracubeColor} from './tetracube-colors.js';
 import {tagCoverage} from './transparency.js';
@@ -11,23 +13,29 @@ import {joinMeshes} from './cell-fragments.js';
 import {rgb, xyz} from './geometry.js';
 const cache=new Map(),colored=new Map();
 let coloredBytes=0;
-export function compositeParts(board,ids,palette,generate,appearance='jelly',spatialColors=false,extrasMask=0) {
+export function compositeParts(board,ids,palette,generate,appearance='jelly',spatialColors=false,extrasMask=0,individual=false) {
   const groups=new Map();
   for(let i=0;i<27;i++)if(board[i]) {
-    const key=ids[i]+':'+board[i],g=groups.get(key)||{mask:0,color:board[i]};
+    const key=ids[i]+':'+board[i],g=groups.get(key)||{mask:0,color:board[i],id:ids[i]};
     g.mask|=1<<i;groups.set(key,g);
   }
-  return [...groups.values()].map(({mask,color})=>{
+  const slots=new Map([...new Set([...groups.values()].map(g=>g.id))].map((id,i)=>[id,i]));
+  const pieces=[...groups.values()].flatMap(g=>{
+    const kind=typeof individual==='string'?assemblyKind(individual,!!identifyMask(g.mask),!!(g.mask&extrasMask)):individual?'cubies':'whole';
+    return kind==='whole'?[g]:Array.from({length:27},(_,i)=>i).filter(i=>g.mask&(1<<i)).map(i=>({...g,wholeMask:g.mask,mask:1<<i,solidIdentity:kind==='solids'}));
+  });
+  return pieces.map(({mask,color,wholeMask,id,solidIdentity})=>{
+    if(solidIdentity){const out=[],cell=31-Math.clz32(mask),slot=slots.get(id)||0;identitySolid(out,xyz(cell),.465,solidColor(slot,rgb(palette[color])),slot);return tagCoverage(new Float32Array(out),xyz(cell));}
     const cornerO=appearance==='jelly' && !!visualSettings.jellyCornerO && identifyMask(mask)==='O';
     const geometryKey=mask+':'+cornerO+':'+jellyStyleKey();
     const bomb=!!(mask&extrasMask);
-    const hex=(spatialColors && placedTetracubeColor(mask)) || palette[color],key=mask+':'+hex+':'+appearance+':'+bomb+':'+cornerO+':'+jellyStyleKey();
+    const hex=(spatialColors && placedTetracubeColor(wholeMask||mask)) || palette[color],key=mask+':'+hex+':'+appearance+':'+bomb+':'+cornerO+':'+jellyStyleKey();
     if(colored.has(key))return colored.get(key);
     const out=[],c=rgb(hex);
     if(appearance==='angular') {
       for(const v of angularPiece(mask,c))out.push(v);
     } else if(appearance==='gameboy') {
-      const letter=bomb?'bomb':identifyMask(mask)||'O';
+      const letter=bomb?'bomb':identifyMask(mask)||'loose';
       for(const v of gameboyPiece(mask,c,letter))out.push(v);
     } else {
       if(!cache.has(geometryKey)) {
@@ -52,6 +60,7 @@ export function compositeMesh(board,ids,palette,generate,appearance='jelly') {
 // Loose jelly cells use the same native surface and shaping-keyed cache as
 // connected fragments. Keep identity solids and current-piece spheres distinct.
 export function jellyCell(out,cell,color,generate,halfSize=0.465,appearance='jelly') {
+  if(appearance==='gameboy'){gameboyCell(out,xyz(cell),halfSize,color,'loose');return;}
   const board=Array(27).fill(0),ids=Array(27).fill(1);board[cell]=1;
   const mesh=compositeParts(board,ids,['','#ffffff'],generate,appearance)[0];
   const center=xyz(cell),scale=halfSize/0.465;

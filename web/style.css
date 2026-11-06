@@ -2658,3 +2658,26 @@ main.explorer-active > .topbar { padding:0 14px; }
  #stageFaceMapPanel p { font-size:12px; text-align:center; }
  .views.vertical.show-face-map #stageNet { width:min(100%,460px); grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; }
  .views.vertical.show-face-map #stageFaceMapPanel h3 { font-size:15px; }
+
+/* Touch orbit selection is available on phones and hybrid touch devices. */
+.touch-orbit-toggle{display:none}
+@media (any-pointer:coarse), (max-width:900px){.touch-orbit-toggle:not([hidden]){display:inline-block;min-height:44px;padding:.6rem .8rem;flex-shrink:0}}
+.touch-orbit-toggle[aria-pressed="true"]{background:#a7e1cb;color:#102b26;border-color:#a7e1cb}
+
+/* Camera labels and values stay together; sliders get their own full row. */
+.camera-range{display:flex!important;flex-direction:column;align-items:stretch!important;gap:.5rem;width:100%;box-sizing:border-box}
+.camera-range input[type="range"]{width:100%;min-width:0}
+.camera-setting-disabled{opacity:.5}
+#orbitDiagnostics{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* UI palette is shared; WebGL material and piece palettes are untouched. */
+:root[data-ui-theme] body{background:var(--bg);color:var(--ink)}
+:host([data-ui-theme]) .app{background:var(--bg);color:var(--ink)}
+:root[data-ui-theme] dialog,:root[data-ui-theme] .settings-section,:host([data-ui-theme]) .settings-content,:host([data-ui-theme]) .settings-heading,:host([data-ui-theme]) .packing-picker-content,:host([data-ui-theme]) .picker-heading,:root[data-ui-theme] .packing-picker-content{background:var(--panel);color:var(--ink);border-color:var(--border)}
+:root[data-ui-theme] button,:host([data-ui-theme]) button,:root[data-ui-theme] select,:host([data-ui-theme]) select{background:var(--panel);color:var(--ink);border-color:var(--border)}
+:root[data-ui-theme] button[aria-pressed="true"],:host([data-ui-theme]) button[aria-pressed="true"],:host([data-ui-theme]) button.primary{background:var(--accent);color:var(--bg)}
+:host([data-ui-theme]) .cube-card{background:radial-gradient(ellipse at center,var(--panel),var(--bg))}
+
+:root[data-ui-theme] .app{background:var(--bg);color:var(--ink)}
+:root[data-ui-theme] .settings-content,:root[data-ui-theme] .settings-heading,:root[data-ui-theme] .packing-picker-content,:root[data-ui-theme] .picker-heading,:host([data-ui-theme]) .filter-range-card,:host([data-ui-theme]) .explorer-page-link{background:var(--panel);color:var(--ink);border-color:var(--border)}
+:root[data-ui-theme] .cube-card{background:radial-gradient(ellipse at center,var(--panel),var(--bg))}

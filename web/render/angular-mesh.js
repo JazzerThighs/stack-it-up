@@ -1,7 +1,7 @@
 // Exact planar CSG of beveled rectangular runs. No marching grid or smooth normals.
 import {xyz} from './geometry.js';
 import {visualSettings} from './visual-settings.js';
-const EPS=1e-7;
+const EPS=1e-7, CELL_INSET=.045;
 const dot=(a,b)=>a.reduce((n,v,k)=>n+v*b[k],0);
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const unit=a=>{const n=Math.hypot(...a);return a.map(v=>v/n);};
@@ -37,15 +37,15 @@ export function angularPiece(mask,color=[1,1,1]) {
     if(valid)runs.push({lo,hi});
   }
   const maximal=runs.filter(r=>!runs.some(s=>s!==r&&r.lo.every((v,k)=>s.lo[k]<=v&&s.hi[k]>=r.hi[k])));
-  let volumes=maximal.map(({lo,hi})=>({center:lo.map((v,k)=>(v+hi[k])/2),half:lo.map((v,k)=>(hi[k]-v+1)/2-.045)}));
+  let volumes=maximal.map(({lo,hi})=>({center:lo.map((v,k)=>(v+hi[k])/2),half:lo.map((v,k)=>(hi[k]-v+1)/2-CELL_INSET)}));
   if(visualSettings.jellyCornerO && cells.length===4) {
     const lo=[0,1,2].map(k=>Math.min(...cells.map(i=>xyz(i)[k]))),hi=[0,1,2].map(k=>Math.max(...cells.map(i=>xyz(i)[k])));
     const span=lo.map((v,k)=>hi[k]-v),axis=span.indexOf(0);
     if(axis>=0 && span.filter(v=>v===1).length===2) {
-      const a=(axis+1)%3,b=(axis+2)%3,mid=lo.map((v,k)=>(v+hi[k])/2),hole=visualSettings.jellyOpening/100,outer=.93;
+      const a=(axis+1)%3,b=(axis+2)%3,mid=lo.map((v,k)=>(v+hi[k])/2),hole=visualSettings.jellyOpening/100,outer=1-CELL_INSET;
       volumes=[];
       for(const direction of [a,b])for(const side of [-1,1]) {
-        const center=mid.slice(),half=[.43,.43,.43];
+        const center=mid.slice(),half=Array(3).fill(.5-CELL_INSET);
         center[direction]+=side*(outer+hole)/2;
         half[direction]=(outer-hole)/2;half[direction===a?b:a]=outer;
         volumes.push({center,half});

@@ -1,3 +1,5 @@
+import {orbitSettings} from '../web/input/orbit-settings.js';
+orbitSettings.orbitSettling=false;
 import assert from 'node:assert/strict';
 import {installCubeDrag, sliceCandidates} from '../web/input/drag.js';
 const keys={};

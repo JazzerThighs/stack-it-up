@@ -26,7 +26,7 @@ $('hoverOutline').checked=true;$('hoverOutline').listeners.input();const canvas=
 const previous=context.state[54];await context.play(6);flush();assert(context.engine.snapshot()[68]>0);$('stageUndo').onclick();flush();assert.equal(context.state[54],previous);
 $('customLayers').checked=true;$('customLayers').onchange();flush();assert($('renderLayers').children.length>=17);$('resetLayers').onclick();flush();assert(!$('customLayers').checked);
 assert.equal($('stageNet').children.length,6);
-assert($('groupRequirements').textContent.includes('Current spheres:'));
+assert($('groupRequirements').textContent.includes('Current piece:'));
 console.log('PASS: actual ES modules + real Wasm startup, hold, undo, sphere/hover rendering, custom layers and defaults (mock WebGL).');
 
 const savedState=Array.from(context.state);
@@ -44,7 +44,7 @@ $('rebuildMode').value='2';$('rebuildMode').onchange();flush();
 assert.deepEqual(Array.from(context.state.slice(166,169)),[1,1,2]);
 const visual=context.state.slice();visual[159]=3|(1<<8);visual[169]=1<<8;visual[180]=1;visual[199]=visual[200]=1;
 context.renderers[0].setState(visual);context.renderers[0].draw();
-assert(context.renderers[0].solid.data.every(Number.isFinite));assert(context.renderers[0].bandMesh.count>0);
+assert(context.renderers[0].solid.data.every(Number.isFinite));assert.equal(context.renderers[0].bandMesh.count,0);assert(context.renderers[0].floatingMesh.count+context.renderers[0].identityMesh.count>0);
 context.renderers[0].setState(context.state);flush();
 console.log('PASS: independent reward settings reach real Wasm; band and reconstruction geometry remains finite.');
 
@@ -304,3 +304,24 @@ assert.equal(cornerVisual.visualSettings.jellyBevel,30);
 assert.deepEqual(context.engine.exportState(),unchangedGame);
 cornerVisual.setVisualSetting('jellyProfile',2);
 console.log('PASS: independent bevel profile refreshes geometry without changing width or game state.');
+
+// Assembly is cosmetic: all three choices preserve the engine puzzle.
+const savedAssemblyState=Array.from(context.state);
+for(const key of ['activePieces','stackPieces'])for(const mode of ['cubies','whole','solids','wholeSolids','cubiesSolids']) {
+  $(key).value=mode;$(key).listeners.change();flush();
+  assert.deepEqual(Array.from(context.state),savedAssemblyState);
+  for(const r of context.renderers)for(const mesh of [r.stackMesh,r.activeOnly,r.floatingMesh,r.identityMesh])assert(mesh.data.every(Number.isFinite));
+}
+console.log('PASS: active/stack assembly modes render finite geometry without changing game state.');
+
+const {S:assemblySnapshot}=await import('../dist/engine/snapshot.js');
+$('activePieces').value='whole';$('activePieces').listeners.change();
+const assemblyFixture=new Uint32Array(226);assemblyFixture[assemblySnapshot.ACTIVE]=27;assemblyFixture[assemblySnapshot.PIECE]=1;
+const assemblyRenderer=context.renderers[0];
+assemblyRenderer.setState(assemblyFixture,{kind:'turn',move:0,t:.25});
+assert(assemblyRenderer.activeOnly.count>0);assert(assemblyRenderer.activeOnly.data.every(Number.isFinite));
+const sliced=assemblyRenderer.activeSliceCache.values().next().value;
+assemblyRenderer.setState(assemblyFixture,{kind:'turn',move:0,t:.75});
+assert.equal(assemblyRenderer.activeSliceCache.values().next().value,sliced);
+assemblyRenderer.setState(context.state);
+console.log('PASS: whole active tetracubes use retained turn slices during partial drags.');

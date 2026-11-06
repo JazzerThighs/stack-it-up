@@ -1,3 +1,5 @@
+import {assemblyUsesSolids} from '../render/assembly.js';
+import {displaySettings,initializeDisplayControls} from './display-settings.js';
 import {jellyStyleKey} from '../render/visual-settings.js';
 import {initializeSettingsPages,openSettingsPage,refreshSettingsPages} from './settings-pages.js';
 import {refreshGameplay} from './gameplay-settings.js';
@@ -91,12 +93,13 @@ export function initializeSettings(value) {
       openSettingsPage(id);
     };
   }
+  initializeDisplayControls(document,key=>{if(key==='activePieces'||key==='stackPieces')for(const r of context.renderers){if(r.sourceMesh)r.setMesh(r.sourceMesh);if(r.state)r.setState(r.state,r.animation);}refreshSettings();context.invalidate();});
   initializePaletteControls();
   let cornerO=jellyStyleKey();
   initializeVisualControls(document,()=>{
     if(cornerO!==jellyStyleKey()){cornerO=jellyStyleKey();for(const r of context.renderers){if(r.sourceMesh)r.setMesh(r.sourceMesh);if(r.state)r.setState(r.state,r.animation);}}
     for(const r of context.renderers) {
-      if(r.solidStyle!==solidStyleKey()){r.solidStyle=solidStyleKey();r.solidGray=!!visualSettings.solidGray;if(r.state)r.setState(r.state,r.animation);}
+      if(r.solidStyle!==solidStyleKey()){if(r.sourceMesh&&assemblyUsesSolids(displaySettings.stackPieces))r.setMesh(r.sourceMesh);r.solidStyle=solidStyleKey();r.solidGray=!!visualSettings.solidGray;if(r.state)r.setState(r.state,r.animation);}
     }
     refreshSettings();
     context.invalidate();
@@ -161,7 +164,7 @@ export function syncDisplaySettings() {
     }
     r.perspective = $("perspectiveCamera").checked;
     const shapeChanged = r.activeSpheres !== $("activeSpheres").checked || r.rebuildSolidIdentities!==$("rebuildSolidIdentities").checked;
-    r.rebuildSolidIdentities=$("rebuildSolidIdentities").checked;
+    r.rebuildSolidIdentities=assemblyUsesSolids(displaySettings.activePieces);
     r.activeSpheres = $("activeSpheres").checked;
     if (shapeChanged && r.state) r.setState(r.state, r.animation);
     r.rearGridOnly = $("rearGridOnly").checked;
