@@ -137,6 +137,34 @@ const settle=async predicate=>{for(let n=0;n<200&&!predicate();n++)await new Pro
 const initial=await initializeExplorer({getElementById:getExplorerElement},{client});
 await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
 assert.match($('status').textContent,/matching packings/);
+if(process.env.HOVER_ONLY){
+  const view=observed.get($('familyExploreCube')).view,cells=view.cells,history=view.history,original=view.solid.data;
+  assert(!$('hoverIdentities').checked);$('hoverIdentities').checked=true;$('hoverIdentities').listeners.change();
+  const i=cells.findIndex(c=>c?.piece>=0),p=[Math.floor(i/9)-1,Math.floor(i/3)%3-1,i%3-1];
+  view.identityHover={p};view.draw();assert(view.hoverIdentityBuffer.count>0);
+  assert.equal(view.solid.data,original);assert.equal(view.cells,cells);assert.equal(view.history,history);
+  view.identityHover=null;view.draw();$('hoverIdentities').checked=false;$('hoverIdentities').listeners.change();
+  assert.equal(view.solid.data,original);
+  console.log('PASS: optional hover identities render through the explorer pipeline and preserve packing geometry/history.');
+  process.exit(0);
+}
+if(process.env.RETAINED_ONLY){
+  $('practiceMode').checked=true;await $('practiceMode').onchange();
+  $('practiceStartPieces').value='retained';$('practiceStartPieces').listeners.change();
+  const start=observed.get($('practiceLeft')).view,target=observed.get($('practiceRight')).view;
+  const original=start.solid.data.slice(),source=start.retainedSource,targetCells=target.cells;
+  assert(source);assert.equal(start.assembly,'retained');
+  await start.play(0);assert.equal(start.retainedSource,source);assert.notDeepEqual(start.solid.data,original);
+  const moved=start.solid.data.slice(),cells=start.cells,history=start.history;
+  start.setState(cells,{kind:'turn',move:1,t:.5});assert.equal(start.retainedSource,source);start.setState(cells);
+  $('practiceStartPieces').value='cubies';$('practiceStartPieces').listeners.change();
+  $('practiceStartPieces').value='retained';$('practiceStartPieces').listeners.change();
+  assert.equal(start.cells,cells);assert.equal(start.history,history);assert.deepEqual(start.solid.data,moved);
+  start.undo();assert.deepEqual(start.solid.data,original);
+  await start.play(7);start.reset();assert.deepEqual(start.solid.data,original);assert.equal(target.cells,targetCells);
+  console.log('PASS: retained Start geometry survives turns, partial drags, assembly switches, undo and reset without changing Target.');
+  process.exit(0);
+}
 if(process.env.INSPECTION_ONLY){
   assert($('familyInspectFilters').checked);
   const inspected=observed.get($('familyExploreCube')).view,cells=inspected.cells,history=inspected.history,line=initial.current.lineNumber;

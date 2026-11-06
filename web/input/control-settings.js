@@ -1,6 +1,6 @@
 import {bindOrbitSettings} from './orbit-settings.js';
 const key='stack-it-up.controls';
-export const controlSettings={hoverRings:true,ringLabels:false,hoverOutline:false,showArrows:false,arrowGuides:false,classicControls:false,freeOrbit:true,perspectiveCamera:true,wideTurns:false};
+export const controlSettings={hoverRings:true,ringLabels:false,hoverOutline:false,hoverIdentities:false,showArrows:false,arrowGuides:false,classicControls:false,freeOrbit:true,perspectiveCamera:true,wideTurns:false};
 try {const saved=JSON.parse(globalThis.localStorage?.getItem(key)||'{}');for(const k in controlSettings)if(typeof saved[k]==='boolean')controlSettings[k]=saved[k];}catch{}
 const subscribers=new Set();
 export function setControlSetting(name,value){

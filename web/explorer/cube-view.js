@@ -1,3 +1,4 @@
+import {capturePieceFragments,retainedPieceFragments} from './retained-pieces.js';
 import {orbitSettings,bindOrbitToggle} from '../input/orbit-settings.js';
 import {jellyStyleKey} from '../render/visual-settings.js';
 import {controlSettings,subscribeControls,setControlSetting} from '../input/control-settings.js';
@@ -151,8 +152,10 @@ export class PackingCube extends Renderer {
   setCells(cells) {
     this.generation++;
     this.busy = false;
-    this.cells = cells.slice();
-    this.initial = cells.slice();
+    this.cells = cells.map((cell,i)=>cell?Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(cell),assemblyOrigin:{value:i,enumerable:false,writable:true,configurable:true}}):cell);
+    this.initial = this.cells.slice();
+    this.retainedSource=null;
+    this.explorationSignature=null;
     this.history = [];
     this.setState(this.cells);
     this.changed();
@@ -161,24 +164,30 @@ export class PackingCube extends Renderer {
     this.currentAnimation = animation;
     const out = [];
     if ((this.familyExploration||this.connected) && this.meshGenerator) {
-      const signature=JSON.stringify([this.familyExploration,cells,cells.map(c=>c?.solidRotation),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,this.individualPieces,this.assembly,this.detectionFilters,solidStyleKey(),jellyStyleKey(),PALETTE]);
+      const signature=JSON.stringify([this.familyExploration,cells,cells.map(c=>c?.solidRotation),cells.map(c=>c?.assemblyOrigin),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,this.individualPieces,this.assembly,this.detectionFilters,solidStyleKey(),jellyStyleKey(),PALETTE]);
       if(signature!==this.explorationSignature) {
         this.explorationSignature=signature;
-        this.explorationGeometry=explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.familyExploration?this.fixedPieceColors:true,this.individualPieces,this.detectionFilters,this.assembly==='solids',this.assembly);
+        let retained=null;
+        if(this.assembly==='retained'){
+          const key=JSON.stringify([this.modelShape,jellyStyleKey(),PALETTE,this.initial.map(c=>c?.color)]);
+          if(!this.retainedSource||this.retainedKey!==key){this.retainedSource=capturePieceFragments(this.initial,this.meshGenerator,this.modelShape);this.retainedKey=key;}
+          retained=retainedPieceFragments(this.retainedSource,cells);
+        }
+        this.explorationGeometry=retained?retained.fragments.map((mesh,i)=>exposedFragment(mesh,i,(axis,side)=>!retained.joined(i,axis,side))):explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.familyExploration?this.fixedPieceColors:true,this.individualPieces,this.detectionFilters,this.assembly==='solids',this.assembly);
         const fixed=visualSettings.solidFixed;
         {
           this.fixedSolidBuffers ??= Array.from({length:27},()=>this.buffer());
           for(let cell=0;cell<27;cell++)this.upload(this.fixedSolidBuffers[cell],joinMeshes(this.explorationGeometry.filter(m=>m.identityCell===cell)));
         }
         const turningGeometry=this.explorationGeometry.filter(m=>m.identityCell===undefined);
-        const fragments=mergeFragments(turningGeometry);
+        const fragments=retained?.fragments||mergeFragments(turningGeometry);
         this.explorationLayers ??= Array.from({length:45},()=>this.buffer());
         // Five motion partitions per axis: three single slices and two wide turns.
         for(let axis=0;axis<3;axis++)for(let mode=0;mode<5;mode++) {
           const moving=i=>mode<3 ? i===mode : i!== (mode===3?2:0);
           const visible=fragments.map((mesh,cell)=>exposedFragment(mesh,cell,(a,side)=>{
             const neighbor=neighborCell(cell,a,side);
-            return neighbor<0 || moving(CubeStack.xyz(cell)[axis])!==moving(CubeStack.xyz(neighbor)[axis]);
+            return neighbor<0 || (retained&&!retained.joined(cell,a,side)) || moving(CubeStack.xyz(cell)[axis])!==moving(CubeStack.xyz(neighbor)[axis]);
           }));
           for(let layer=0;layer<3;layer++)
             this.upload(this.explorationLayers[(axis*5+mode)*3+layer],joinMeshes(visible.filter((_,i)=>CubeStack.xyz(i)[axis]===layer)));
@@ -240,7 +249,7 @@ export class PackingCube extends Renderer {
     );
     if (generation !== this.generation) return;
     this.history.push({ cells: from, move });
-    this.cells = turn(from.map((cell,i)=>cell && movedCell(i,move)?Object.defineProperty({...cell},'solidRotation',{value:composeRotation(turnTransform(move,1),cell.solidRotation)}):cell), move);
+    this.cells = turn(from.map((cell,i)=>cell && movedCell(i,move)?Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(cell),solidRotation:{value:composeRotation(turnTransform(move,1),cell.solidRotation),configurable:true}}):cell), move);
     this.busy = false;
     this.setState(this.cells);
     this.changed();

@@ -56,9 +56,10 @@ function installCubeDrag(r, onOrbit, context) {
   let lastHover = null;
   const hover = (e) => {
     lastHover = e;
-    if (context.lockMode) { r.hover = null; canvas.style.cursor = pickBand(r,e,context.state)>=0 ? "pointer" : "default"; context.invalidate(); return; }
+    if (context.lockMode) { r.hover = null; r.identityHover = null; canvas.style.cursor = pickBand(r,e,context.state)>=0 ? "pointer" : "default"; context.invalidate(); return; }
     const hit = hitAt(e),
       rect = canvas.getBoundingClientRect();
+    r.identityHover=hit;
     r.hover =
       hit && !r.isStack
         ? {
@@ -71,7 +72,7 @@ function installCubeDrag(r, onOrbit, context) {
     context.invalidate();
   };
   canvas.addEventListener("pointerleave", () => {
-    r.hover = null;
+    r.hover = null; r.identityHover = null;
     lastHover = null;
     context.invalidate();
   });
@@ -136,7 +137,7 @@ function installCubeDrag(r, onOrbit, context) {
     if(action==='off')return;
     stopOrbitMotion();
     orbit.cancel();
-    r.hover = null;
+    r.hover = null; r.identityHover = null;
     context.invalidate();
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
@@ -175,7 +176,7 @@ function installCubeDrag(r, onOrbit, context) {
       if(d.turn){r.setState(context.state);context.setBusy(false);}
       const action=orbitSettings.mouseBoth;
       Object.assign(d,{chord:true,newOrbit:action!=='free',hit:null,turn:false,lockClick:false,x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY});
-      r.hover=null;r.orbitDragging=true;if(d.newOrbit)orbit.start(e.clientX,e.clientY,action==='xyz');context.invalidate();return;
+      r.hover=null;r.identityHover=null;r.orbitDragging=true;if(d.newOrbit)orbit.start(e.clientX,e.clientY,action==='xyz');context.invalidate();return;
     }
     if(d.chord&&e.buttons!==undefined&&(e.buttons&3)!==3){finish(false);return;}
     const dx = e.clientX - d.x,

@@ -1,3 +1,4 @@
+import {hoverIdentityPackets} from './hover-identities.js';
 import {voxelMesh} from './voxel-mesh.js';
 import {categorySeed} from './transparency.js';
 import {IDENTITY,transformPoint} from './transforms.js';
@@ -16,6 +17,7 @@ export function renderPackets(packets, context) {
   const { layerOrder } = context;
   const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
+  packets=hoverIdentityPackets(this,packets);
   packets=packets.map(p=>({...p,positionalLighting:lightingMode(p,this.modelShape)}));
   // Keep original buffers intact: changing style never changes game geometry.
   if(this.modelShape==='voxel' || this.appearance==='voxel') {
