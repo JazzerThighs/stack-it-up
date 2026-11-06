@@ -325,3 +325,17 @@ assemblyRenderer.setState(assemblyFixture,{kind:'turn',move:0,t:.75});
 assert.equal(assemblyRenderer.activeSliceCache.values().next().value,sliced);
 assemblyRenderer.setState(context.state);
 console.log('PASS: whole active tetracubes use retained turn slices during partial drags.');
+
+$('stackPieces').value='retained';$('stackPieces').listeners.change();flush();
+const {seedStackShapes,applyStackShapeEvent}=await import('../dist/engine/stack-shapes.js');
+clearFrom.stackShapes=seedStackShapes(clearFrom).stack;
+const retainedBefore=clearFrom.stackShapes;
+clearTo.set(clearFrom);clearTo[0]=clearTo[1]=clearTo[27]=clearTo[28]=0;
+clearTo.stackShapes=applyStackShapeEvent({stack:retainedBefore,floating:Array(27).fill(null)},{...clearEvent,board:clearTo.slice(0,27),ids:clearTo.slice(27,54)}).stack;
+renderer.setState(clearFrom);renderer.setMesh(new Float32Array());assert(renderer.stackMesh.count>0);
+renderer.prepareStackEvent(clearFrom,clearTo,{...clearEvent});renderer.stackFrame(clearFrom,clearTo,renderer.stackEvent,.5);
+assert(renderer.stackPackets.length>0);assert(renderer.stackCellBuffers.every(b=>b.data.every(Number.isFinite)));
+renderer.setState(clearTo);renderer.setMesh(new Float32Array());assert(renderer.stackMesh.count>0);
+assert.equal(clearTo.stackShapes[3].source,retainedBefore[3].source);
+renderer.setState(context.state);renderer.setMesh(context.engine.mesh());
+console.log('PASS: retained game-stack assembly renders original cut fragments through clear animation and final stack upload.');

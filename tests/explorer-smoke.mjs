@@ -148,6 +148,35 @@ if(process.env.HOVER_ONLY){
   console.log('PASS: optional hover identities render through the explorer pipeline and preserve packing geometry/history.');
   process.exit(0);
 }
+if(process.env.FAMILY_LOCK_ONLY){
+  const cube=observed.get($('familyExploreCube')).view;
+  const starter=cube.cells.map(c=>c.piece),original=cube.solid.data.slice();
+  assert(!$('familyLockShapes').disabled);await $('familyLockShapes').onclick();
+  assert.equal(cube.assembly,'retained');assert.equal($('familySelect').value,'562');assert($('familySelect').disabled);
+  const captured=cube.retainedSource;await cube.play(0);assert.equal(cube.retainedSource,captured);
+  $('familyPieces').value='cubies';$('familyPieces').listeners.change();assert.equal(cube.assembly,'retained');
+  await $('resetPackingFilters').onclick();assert($('familySelect').disabled);
+  const target=await client.query({filters:{family:562},line:50152,offset:1});
+  await initial.query({line:target.record.lineNumber});
+  assert.equal(initial.current.lineNumber,target.record.lineNumber);assert(cube.history.length>0);
+  assert.deepEqual(cube.initial.map(c=>c.piece),starter);
+  const {practicePair}=await import(new URL('explorer/model.js',assetRoot));
+  const {packingPresentation}=await import(new URL('explorer/presentation.js',assetRoot));
+  const pair=practicePair(packingPresentation(official,'official').packing,packingPresentation(target.record,'official').packing,{targetColors:true});
+  assert.deepEqual(cube.cells.map(c=>c.piece),pair.right.map(c=>c.piece));
+  assert.deepEqual(cube.cells.filter(c=>c.piece>=0).map(c=>c.color),pair.right.filter(c=>c.piece>=0).map(c=>c.color));
+  const geometry=cube.solid.data.filter((_,i)=>i%9<6),history=cube.history;
+  $('canonicalColors').onchange();
+  const canonical=practicePair(packingPresentation(official).packing,packingPresentation(target.record).packing,{targetColors:true});
+  assert.deepEqual(cube.cells.filter(c=>c.piece>=0).map(c=>c.color),canonical.right.filter(c=>c.piece>=0).map(c=>c.color));
+  assert.deepEqual(cube.solid.data.filter((_,i)=>i%9<6),geometry);assert.equal(cube.history,history);
+  $('officialColors').onchange();
+  await initial.query({line:50152});assert.deepEqual(cube.cells.map(c=>c.piece),starter);assert.equal(cube.history.length,0);
+  const other=await client.query({filters:{counts:[{type:'O',min:6,max:6}]}});
+  await initial.query({line:other.record.lineNumber});assert.match($('status').textContent,/Unlock shapes/);assert.equal(initial.current.lineNumber,50152);
+  await $('familyLockShapes').onclick();assert.equal(cube.assembly,'cubies');assert(!$('familySelect').disabled);
+  console.log('PASS: lock matched packing, pin family across filter resets, replay verified path from starter, update colors, reject other families, unlock and restore assembly.');process.exit(0);
+}
 if(process.env.RETAINED_ONLY){
   $('practiceMode').checked=true;await $('practiceMode').onchange();
   $('practiceStartPieces').value='retained';$('practiceStartPieces').listeners.change();

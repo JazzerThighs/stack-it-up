@@ -3,7 +3,7 @@ import {CubeStack} from "../engine/coordinates.js";
 import { S } from "../engine/snapshot.js";
 const $ = (id) => document.getElementById(id);
 const names = ["", "O", "T", "L", "J", "S", "Z", "B", "D", "F", "J/L", "S/Z"];
-export const copyState=s=>{const copy=s.slice();if(s.solidRotations)copy.solidRotations=s.solidRotations.slice();if(s.rebuildIds)copy.rebuildIds=s.rebuildIds.slice();return copy;};
+export const copyState=s=>{const copy=s.slice();if(s.stackShapes)copy.stackShapes=s.stackShapes;if(s.solidRotations)copy.solidRotations=s.solidRotations.slice();if(s.rebuildIds)copy.rebuildIds=s.rebuildIds.slice();return copy;};
 // Carry the visible active cells to the end of the player's completed turn.
 export function landedState(before, move) {
   const state=copyState(before);
@@ -65,6 +65,7 @@ export function createAnimations(context) {
       const next = copyState(display);
       next.set(e.board, 0);
       next.set(e.ids, 27);
+      if(e.stackShapes)next.stackShapes=e.stackShapes;
 
       if (e.kind === 5) {
         next.set(after.slice(S.BANDAGED), S.BANDAGED);

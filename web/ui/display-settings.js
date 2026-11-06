@@ -1,6 +1,6 @@
 import {assemblyOptions} from '../render/assembly.js';
 export const displaySpecs={
- familyPieces:{value:'whole',options:assemblyOptions.map(([value])=>value)},practiceStartPieces:{value:'cubies',options:[...assemblyOptions.map(([value])=>value),'retained']},practiceTargetPieces:{value:'whole',options:assemblyOptions.map(([value])=>value)},activePieces:{value:'solids',options:assemblyOptions.map(([value])=>value)},stackPieces:{value:'whole',options:assemblyOptions.map(([value])=>value)},
+ familyPieces:{value:'whole',options:assemblyOptions.map(([value])=>value)},practiceStartPieces:{value:'cubies',options:[...assemblyOptions.map(([value])=>value),'retained']},practiceTargetPieces:{value:'whole',options:assemblyOptions.map(([value])=>value)},activePieces:{value:'solids',options:assemblyOptions.map(([value])=>value)},stackPieces:{value:'whole',options:[...assemblyOptions.map(([value])=>value),'retained']},
  gameActiveSize:{value:100,min:50,max:160},gameStackSize:{value:100,min:50,max:160},familySize:{value:100,min:50,max:160},practiceStartSize:{value:100,min:50,max:160},practiceTargetSize:{value:100,min:50,max:160},uiTheme:{value:'teal',options:['teal','slate','violet','amber']}
 };
 export const displaySettings=Object.fromEntries(Object.entries(displaySpecs).map(([k,s])=>[k,s.value]));

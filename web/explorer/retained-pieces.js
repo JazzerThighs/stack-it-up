@@ -5,8 +5,8 @@ import {IDENTITY,composeRotation,transformPoint} from '../render/transforms.js';
 import {withCoverage,vertexCoverage} from '../render/transparency.js';
 import {PALETTE} from './model.js';
 const inverse=r=>[0,3,6,1,4,7,2,5,8].map(i=>r[i]);
-export function capturePieceFragments(cells,generate,shape){
- const parts=compositeParts(cells.map(c=>c?.color||0),cells.map((c,i)=>c?.piece>=0?c.piece+1:i+100),PALETTE,generate,shape,false,cells.reduce((m,c,i)=>c?.piece<0?m|(1<<i):m,0));
+export function capturePieceFragments(cells,generate,shape,palette=PALETTE){
+ const parts=compositeParts(cells.map(c=>c?.color||0),cells.map((c,i)=>c?.piece>=0?c.piece+1:i+100),palette,generate,shape,false,cells.reduce((m,c,i)=>c?.piece<0?m|(1<<i):m,0));
  return {cells,fragments:mergeFragments(parts)};
 }
 export function retainedPieceFragments(source,cells){

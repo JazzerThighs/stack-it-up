@@ -25,7 +25,7 @@ export function createExplorerViews({
 }) {
   const $ = id => root.getElementById(id);
   const cubes = new Map();
-  function display(view,id){const [pieces,size]=viewPreferences[id]||['practiceTargetPieces','practiceTargetSize'];view.displayId=id;view.assembly=displaySettings[pieces];view.individualPieces=view.assembly==='cubies';view.explorationSolids=assemblyUsesSolids(view.assembly);view.connected=true;view.detectionFilters=data.filters?.()||{};view.zoomScale=displaySettings[size]/100;}
+  function display(view,id){const [pieces,size]=viewPreferences[id]||['practiceTargetPieces','practiceTargetSize'];view.displayId=id;view.assembly=view.lockedAssembly||displaySettings[pieces];view.individualPieces=view.assembly==='cubies';view.explorationSolids=assemblyUsesSolids(view.assembly);view.connected=true;view.detectionFilters=data.filters?.()||{};view.zoomScale=displaySettings[size]/100;}
   initializeDisplayControls(root,key=>{for(const [id,cube]of cubes){display(cube,id);if(key.endsWith('Pieces'))cube.setState(cube.cells,cube.currentAnimation);cube.invalidate();}});
   data.refreshDetection=()=>{for(const cube of cubes.values()){cube.detectionFilters=data.filters?.()||{};cube.setState(cube.cells,cube.currentAnimation);cube.onChange?.(cube);}};
   let cornerO=jellyStyleKey();
@@ -248,7 +248,7 @@ export function createExplorerViews({
   $('practiceViewStart').onclick=()=>selectPracticeView('start');
   $('practiceViewTarget').onclick=()=>selectPracticeView('target');
   async function navigate(p) {
-    if($('familyExploreMode').checked)familyExplorer.load(p);
+    if($('familyExploreMode').checked)await familyExplorer.load(p);
     else if($('practiceMode').checked) {
       if($('navigationTarget').value==='target')loadPair(sourcePacking||p,p);
       else loadPair(p,targetPacking||p);
@@ -257,6 +257,7 @@ export function createExplorerViews({
   async function updateMode() {
     const family=$("familyExploreMode").checked, practice=$("practiceMode").checked;
     if(!practice&&practiceBusy)cancelPractice();
+    if(!family)familyExplorer.leave?.();
     $("familyExplorePanel").hidden=!family;
     $("practicePanel").hidden=!practice;
     $("cubeLayout").hidden=family || practice;

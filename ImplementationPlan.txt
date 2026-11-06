@@ -1,135 +1,232 @@
-1. Establish shared piece definitions
-Support nine named pieces: O, T, L, J, S, Z, B, D, F.
-- B: branch
-- D: right screw
-- F: left screw
-Keep the existing six numeric IDs unchanged and append the new ones. Replace hardcoded six-piece arrays, bounds, and random-selection logic with catalog-driven definitions.
+STACK IT UP — IMPLEMENTATION PLAN
+Updated: 2026-11-06
 
-The catalog should describe geometry, proper rotations, chirality, valid placements, inventory requirements, display names, and default colors. Rust and JavaScript should consume matching generated definitions rather than independently defining shapes.
+Purpose
+-------
+This is the current development backlog for stack-it-up-3d. It replaces the
+completed 3D migration milestones. Proposed items below are suggestions for
+review, not permission to implement every item or change existing defaults.
 
-Lowercase metadata letters remain placement attributes, not additional piece types.
-2. Generalize placement detection and spawning
-I checked the generated placement catalog. These are all the distinct non-core compositions:
-Piece	Possible compositions	Minimum inventory covering every composition
-Branch — B	3 edges + 1 corner; or 2 centers + 1 edge + 1 corner	2 centers, 3 edges, 1 corner: 6 active cubies
-Right screw — D	1 center + 2 edges + 1 corner; or 2 centers + 2 edges	2 centers, 2 edges, 1 corner: 5 active cubies
-Left screw — F	Same compositions as D	2 centers, 2 edges, 1 corner: 5 active cubies
+Current baseline — preserve, do not rebuild
+------------------------------------------
+- Rust/Wasm gameplay supports the nine named tetracubes and optional J/L and S/Z
+  queue choices, reconstruction, release rules, gravity, undo and state sharing.
+- The repository owns the tetracubes-v2 dataset: 1,871,891 packings in 2,605
+  families. Compact indexes and family chunks are used by all explorer modes.
+  Classic filtering uses this database; the old dataset is not required.
+- Family 562 / line 50152 is the official starting packing. Physical ownership,
+  detected shape and display color are separate concepts.
+- Family inspection preserves the working cube during filter edits by default.
+  Recognition changes in place; explicit packing navigation still loads a cube.
+- Piece assembly has five shared combinations for complete pieces, fragments and
+  extras. Practice Start also offers retained cut pieces from the loaded packing.
+- Rendering includes Angular/Tengen, Jelly, Voxel and Gameboy models, appearance
+  effects, shared palettes, transparency controls and configurable UI themes.
+- Free Drag and XYZ Orbit, configurable mouse bindings, mobile orbit toggle,
+  shared hover controls and independent view-size controls are implemented.
+- Text selection is disabled on interface labels, with editable fields preserved.
+  Optional hover identity substitution is implemented and off by default.
 
+Keep these invariants
+---------------------
+- Visual options must not mutate game state, packing ownership or move history.
+- Recognition and filter limits must use the same identity/placement definitions.
+  Per-piece exclusions affect recognition; full-packing counts govern matches.
+- Mirror packings and screw handedness remain distinct. Do not silently apply
+  reflection deduplication or renumber existing dataset references.
+- Queued spatial pieces use the supported non-core placement rules. Explorer and
+  reconstruction recognition may include core-containing shapes as permitted.
+- New settings should retain unrelated saved preferences. Shared settings should
+  behave consistently in the game, explorer, setup and live settings dialogs.
+- Retained-cut mode captures shapes from the loaded Start packing, not whichever
+  shapes happen to be recognized after a turn. Rejoining hides internal cut caps.
+- Keep dataset assets local to this repository and release, with relative URLs
+  and versioned frontend/Wasm/data references.
 
-Technically, this requires the maximum required count of each cubie type across placements, rather than their intersection. That gives the smallest inventory capable of constructing every allowed composition.
+1. Browser interaction safeguards — DECISIONS NEEDED
+--------------------------------------------------
+The following are potential browser behaviors, not all confirmed defects on every
+browser. Only text-selection prevention has been implemented from this list.
 
-Required changes:
-- Generate separate placement tables for B, D, and F using proper rotations only.
-- Distinguish the two screw handednesses throughout detection.
-- Support multiple active centers; spawning currently assumes exactly one.
-- Let B/D/F complete across faces during ordinary play. They must not be treated as planar fallback placements.
-- Keep their queue-piece placements outside the core, including automatic placements.
-- Preserve maximum-separation spawning and the existing automatic-placement escape when a non-completing spawn is unavailable.
-- Lock the four cubies forming the selected piece; handle unused inventory as the current game does.
-- Ensure extra inventory does not cause a false top-out when a legal four-cell placement can still fit.
-- Replace face-only placement disambiguation with selectable placement masks when several spatial completions are possible.
-Core-containing B/D/F shapes must remain recognizable for explorer data and applicable stack-reconstruction rules. That is separate from permitting them as newly spawned queue-piece placements.
-3. Extend the queue, hold pocket, and game settings
-Add a piece-pool setting with:
-- Classic planar pieces.
-- All nine pieces.
-- Custom enabled pieces.
-Carry this through random generation, hold, manual next-piece selection, debugging controls, restarting, and saved games.
+1.1 Accidental numeric edits while scrolling
+    Investigate wheel changes on focused number fields and native selects.
+    Candidate: allow settings-menu scrolling without changing the focused value;
+    preserve explicit typing, arrow keys and intentional slider interaction.
+    Acceptance: scrolling a long settings page cannot silently alter a range.
 
-B/D/F need small, consistently oriented 3D previews with letter labels. Flattening them into the existing planar previews would obscure screw handedness.
+1.2 Accidental activation of focused buttons
+    Investigate Space/Enter activation and key-repeat on turn, reset and new-game
+    controls. Choose which actions need repeat suppression or extra protection.
+    Preserve intentional keyboard activation and visible focus indicators.
+    Acceptance: holding a key cannot unexpectedly repeat a destructive action.
 
-Also update:
-- Successful-move highlighting.
-- Released-piece reconstruction and compatibility checks.
-- Automatic placement chains.
-- Undo and state sharing.
-- Queue dead-end forecasting.
-Forecasting must use the same new placement rules as actual gameplay, including the prohibition on core placements for queued spatial pieces.
-4. Version the state and engine interface
-The current save validation and browser adapter contain six-piece limits.
-- Extend board, queue, hold, and released-piece validation.
-- Version saved states and the WASM interface wherever their layouts change.
-- Save the enabled piece pool and relevant placement rules.
-- Preserve imports of existing six-piece saves.
-- Migrate existing palette/settings preferences without resetting unrelated choices.
-- Make incompatible engine/frontend combinations fail clearly.
-A piece’s physical ownership ID, current detected shape, and display color should remain separate. Reconstruction can change shape without changing which cubies belong together.
-5. Package the expanded dataset for browser use
-The new dataset has 1,871,891 packings and 2,605 families. Loading all the text files into browser objects at startup would be a major performance regression.
+1.3 Context menus and mobile long-press behavior
+    Cube canvases already suppress the right-click context menu. Decide whether
+    non-editable HUD controls should also suppress it or mobile callouts.
+    Keep normal copy/paste menus in editable fields and useful link behavior.
+    Acceptance: cube/HUD gestures do not open unwanted menus on tested devices.
 
-Add a build-time data converter that:
-- Validates the five source files and their cross-references.
-- Produces a versioned manifest, compact indexes, and packing-data chunks.
-- Stores each packing once, with family membership represented by IDs.
-- Includes precomputed composition and placement filters.
-- Loads detailed packing records on demand.
-- Performs substantial filtering/index work in a Web Worker.
-- Supports random selection without constructing millions of JavaScript objects.
-Keep the legacy dataset and official-cube references available during migration. Old source-line IDs must not silently refer to unrelated rows in the new dataset.
+1.4 Native link/image dragging
+    Audit interactive icons, images and links for browser drag previews or
+    accidental navigation when a drag begins on them.
+    Candidate: suppress native dragging only on decorative/gameplay elements.
+    Acceptance: these elements cannot steal a cube gesture with a drag ghost.
 
-The app should consume generated family membership, not recompute families in the browser.
-6. Update every explorer mode and filter menu
-Use one shared filter model across the packing browser, practice comparison, and Family Explorer.
+1.5 Touch navigation, page movement and zoom
+    Audit pinch/double-tap zoom, page overscroll, pull-to-refresh and edge swipes.
+    Cube touch-action and menu scroll containment already exist; verify coverage
+    rather than disabling all touch behavior globally. Some OS/browser gestures
+    cannot reliably be suppressed. Preserve accessibility zoom where possible.
+    Acceptance: cube gestures stay in the viewport; menus still scroll normally.
 
-Support filtering by:
-- Presence, absence, or count of each piece type.
-- Planar-only, spatial-only, or mixed compositions.
-- Core occupied by a piece versus extras.
-- Core occupancy by specific piece types.
-- Facebound planar pieces.
-- Non-facebound planar pieces, distinguishing core-containing and surface-only cases.
-- Family and bag composition.
-Important semantics:
-- B/D/F spanning multiple faces is normal.
-- Lowercase b/d/f means core occupancy only.
-- Existing lowercase planar letters retain their established meaning.
-- “All facebound” remains a planar property.
-- “One of each classic piece” stays a specific classic filter.
-Remove assumptions that families require classic six-bag members. Families with none must still be browsable and selectable.
-7. Extend Family Explorer’s live detection and rendering
-After each move:
-- Detect planar pieces, branches, and both screw handednesses.
-- Replace completed groups’ identity solids with the corresponding smooth tetracube mesh.
-- Restore identity solids when a group becomes unassembled.
-- Preserve stable physical IDs and solid assignments.
-- Retain existing sliced-piece turn animations and cached fragment geometry.
-- Match completed packings against the expanded dataset under proper rotations.
-Two mirror packings must remain distinct packing records. They may nevertheless belong to the same family if face turns connect them.
-8. Expand color customization and presentation
-Add B/D/F to all relevant palette controls:
-Piece	Default
-F — left screw	Light grey
-D — right screw	Dark grey
-B — branch	Brown
+2. Real-device visual and interaction validation — PROPOSED NEXT PRIORITY
+------------------------------------------------------------------------
+Automated DOM/WebGL mocks verify behavior, not actual GPU pixels or touch feel.
 
+- Test desktop mouse/trackpad, a narrow Android browser and iOS Safari where
+  available. Record browser/device versions and viewport sizes with findings.
+- Test both practice cubes, family inspection and combined/split game views at
+  minimum/default/maximum size. Check clipping, HUD overlap and pointer accuracy.
+- Exercise free/XYZ orbit bindings, simultaneous buttons, pointer cancellation,
+  leaving the canvas, touch interruption and turning while a menu opens.
+- Check all assembly combinations with duplicate canonical colors, including
+  excluded shapes, extras and already-disassembled groups.
+- Check retained-cut mode with undo/reset, scrambling, source replacement,
+  palette/model changes, transparency and graphics recovery.
+- Check hover identity substitution in every view: group boundaries, duplicate
+  colors, retained geometry, depth, lighting, opacity and restoration on exit.
+- Review hover picking through gaps and on rounded/small shapes. Current picking
+  is based on cube-surface cells; consider visible-geometry picking if users can
+  hover a visible piece without selecting the expected physical group.
+- Verify app background/resume and manual graphics reset on real mobile GPUs.
 
-Replace the current hardcoded spatial-color override with the configurable palette.
+Done when: a recorded device checklist passes, or each remaining failure has a
+reproducible state/reference, expected result and prioritized follow-up.
 
-Apply those colors consistently to queue previews, placed shapes, reconstructed shapes, explorer pieces, legends, and highlights. Preserve identity-solid coloring as a separate visual setting.
+3. Performance and memory — MEASURE BEFORE CHANGING
+--------------------------------------------------
+- Benchmark cold/cached startup, first filter query, family switching and memory
+  use with the full dataset on a representative phone.
+- Measure frame times during turns/orbit and first-hover latency, especially for
+  Jelly, transparency, ASCII/dither and retained-cut pieces.
+- Confirm hidden views stop drawing. Track geometry cache and GPU buffer growth
+  across repeated packing loads, hover changes, settings changes and resets.
+- Profile hover substitution: it should reuse geometry within a group and avoid
+  producing visible internal caps in untouched pieces.
+- Profile retained fragments: precompute source cuts and reuse them; avoid
+  recutting or reallocating geometry on every partial-drag frame.
+- If measurements justify it, add bounded caches, idle/background preparation,
+  cancellable work or adaptive quality. Do not silently downgrade chosen styles.
 
-Verify all three new shapes with the existing rendering styles, transparency modes, outlines, breathing, and placement/clear animations.
-9. Validate and deploy incrementally
-The main acceptance checks should include:
-- Every catalog placement identifies correctly under all 24 rotations.
-- Reflection exchanges D and F rather than merging them.
-- Every non-core composition is constructible from its supplied inventory.
-- Queue B/D/F placements never use the core.
-- Automatic placement and forecasting agree with gameplay.
-- Existing saves and classic gameplay still work.
-- Every dataset member appears in exactly its recorded family.
-- Browser filtering agrees with generated metadata.
-- Mobile startup remains responsive without loading the entire dataset.
-Suggested milestones: shared catalog → playable B/D/F queue → state/palette updates → compact dataset loader → explorer integration → performance and regression testing.
+Done when: benchmarks identify the bottleneck and show a measurable improvement
+without changing puzzle state, ownership, geometry semantics or visual defaults.
 
-10. Single-repository data ownership (required)
-- This branch owns all packing data and metadata. No separate dataset repository, external raw GitHub URL, or runtime archive download is required.
-- Commit results.7z and data/source.json with the application. The manifest pins the source archive checksum and required files.
-- Keep the existing classic dataset and official-cube reference data in this repository during migration.
-- Build the v2 browser manifest, compact indexes, and independently loadable chunks from this local archive. Do not rely on sibling workspace folders such as 3dmetadata/results.
-- Use a documented local extraction step/tool and the same process in CI. Pin or verify extraction tooling as appropriate. Avoid committing the large expanded text files.
-- Serve all generated browser assets from relative URLs under the application's own deployment path, including GitHub Pages subdirectory hosting.
-- Include the dataset version/checksum in build fingerprints and shareable packing references to avoid stale data and legacy/new line-ID collisions.
-- Publish browser-ready chunks, not results.7z or the expanded source text, with the app. Ensure release packaging does not duplicate the large dataset unnecessarily.
-- A clean clone must contain everything needed to generate the dataset. No credentials, checkout, or download from another data repository may be required.
-- Validate the required members, schema, metadata counts, and family membership during conversion. Fail builds on missing or inconsistent data; do not silently fall back to remote data.
-- Acceptance check: load and browse generated data with external data hosts blocked; test both localhost and a GitHub Pages-style subdirectory.
+4. Practice solving and demonstration — PROPOSED IMPROVEMENTS
+-----------------------------------------------------------
+A verified constructive solver and target-preserving scramble already exist.
+The solver produces valid paths; it does not promise the shortest path or replay
+an original family-graph edge.
+
+- Add pause/resume, single-step, speed controls and a readable move sequence if
+  desired. Make long demonstrations easier to follow and cancel.
+- Explore shorter verified paths and local sequence simplification, with bounded
+  computation and clear progress. Retain the existing verified fallback.
+- Decide whether a demonstration should target physical piece membership only
+  or also the orientation of retained cut geometry. These are different goals;
+  do not silently treat one as the other in success messages.
+- Consider a visual orientation/alignment guide between Start and Target.
+
+Done when: every displayed path is replay-verified and its stated target matches
+what it actually solves; cancellation leaves an inspectable, valid cube.
+
+5. State sharing, preferences and recovery — PROPOSED IMPROVEMENTS
+----------------------------------------------------------------
+- Audit persistence of newer explorer settings, including color mode, inspection,
+  assembly and view sizes. Document which selections persist between sessions.
+- Consider shareable explorer sessions containing the dataset identity, loaded
+  packing(s), physical cell state, turn history, filters, inspection mode and
+  retained-shape source. Keep this distinct from existing game-state sharing.
+- Decide whether share links/files include cosmetic preferences or leave the
+  recipient's appearance unchanged. Avoid excessively long URLs.
+- Verify stale or malformed imports fail clearly without erasing the current
+  puzzle. Include the build/data version in useful diagnostic exports.
+- Audit interrupted startup, background/resume, storage failures and recovery
+  notices; preserve progress and offer an actionable retry when appropriate.
+
+Done when: a shared session reproduces the intended puzzle and ownership, and
+recovery restores it without accidentally replacing its source packing.
+
+6. Menus and accessibility — PROPOSED CLEANUP
+-------------------------------------------
+- Audit descriptions and dependencies against current behavior; remove remaining
+  obsolete visible controls rather than accumulating competing ways to set it.
+- Keep Piece Assembly and Cube Sizes aligned to the same five view categories.
+- Check long assembly-option labels on phones; consider wrapped choices with
+  short descriptions/previews if native dropdowns truncate important distinctions.
+- Provide deliberate copy controls for useful read-only text now that accidental
+  page-text selection is disabled. Preserve text editing and keyboard navigation.
+- Consider a keyboard/touch equivalent for hover identity inspection, such as a
+  focus or press-to-inspect action. Choose its gesture before implementation so
+  it does not conflict with turns, orbit or early locking.
+- Check contrast, focus, screen-reader labels and reduced-motion behavior.
+
+Done when: controls are understandable and reachable on both desktop and mobile,
+and an essential distinction does not depend exclusively on mouse hover or color.
+
+7. Test automation and release confidence — PROPOSED HARDENING
+------------------------------------------------------------
+- Bring CI's selected test list into parity with important newer coverage:
+  assembly choices, retained pieces, hover identities, practice paths, inspection
+  retention, official/multicolor fallback and mouse/XYZ controls.
+- Give focused smoke-test branches a standard script/CI entry so coverage is not
+  dependent on remembering environment flags (RETAINED_ONLY, HOVER_ONLY and
+  INSPECTION_ONLY currently select focused explorer checks).
+- Add real-browser interaction and visual checks where feasible. Keep geometry
+  invariants and native rule tests alongside them; screenshots alone are not
+  sufficient for gameplay or solver correctness.
+- Cover restoration after pointer cancellation, context loss, tab suspension and
+  a versioned release update. Test GitHub Pages-style subdirectory hosting.
+- Serialize builds against tests using dist/: rebuilding replaces release asset
+  directories and invalidates a running test's asset URLs.
+- Keep a small release checklist: build, relevant native/browser tests, source
+  validation, mobile sanity checks and no unresolved conflict markers.
+
+Done when: a clean checkout can build and test the local dataset, and CI exercises
+critical new interaction paths without requiring undocumented manual steps.
+
+8. Documentation and code organization — PROPOSED MAINTENANCE
+-----------------------------------------------------------
+- Update README and technical docs where they still describe migration-era
+  limits, old dataset/member counts, old color/count semantics or old controls.
+  docs/3d-implementation.md is migration history, not the current backlog.
+- Document the distinction between source identity, detected shape, canonical
+  color, physical color, assembly presentation and retained segment orientation.
+- Document filter inspection versus navigation, including exclusions versus
+  whole-packing min/max constraints and the meaning of a reported match.
+- Centralize assembly/view labels and setting definitions where duplication is
+  causing drift between game and explorer HTML, validation and dependencies.
+- Keep rendering-only transforms outside engine state; isolate shared identity
+  selection and lifecycle/cache ownership instead of adding more UI conditionals
+  to rule code. Refactor incrementally under existing regression tests.
+
+Done when: contributors can find one current explanation of each behavior and
+changing a shared setting does not require inconsistent edits across menus.
+
+Deferred — NOT part of the next implementation batch
+---------------------------------------------------
+- Mirror/reflection deduplication and any resulting dataset renumbering.
+- Arbitrary-dimension cuboid development.
+- Editable enumeration/restructuring of every setting; user deferred this.
+- New desktop packaging, offline/PWA distribution or hosting changes: revisit
+  deployment requirements separately; retain the working browser/Pages build.
+- Additional gameplay rules or piece types without a separate design decision.
+
+Suggested order
+---------------
+1. Choose which browser safeguards to implement.
+2. Run the real-device checklist and address reproducible interaction failures.
+3. Measure and improve the largest performance costs.
+4. Harden CI/recovery while updating stale documentation.
+5. Select optional practice, sharing and accessibility improvements individually.
+
+This document update does not authorize implementation of the proposed backlog.

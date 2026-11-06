@@ -1,3 +1,4 @@
+import {retainedStack} from './retained-stack.js';
 import {assemblyKind,assemblyUsesSolids} from './assembly.js';
 import {identifyMask} from '../explorer/family-exploration.js';
 import {sliceForTurn,animateSlices} from '../explorer/exploration-mesh.js';
@@ -198,6 +199,7 @@ class Renderer {
     this.stackPackets=null;
     this.stackEvent=null;
     this.sourceMesh = data;
+    if(this.state && displaySettings.stackPieces==='retained'){this.upload(this.stackMesh,retainedStack(this.state,(m,o)=>context.engine.bandMesh(m,o),this.modelShape).mesh());return;}
     const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true,0,displaySettings.stackPieces) : [data];
     this.upload(this.stackMesh,joinMeshes(parts));
   }
@@ -326,15 +328,16 @@ class Renderer {
     if(this.stackEvent===event)return;
     this.stackEvent=event;
     const source=event.kind===2?from:to;
-    const parts=compositeParts(source.slice(0,27),source.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true,0,displaySettings.stackPieces);
-    const fragments=mergeFragments(parts);
+    const retained=displaySettings.stackPieces==='retained'?retainedStack(source,(m,o)=>context.engine.bandMesh(m,o),this.modelShape):null;
+    const parts=retained?[]:compositeParts(source.slice(0,27),source.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true,0,displaySettings.stackPieces);
+    const fragments=retained?.fragments||mergeFragments(parts);
     this.stackCellBuffers ??= Array.from({length:81},()=>this.buffer());
     for(let phase=0;phase<3;phase++) {
       const t=phase/2,transforms=Array.from({length:27},(_,i)=>this.stackTransform(event,i,t));
       for(let i=0;i<27;i++) {
         const mesh=exposedFragment(fragments[i],i,(axis,side)=>{
           const neighbor=neighborCell(i,axis,side);
-          return neighbor<0 || !fragments[neighbor].length || transforms[neighbor].scale<=0 ||
+          return neighbor<0 || (retained&&!retained.joined(i,axis,side)) || !fragments[neighbor].length || transforms[neighbor].scale<=0 ||
             transforms[i].scale!==transforms[neighbor].scale ||
             transforms[i].offset.some((v,a)=>Math.abs(v-transforms[neighbor].offset[a])>1e-6);
         });

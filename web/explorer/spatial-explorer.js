@@ -59,12 +59,13 @@ export async function initializeSpatialExplorer(
   $('spatialFilters').hidden = false;
   try{const saved=localStorage.getItem('stack-it-up.family-inspect');if(saved!==null)$('familyInspectFilters').checked=saved!=='false';}catch{}
   $('familyInspectFilters').onchange=()=>{try{localStorage.setItem('stack-it-up.family-inspect',String($('familyInspectFilters').checked));}catch{}};
+  let lockedFamily=null;
   function filters() {
     const f = Object.fromEntries(flags.map((id) => [id, $(id).checked]));
     for (const id of ['extraEdges', 'extraCorners', 'extraCenters'])
       f[id] = $(id).value;
     Object.assign(f, {
-      family: +$('familySelect').value || 0,
+      family: lockedFamily ?? (+$('familySelect').value || 0),
       bag: $('familyBag').value || '',
       spatial:
         $('datasetSelect').value === 'classic'
@@ -95,6 +96,7 @@ export async function initializeSpatialExplorer(
   }
   const provider = {
     filters,
+    lockFamily(id){lockedFamily=id;$('familySelect').disabled=id!==null;if(id!==null)$('familySelect').value=String(id);return query({},true,false);},
     presentation: (p) => packingPresentation(p, colorMode()),
     record: async (id) => remember(await client.record(id)),
     lookup: async (f, m) => {
@@ -231,12 +233,14 @@ export async function initializeSpatialExplorer(
     if(invalidRanges){$('status').textContent='Correct the marked count ranges to filter packings.';return;}
     $('status').textContent = 'Filtering local index…';
     try {
+      if(lockedFamily!==null)$('familySelect').value=String(lockedFamily);
       const f = filters();
+      if(lockedFamily!==null && action.line){const requested=await client.record(action.line);if(requested?.familyId!==lockedFamily)throw Error(`Shapes are locked to family ${lockedFamily}. Unlock shapes to change families.`);}
       provider.refreshDetection?.();
       $('filterFamilyStatus').textContent = f.family
         ? `Family ${f.family}`
         : 'All families';
-      $('clearFilterFamily').disabled = !f.family;
+      $('clearFilterFamily').disabled = lockedFamily!==null || !f.family;
       if (
         f.counts.some(
           (c) =>

@@ -2681,3 +2681,13 @@ main.explorer-active > .topbar { padding:0 14px; }
 :root[data-ui-theme] .app{background:var(--bg);color:var(--ink)}
 :root[data-ui-theme] .settings-content,:root[data-ui-theme] .settings-heading,:root[data-ui-theme] .packing-picker-content,:root[data-ui-theme] .picker-heading,:host([data-ui-theme]) .filter-range-card,:host([data-ui-theme]) .explorer-page-link{background:var(--panel);color:var(--ink);border-color:var(--border)}
 :root[data-ui-theme] .cube-card{background:radial-gradient(ellipse at center,var(--panel),var(--bg))}
+
+/* Keep cube/UI drags from selecting labels. Editable/shared text remains selectable. */
+*, *::before, *::after {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"], [contenteditable="true"] * {
+  -webkit-user-select: text;
+  user-select: text;
+}

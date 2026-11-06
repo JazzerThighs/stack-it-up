@@ -120,7 +120,7 @@ const descriptor = (cells) =>
 
 // Exact family invariant: corner/edge multiplicities and center positions for
 // each physical piece, under 24 proper rotations. Extras stay a separate group.
-export function practicePair(source, target) {
+export function practicePair(source, target, {targetColors:useTargetColors=false}={}) {
   const sourceGroups = source.masks.map(cellsOf),
     targetGroups = target.masks.map(cellsOf);
   const descriptors = sourceGroups.map(descriptor),
@@ -155,7 +155,7 @@ export function practicePair(source, target) {
       group.forEach(
         (i) =>
           (right[displayIndex(rotation[i])] = {
-            color: left.find(c=>c.piece===mapping[k]).color,
+            color: useTargetColors && target.cellColors ? target.cellColors[i] : left.find(c=>c.piece===mapping[k]).color,
             piece: mapping[k],
           }),
       ),

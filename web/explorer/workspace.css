@@ -416,3 +416,17 @@ button.primary { background:var(--accent);color:#142724; }
 :root[data-ui-theme] .app{background:var(--bg);color:var(--ink)}
 :root[data-ui-theme] .settings-content,:root[data-ui-theme] .settings-heading,:root[data-ui-theme] .packing-picker-content,:root[data-ui-theme] .picker-heading,:host([data-ui-theme]) .filter-range-card,:host([data-ui-theme]) .explorer-page-link{background:var(--panel);color:var(--ink);border-color:var(--border)}
 :root[data-ui-theme] .cube-card{background:radial-gradient(ellipse at center,var(--panel),var(--bg))}
+
+/* Keep cube/UI drags from selecting labels. Editable/shared text remains selectable. */
+*, *::before, *::after {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"], [contenteditable="true"] * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.family-lock-shapes { position:absolute; top:10px; right:12px; z-index:6; min-height:36px; }
+.family-lock-shapes[aria-pressed="true"] { background:var(--accent,var(--mint)); color:var(--bg); }
+#familyExplorePanel h2 { padding-right:130px; }
