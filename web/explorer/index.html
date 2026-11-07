@@ -744,8 +744,9 @@
                         type="radio"
                         name="colorMode"
                         id="canonicalColors"
+                        checked
                       />
-                      Canonical</label
+                      Canonical Colors</label
                     >
                     <label
                       ><input
@@ -755,16 +756,6 @@
                       />
                       Multicolor</label
                     >
-                    <label
-                      ><input
-                        type="radio"
-                        name="colorMode"
-                        id="officialColors"
-                        checked
-                      />
-                      Official</label
-                    >
-                  <label><input type="radio" name="colorMode" id="officialMulticolor" /> Official-Compatible / Multicolor fallback</label>
                   </fieldset>
                   <fieldset id="explorerInputSettings">
                     <legend>Input</legend>
@@ -1389,6 +1380,9 @@
             </p>
             <p id="familyExploreLetters"></p>
             <div id="familyExploreMatches"></div>
+              <h3>Packings encountered</h3>
+              <p id="familyLedgerStatus" role="status"></p>
+              <ol id="familyPackingLedger"></ol>
           </div>
         </details>
       </section>

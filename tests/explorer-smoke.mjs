@@ -149,6 +149,7 @@ if(process.env.HOVER_ONLY){
   process.exit(0);
 }
 if(process.env.FAMILY_LOCK_ONLY){
+  assert($('canonicalColors').checked);assert(!html.includes('id="officialColors"'));assert(!html.includes('id="officialMulticolor"'));
   const cube=observed.get($('familyExploreCube')).view;
   const starter=cube.cells.map(c=>c.piece),original=cube.solid.data.slice();
   assert(!$('familyLockShapes').disabled);await $('familyLockShapes').onclick();
@@ -158,11 +159,24 @@ if(process.env.FAMILY_LOCK_ONLY){
   await $('resetPackingFilters').onclick();assert($('familySelect').disabled);
   const target=await client.query({filters:{family:562},line:50152,offset:1});
   await initial.query({line:target.record.lineNumber});
-  assert.equal(initial.current.lineNumber,target.record.lineNumber);assert(cube.history.length>0);
+  assert.equal(initial.current.lineNumber,target.record.lineNumber);assert.equal(cube.history.length,0);assert(cube.undoButton.disabled);
+  const generated=cube.cells;cube.undo();assert.equal(cube.cells,generated);
+  await cube.play(0);const cachedTurn=cube.cells;cube.undo();await cube.play(0);assert.equal(cube.cells,cachedTurn,'repeated turn uses cached state');cube.undo();
+  cube.reset();assert.equal(cube.cells,generated,'reset returns to generated destination');
+  const oldLookup=client.lookup;let lookups=0;client.lookup=(...args)=>{lookups++;return oldLookup(...args);};
+  await cube.play(0);cube.undo();await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
+  assert.equal(lookups,0,'revisiting a known packing reuses its lookup');client.lookup=oldLookup;
+  $('canonicalColors').onchange();
+  assert(cube.turnCache.get(cube.cells).has(0),'color refresh retains cached turn branches');
+  const recoloredCached=cube.turnCache.get(cube.cells).get(0);await cube.play(0);assert.equal(cube.cells,recoloredCached);cube.undo();
+  const cache=cube.turnCache,manualHistory=cube.history;
+  await $('resetPackingFilters').onclick();assert.equal(cube.turnCache,cache);assert.equal(cube.history,manualHistory);
+
+  assert($('familyPackingLedger').children.length>=2);
   assert.deepEqual(cube.initial.map(c=>c.piece),starter);
   const {practicePair}=await import(new URL('explorer/model.js',assetRoot));
   const {packingPresentation}=await import(new URL('explorer/presentation.js',assetRoot));
-  const pair=practicePair(packingPresentation(official,'official').packing,packingPresentation(target.record,'official').packing,{targetColors:true});
+  const pair=practicePair(packingPresentation(official).packing,packingPresentation(target.record).packing,{targetColors:true});
   assert.deepEqual(cube.cells.map(c=>c.piece),pair.right.map(c=>c.piece));
   assert.deepEqual(cube.cells.filter(c=>c.piece>=0).map(c=>c.color),pair.right.filter(c=>c.piece>=0).map(c=>c.color));
   const geometry=cube.solid.data.filter((_,i)=>i%9<6),history=cube.history;
@@ -170,7 +184,7 @@ if(process.env.FAMILY_LOCK_ONLY){
   const canonical=practicePair(packingPresentation(official).packing,packingPresentation(target.record).packing,{targetColors:true});
   assert.deepEqual(cube.cells.filter(c=>c.piece>=0).map(c=>c.color),canonical.right.filter(c=>c.piece>=0).map(c=>c.color));
   assert.deepEqual(cube.solid.data.filter((_,i)=>i%9<6),geometry);assert.equal(cube.history,history);
-  $('officialColors').onchange();
+  $('positionalColors').onchange();
   await initial.query({line:50152});assert.deepEqual(cube.cells.map(c=>c.piece),starter);assert.equal(cube.history.length,0);
   const other=await client.query({filters:{counts:[{type:'O',min:6,max:6}]}});
   await initial.query({line:other.record.lineNumber});assert.match($('status').textContent,/Unlock/);assert.equal(initial.current.lineNumber,50152);
@@ -188,7 +202,7 @@ if(process.env.FAMILY_LOCK_ONLY){
   const expected=joinMeshes(explorationMeshes(cube.cells,cube.meshGenerator,cube.modelShape,false,cube.explorationGray,true,false,cube.detectionFilters,false,'whole'));
   assert.deepEqual(cube.solid.data,expected,'geometry follows current detected tetracubes');
   const live=cube.cells,liveHistory=cube.history;
-  $('officialColors').onchange();assert.equal(cube.cells,live);assert.equal(cube.history,liveHistory);
+  $('positionalColors').onchange();assert.equal(cube.cells,live);assert.equal(cube.history,liveHistory);
   for(const cell of cube.cells)if(cell.piece>=0)assert.equal(cell.color,lockedColors.get(cell.piece));
   await cube.play(0);for(const cell of cube.cells)if(cell.piece>=0)assert.equal(cell.color,lockedColors.get(cell.piece));
   cube.undo();assert.deepEqual(cube.solid.data,expected);
@@ -227,7 +241,7 @@ if(process.env.INSPECTION_ONLY){
   await initial.query({line:next.record.lineNumber},true);assert.equal(initial.current.lineNumber,next.record.lineNumber);assert.notEqual(inspected.cells,cells);
   const duplicate=await client.query({filters:{counts:[{type:'O',min:6,max:6}]}});
   await initial.query({line:duplicate.record.lineNumber});
-  $('officialMulticolor').checked=true;$('officialMulticolor').onchange();
+  $('positionalColors').checked=true;$('positionalColors').onchange();
   assert(inspected.fixedPieceColors);assert.equal(new Set(inspected.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
   console.log('PASS: default live inspection, excluded/re-enabled O geometry, explicit source navigation, and distinct fallback colors.');
   process.exit(0);
@@ -254,7 +268,7 @@ assert($("scrambledCube").children.length >= 2);
 // official source packing, including its white edge and black center.
 $('canonicalColors').onchange();
 assert(observed.get($('solvedCube')).view.cells.some(c=>c.color==='r'));
-$('officialColors').onchange();
+$('positionalColors').onchange();
 assert(!html.includes('id="piece3d"')); assert.equal($("cubeLayout").dataset.views,2);
 $("practiceMode").checked = true;
 await $("practiceMode").onchange();
@@ -422,11 +436,14 @@ assert(familyView.solid.data.every(Number.isFinite));
 familyView.setState(familyView.cells);
 await $('random').onclick();
 assert(familyView.explorationSolids,'solid identities survive packing reloads');
-assert.equal(new Set(familyView.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
+assert(familyView.cells.filter(c=>c.piece>=0).every(c=>c.color));
 $('familyPieces').value='whole';$('familyPieces').listeners.change();
 assert(!familyView.explorationSolids);
 console.log('PASS: family startup and solid-identity setting, live geometry changes and reload retention.');
 
+let prepared=0;const prepareUpload=familyView.upload;familyView.upload=function(...args){prepared++;return prepareUpload.apply(this,args);};
+for(let move=0;move<15;move++)familyView.setState(familyView.cells,{kind:'turn',move,t:0});
+familyView.upload=prepareUpload;assert(prepared<=45,'only three buffers per requested partition');
 const retained=familyView.explorationLayers.map(b=>b.data);
 let turnUploads=0;const originalUpload=familyView.upload;
 familyView.upload=function(...args){turnUploads++;return originalUpload.apply(this,args);};
@@ -549,16 +566,16 @@ console.log('PASS: viewport switches preserve the in-progress practice puzzle.')
 // Palette changes reach the live family renderer without resetting moves or poses.
 $('familyExploreMode').checked=true;await $('familyExploreMode').onchange();
 $('sourceLine').value='50152';await $('sourceJump').onsubmit({preventDefault(){}});
-$('officialColors').onchange();
+$('positionalColors').onchange();
 const officialFamilyView=observed.get($('familyExploreCube')).view;
 assert(officialFamilyView.fixedPieceColors);
 await officialFamilyView.play(0);
 const officialOwners=officialFamilyView.cells.map(c=>c.piece),officialHistory=officialFamilyView.history.length;
 $('canonicalColors').onchange();assert(!officialFamilyView.fixedPieceColors);
-$('officialColors').onchange();assert(officialFamilyView.fixedPieceColors);
+$('positionalColors').onchange();assert(officialFamilyView.fixedPieceColors);
 assert.deepEqual(officialFamilyView.cells.map(c=>c.piece),officialOwners);
 assert.equal(officialFamilyView.history.length,officialHistory);
-for(const c of officialFamilyView.cells)if(c.piece>=0)assert.equal(c.color,'brogym'[c.piece]);
+for(const c of officialFamilyView.cells)if(c.piece>=0)assert.equal(c.color,'bymogr'[c.piece]);
 console.log('PASS: color-mode changes update live family rendering and preserve turn history.');
 
 const beforeRecovery=structuredClone(officialFamilyView.cells),historyBeforeRecovery=officialFamilyView.history.length;
@@ -572,7 +589,7 @@ assert.equal(officialFamilyView.history.length,historyBeforeRecovery);
 retainedLayers.forEach((layer,i)=>{
   assert.equal(officialFamilyView.explorationLayers[i],layer);
   assert.notEqual(layer.buffer,oldLayerBuffers[i]);
-  assert.equal(layer.count,layer.data.length/9);
+  assert.equal(layer.count,(layer.data?.length||0)/9);
 });
 console.log('PASS: family-explorer GPU recovery preserves cut-piece layers, packing identity and move history.');
 
@@ -690,6 +707,6 @@ assert(inspectedView.explorationGeometry.some(m=>m.identityCell!==undefined));
 await $('resetPackingFilters').onclick();
 assert.equal(inspectedView.cells,inspectionCells);assert.equal(inspectedView.history,inspectionHistory);
 assert(detectPieces(inspectedView.cells,inspectedView.detectionFilters).find(p=>p.id===recognized.id).letter);
-$('officialMulticolor').checked=true;$('officialMulticolor').onchange();
+$('positionalColors').checked=true;$('positionalColors').onchange();
 assert(inspectedView.fixedPieceColors);assert.equal(new Set(inspectedView.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
 console.log('PASS: default inspection preserves the live cube/history across exclusions and resets; recognition and distinct colors update in place.');

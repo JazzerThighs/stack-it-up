@@ -151,11 +151,7 @@ export async function initializeSpatialExplorer(
   );
   $('familyBag').disabled = false;
   function colorMode() {
-    return $('officialMulticolor').checked?'officialMulticolor':$('officialColors').checked
-      ? 'official'
-      : ($('positionalColors').checked||$('officialMulticolor').checked)
-        ? 'multicolor'
-        : 'canonical';
+    return $('positionalColors').checked ? 'multicolor' : 'canonical';
   }
   function displayPacking(p) {
     const shown = packingPresentation(p, colorMode());
@@ -174,11 +170,7 @@ export async function initializeSpatialExplorer(
       .map((c, i) => `${i + 1}: ${c}`)
       .join(' · ');
     $('colorStatus').textContent =
-      ($('officialColors').checked||$('officialMulticolor').checked) && current.familyId === info.officialFamily
-        ? 'Official-compatible colors'
-        : ($('positionalColors').checked||$('officialMulticolor').checked)
-          ? 'Distinct physical-piece colors'
-          : 'Canonical shape colors';
+      $('positionalColors').checked ? 'Distinct physical-piece colors' : 'Canonical shape colors';
     $('scrambleText').textContent = scramble.join(' ');
     $('solutionText').textContent = scramble
       .slice()
@@ -416,13 +408,11 @@ export async function initializeSpatialExplorer(
       return query({ line: current.lineNumber }, true);
     }
   };
-  for (const id of ['canonicalColors', 'officialColors', 'positionalColors','officialMulticolor'])
+  for (const id of ['canonicalColors', 'positionalColors'])
     $(id).onchange = () => {
       for (const other of [
         'canonicalColors',
-        'officialColors',
         'positionalColors',
-        'officialMulticolor',
       ])
         $(other).checked = other === id;
       paint();

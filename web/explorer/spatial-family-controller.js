@@ -16,6 +16,25 @@ export function packingFromCells(cells){
 }
 export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   let view,source,family,lookupGeneration=0,matched=null,locked=null,run=0,busy=false,worker=null,cancelJob=null;
+  const ledger=new Map(),recentLedger=[],lookups=new Map(),paths=new Map();
+  function remember(records) {
+    let added=false;
+    for(const p of records){const key=`${p.dataset}:${p.lineNumber}`;if(!ledger.has(key)){ledger.set(key,p);recentLedger.push(p);if(recentLedger.length>50)recentLedger.shift();added=true;}}
+    if(!added)return;
+    // Keep the ledger compact on screen; its entries never retain mesh/history data.
+    $('familyLedgerStatus').textContent=`${ledger.size} distinct packings encountered · showing the latest ${recentLedger.length}`;
+    $('familyPackingLedger').replaceChildren(...recentLedger.slice().reverse().map(p=>{
+      const row=document.createElement('li');row.textContent=`${p.dataset} · Line ${p.lineNumber} · Family ${p.familyId} · ${p.identities.join('')}`;return row;
+    }));
+  }
+  function lookup(masks) {
+    const key=JSON.stringify([family,masks.slice().sort((a,b)=>a-b),data.filters?.()]);
+    if(lookups.has(key))return lookups.get(key);
+    const promise=data.lookup(family,masks).catch(error=>{lookups.delete(key);throw error;});
+    lookups.set(key,promise);
+    if(lookups.size>256)lookups.delete(lookups.keys().next().value);
+    return promise;
+  }
   const button=$('familyLockShapes'),colorButton=$('familyLockColors');
   function syncButton(){
     for(const [control,mode,label] of [[button,'shapes','shapes'],[colorButton,'colors','colors']]){
@@ -27,12 +46,26 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     }
   }
   function cancel(){run++;worker?.terminate();worker=null;cancelJob?.();cancelJob=null;busy=false;if(view){view.generation++;view.busy=false;view.orbitOnly=false;view.playbackMs=null;}syncButton();}
-  function path(a,b){
+  function constructPath(a,b){
     if(typeof Worker==='undefined')return import('./practice-path.js').then(m=>m.planPracticePath(a,b));
     return new Promise((resolve,reject)=>{worker=new Worker(new URL('./practice-worker.js',import.meta.url),{type:'module'});cancelJob=()=>reject(Error('Path cancelled'));worker.onmessage=({data})=>{worker?.terminate();worker=null;cancelJob=null;data.error?reject(Error(data.error)):resolve(data.moves);};worker.onerror=()=>{worker?.terminate();worker=null;cancelJob=null;reject(Error('Could not construct the family path'));};worker.postMessage({source:a,target:b});});
   }
+  async function path(a,b) {
+    const key=JSON.stringify([a,b]);
+    if(paths.has(key))return paths.get(key);
+    const moves=await constructPath(a,b);paths.set(key,moves);
+    if(paths.size>32)paths.delete(paths.keys().next().value);
+    return moves;
+  }
   async function changed(cube) {
-    if(busy)return;
+    if(busy){
+      const groups=detectPieces(cube.cells,cube.detectionFilters);
+      if(groups.length===6&&groups.every(p=>p.letter)){
+        const masks=groups.map(p=>inverse.reduce((m,j,i)=>m|((p.mask&(1<<i))?1<<j:0),0));
+        lookup(masks).then(remember).catch(()=>{});
+      }
+      return;
+    }
     const token=++lookupGeneration,group=detectPieces(cube.cells,cube.detectionFilters),count=group.filter(p=>p.letter).length;
     matched=null;syncButton();
     $('familyExploreProgress').textContent=`${count}/6 tetracubes${count===6?' - Checking packing.':''}`;
@@ -41,7 +74,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     if(count!==6)return;
     const masks=group.map(p=>inverse.reduce((m,j,i)=>m|((p.mask&(1<<i))?1<<j:0),0));
     try {
-      const matches=await data.lookup(family,masks);if(token!==lookupGeneration)return;
+      const matches=await lookup(masks);remember(matches);if(token!==lookupGeneration)return;
       matched=matches[0]||null;syncButton();
       $('familyExploreProgress').textContent=matches.length?'6/6 tetracubes - Packing found':'6/6 tetracubes - Not listed in this family';
       for(const p of matches) {
@@ -54,7 +87,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   async function load(p) {
     if(!p)return;
     if(locked&&p.familyId!==family)throw Error(`Unlock ${locked.mode} to leave family ${family}.`);
-    cancel();++lookupGeneration;source=p;family=p.familyId;
+    cancel();++lookupGeneration;source=p;family=p.familyId;remember([p]);
     $('familyExploreTitle').textContent=`Family ${family} Â· Line ${p.lineNumber}`;
     view=get('familyExploreCube',{onChange:changed});view.familyExploration=true;
     const shown=data.presentation(p);
@@ -78,14 +111,14 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
       }
     }catch(e){if(token===run)$('familyExploreProgress').textContent=e.message;throw e;}
     finally{if(token===run){busy=false;view.orbitOnly=false;view.playbackMs=null;syncButton();}}
-    if(token===run)await changed(view);
+    if(token===run){view.checkpoint();await changed(view);}
   }
   function refreshColors() {
     if(!view||!source)return;
     if(locked?.mode==='colors'){view.fixedPieceColors=true;view.setState(view.cells,view.currentAnimation);return;}
     const shown=data.presentation(source),reference=locked?practicePair(locked.packing,shown.packing,{targetColors:true}).right:shown.cells;
-    view.fixedPieceColors=locked?true:shown.fixed;view.cells=recolor(view.cells,reference);view.initial=recolor(view.initial,reference);
-    for(const h of view.history)h.cells=recolor(h.cells,reference);
+    view.fixedPieceColors=locked?true:shown.fixed;
+    view.mapCells(cells=>recolor(cells,reference));
     view.setState(view.cells,view.currentAnimation);
   }
   function unlock(){cancel();locked=null;if(view){view.lockedAssembly=null;view.assembly=displaySettings.familyPieces;view.individualPieces=view.assembly==='cubies';view.explorationSolids=assemblyUsesSolids(view.assembly);view.setState(view.cells);}data.lockFamily?.(null);refreshColors();if(view)changed(view);}
@@ -96,10 +129,14 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     // Capture what is actually visible, including canonical recoloring after manual turns.
     const detected=new Map(detectPieces(view.cells,view.detectionFilters).map(p=>[p.id,p.letter]));
     const cells=recolor(view.cells,view.cells.map(c=>c.piece<0||view.fixedPieceColors?c:{...c,color:detectedColor(detected.get(c.piece),c.color)}));
-    locked={mode,record:matched,cells,packing:packingFromCells(cells)};
+    // Rebase retained fragments at the captured pose, including the existing undo floor.
+    const origins=new Map(cells.map((c,i)=>[c.assemblyOrigin,i]));
+    const rebase=state=>state.map(c=>Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(c),assemblyOrigin:{value:origins.get(c.assemblyOrigin),enumerable:false,writable:true,configurable:true}}));
+    view.mapCells(state=>rebase(recolor(state,cells)));
+    locked={mode,record:matched,cells:view.cells,packing:packingFromCells(view.cells)};
     source=matched;
     $('familyExploreTitle').textContent=`Family ${family} Â· Line ${source.lineNumber}`;
-    view.lockedAssembly=mode==='shapes'?'retained':'whole';view.assembly=view.lockedAssembly;view.individualPieces=false;view.explorationSolids=false;view.fixedPieceColors=true;view.setCells(locked.cells);
+    view.lockedAssembly=mode==='shapes'?'retained':'whole';view.assembly=view.lockedAssembly;view.individualPieces=false;view.explorationSolids=false;view.fixedPieceColors=true;view.cells=locked.cells;view.initial=locked.cells.slice();view.retainedSource=null;view.setState(view.cells);
     const token=run;
     await data.selectionChanged?.(source);
     if(!locked||token!==run)return;

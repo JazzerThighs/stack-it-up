@@ -67,6 +67,7 @@ export class PackingCube extends Renderer {
     this.onChange = onChange;
     this.cells = [];
     this.history = [];
+    this.turnCache = new WeakMap();
     this.busy = false;
     this.generation = 0;
     this.opacity = 1;
@@ -157,6 +158,8 @@ export class PackingCube extends Renderer {
     this.retainedSource=null;
     this.explorationSignature=null;
     this.history = [];
+    this.turnCache = new WeakMap();
+    this.checkpointCells = this.cells;
     this.setState(this.cells);
     this.changed();
   }
@@ -182,18 +185,13 @@ export class PackingCube extends Renderer {
         const turningGeometry=this.explorationGeometry.filter(m=>m.identityCell===undefined);
         const fragments=retained?.fragments||mergeFragments(turningGeometry);
         this.explorationLayers ??= Array.from({length:45},()=>this.buffer());
-        // Five motion partitions per axis: three single slices and two wide turns.
-        for(let axis=0;axis<3;axis++)for(let mode=0;mode<5;mode++) {
-          const moving=i=>mode<3 ? i===mode : i!== (mode===3?2:0);
-          const visible=fragments.map((mesh,cell)=>exposedFragment(mesh,cell,(a,side)=>{
-            const neighbor=neighborCell(cell,a,side);
-            return neighbor<0 || (retained&&!retained.joined(cell,a,side)) || moving(CubeStack.xyz(cell)[axis])!==moving(CubeStack.xyz(neighbor)[axis]);
-          }));
-          for(let layer=0;layer<3;layer++)
-            this.upload(this.explorationLayers[(axis*5+mode)*3+layer],joinMeshes(visible.filter((_,i)=>CubeStack.xyz(i)[axis]===layer)));
-        }
+        // Defer cutting/uploading motion layers until that turn is actually used.
+        this.motionFragments=fragments;
+        this.motionRetained=retained;
+        this.motionPartitions=new Set();
         this.upload(this.solid,joinMeshes(turningGeometry));
       }
+      if(animation?.kind==='turn')this.prepareMotion(animation.move);
       this.invalidate();this.onFrame?.(cells,animation);return;
     }
     if (this.connected && this.meshGenerator && !animation) {
@@ -211,6 +209,40 @@ export class PackingCube extends Renderer {
     this.upload(this.solid, new Float32Array(out));
     this.invalidate();
     this.onFrame?.(cells, animation);
+  }
+  prepareMotion(move) {
+    const [,axis,layer,side]=CubeStack.moves[move%15];
+    const mode=layer==='wide'?(side===0?3:4):layer,key=axis*5+mode;
+    if(this.motionPartitions.has(key))return;
+    const moving=i=>mode<3?i===mode:i!==(mode===3?2:0);
+    const visible=this.motionFragments.map((mesh,cell)=>exposedFragment(mesh,cell,(a,sign)=>{
+      const neighbor=neighborCell(cell,a,sign);
+      return neighbor<0 || (this.motionRetained&&!this.motionRetained.joined(cell,a,sign)) || moving(CubeStack.xyz(cell)[axis])!==moving(CubeStack.xyz(neighbor)[axis]);
+    }));
+    for(let slice=0;slice<3;slice++)this.upload(this.explorationLayers[key*3+slice],joinMeshes(visible.filter((_,i)=>CubeStack.xyz(i)[axis]===slice)));
+    this.motionPartitions.add(key);
+  }
+  // A generated destination is the undo/reset floor, without recutting retained shapes.
+  checkpoint() {
+    this.history=[];
+    this.turnCache=new WeakMap();
+    this.checkpointCells=this.cells;
+    this.changed();
+  }
+  // Recolor/rebase cached states together so settings do not discard turn branches.
+  mapCells(transform) {
+    const mapped=new WeakMap(),pending=[],cache=new WeakMap();
+    const map=cells=>{
+      if(!mapped.has(cells)){mapped.set(cells,transform(cells));pending.push(cells);}
+      return mapped.get(cells);
+    };
+    this.cells=map(this.cells);this.initial=map(this.initial);this.checkpointCells=map(this.checkpointCells);
+    for(const h of this.history)h.cells=map(h.cells);
+    for(let i=0;i<pending.length;i++){
+      const from=pending[i],transitions=this.turnCache.get(from);
+      if(transitions)cache.set(map(from),new Map([...transitions].map(([move,next])=>[move,map(next)])));
+    }
+    this.turnCache=cache;
   }
   changed() {
     if (this.undoButton) this.undoButton.disabled = !this.history.length;
@@ -243,13 +275,22 @@ export class PackingCube extends Renderer {
     if (this.busy || this.orbitOnly || !this.cells.length) return;
     this.busy = true;
     const generation = this.generation,
-      from = this.cells.slice();
+      from = this.cells;
     await this.animate((this.playbackMs||180) * (1 - start), (t) =>
       this.setState(from, { kind: "turn", move, t: start + (1 - start) * t }),
     );
     if (generation !== this.generation) return;
     this.history.push({ cells: from, move });
-    this.cells = turn(from.map((cell,i)=>cell && movedCell(i,move)?Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(cell),solidRotation:{value:composeRotation(turnTransform(move,1),cell.solidRotation),configurable:true}}):cell), move);
+    let transitions=this.turnCache.get(from);
+    if(!transitions){transitions=new Map();this.turnCache.set(from,transitions);}
+    if(!transitions.has(move)){
+      const next = turn(from.map((cell,i)=>cell && movedCell(i,move)?Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(cell),solidRotation:{value:composeRotation(turnTransform(move,1),cell.solidRotation),configurable:true}}):cell), move);
+      transitions.set(move,next);
+      let inverse=this.turnCache.get(next);
+      if(!inverse){inverse=new Map();this.turnCache.set(next,inverse);}
+      inverse.set((move+15)%30,from);
+    }
+    this.cells=transitions.get(move);
     this.busy = false;
     this.setState(this.cells);
     this.changed();
@@ -261,7 +302,9 @@ export class PackingCube extends Renderer {
     this.changed();
   }
   reset() {
-    if (!this.orbitOnly && this.initial) this.setCells(this.initial);
+    if (!this.orbitOnly && !this.busy && this.checkpointCells) {
+      this.cells=this.checkpointCells;this.history=[];this.setState(this.cells);this.changed();
+    }
   }
   isVisible() {
     return !document.hidden && !document.getElementById("explorerPage")?.hidden;

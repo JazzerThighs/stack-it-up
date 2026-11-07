@@ -44,7 +44,7 @@ export function initializeExplorerSettings(root) {
   unpack(page('Piece assembly',appearance),$('pieceAssemblySettings'));
   unpack(page('Interface theme',appearance),$('interfaceSettings'));
   const colors=page('Colors',appearance);unpack(colors,find('.color-controls'));
-  help(colors,'Official uses canonical colors outside family 562. Official-Compatible / Multicolor fallback keeps distinct piece colors in every family.');
+  help(colors,'Canonical Colors follows the detected shapes. Multicolor distinguishes physical pieces. Use Lock colors in the family explorer to keep the starting colors. Official-family filters remain available.');
   const palette=page('Tetromino palette',colors);unpack(palette,find('.piece-colors'));
   const solids=page('Balls & Platonic Solids',appearance);
   const solidField=$('familySolidIdentities').closest('fieldset');unpack(solids,solidField);

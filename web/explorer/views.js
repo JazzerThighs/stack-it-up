@@ -291,8 +291,7 @@ export function createExplorerViews({
       };
       for(const [id,reference]of [['practiceLeft',pair.left],['practiceRight',pair.right]]) {
         const cube=cubes.get(id);if(!cube)continue;
-        cube.cells=recolor(cube.cells,reference);cube.initial=recolor(cube.initial,reference);
-        for(const h of cube.history)h.cells=recolor(h.cells,reference);
+        cube.mapCells(cells=>recolor(cells,reference));
         cube.setState(cube.cells,cube.currentAnimation);
       }
       targetCells=cubes.get('practiceRight').cells;updatePractice();
