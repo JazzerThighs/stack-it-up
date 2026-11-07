@@ -1,13 +1,13 @@
 use cube_stack::{engine::*,pieces::PIECES};
 #[test]
-fn every_spatial_surface_shape_matches_and_core_never_does() {
+fn every_spatial_shape_matches_including_special_core_inventory() {
     let t=Tables::new();
     for id in 7..=9 {
         let p=&PIECES[id-1];
-        assert!(t.fallback[id-1].is_empty());
+        assert!(t.fallback[id-1].iter().all(|(m,tier)|m&(1<<13)!=0 && *tier==2));
         for &mask in p.placements {
             let mut s=State::empty(1);s.queue.extend([id as u8,1]);s.active=mask;
-            assert_eq!(!s.matches(&t).is_empty(),mask&(1<<13)==0);
+            assert!(!s.matches(&t).is_empty());
             if id>=8 {
                 s.queue[0]=if id==8 {9} else {8};
                 assert!(s.matches(&t).is_empty());
@@ -27,7 +27,7 @@ fn spatial_spawns_have_minimal_inventory_and_no_finished_piece() {
     }}
 }
 #[test]
-fn full_inventory_not_required_for_automatic_gap_and_core_gap_tops_out() {
+fn sole_spatial_gap_is_automatic_on_surface_or_in_core() {
     let t=Tables::new();
     for id in 7..=9 {
         for &gap in PIECES[id-1].placements {
@@ -35,7 +35,7 @@ fn full_inventory_not_required_for_automatic_gap_and_core_gap_tops_out() {
             for i in bits(FULL^gap) {s.board[i]=1;s.ids[i]=1;}
             let decision=s.spawn_decision(&t);
             if gap&(1<<13)==0 {assert_eq!(decision,SpawnDecision::Automatic{mask:gap,tier:1});}
-            else {assert_eq!(decision,SpawnDecision::TopOut);}
+            else {assert_eq!(decision,SpawnDecision::Automatic{mask:gap,tier:2});}
         }
     }
 }

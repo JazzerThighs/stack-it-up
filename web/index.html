@@ -235,6 +235,7 @@
                 U D F B L R · M E S for slices · Shift for prime · wide-turn button for wide moves · Ctrl/⌘ Z to undo
               </p>
             </section>
+            <div id="coreChoices" class="core-choices" hidden><span id="coreChoiceStatus" role="status">Core orientation</span><button id="corePrevious" type="button" aria-label="Previous core orientation">←</button><button id="coreNext" type="button" aria-label="Next core orientation">→</button><button id="corePlace" type="button">Place here</button></div>
             <div class="status-strip"><span id="groupRequirements" role="status"></span>
               <span id="message" role="status" aria-live="polite"
                 >Loading game…</span
@@ -1051,7 +1052,7 @@
               </div>
               <div>
                 <h2>Spawning and top out</h2>
-                <p>Planar pieces try face gaps, then surface gaps, then gaps through the core. B/D/F stay outside the core. If an unfinished spawn cannot fit, a valid gap may fill automatically. No valid placement means top out.</p>
+                <p>All pieces can use core gaps. A sole fit places automatically when freed groups are ready. Multiple core-only fits give pale spheres and an orientation selector; preview, then confirm. Normal spawns keep centers adjacent, allowing stack overlap when empty slots cannot accommodate them. No valid placement means top out.</p>
               </div>
             </div>
           </details>

@@ -139,8 +139,11 @@ impl Game {
                 }
                 s.queue.push_back(p as u8);
             }
-            if s.queue[0]>6 {
-                if s.active & (1<<13)!=0 {return None;}
+            if s.active & (1<<13)!=0 {
+                let composition=|m:u32|std::array::from_fn::<_,4,_>(|k|bits(m).filter(|&i|kind(i)==k).count());
+                let valid=choices(s.queue[0]).iter().any(|&id|crate::pieces::PIECES[id as usize-1].placements.iter().any(|&m|m&(1<<13)!=0 && composition(m)==composition(s.active)));
+                if !valid {return None;}
+            } else if s.queue[0]>6 {
                 let inventory=if s.queue[0]>=10 {[1,2,if s.queue[0]==10 {2}else{1}]}else{crate::pieces::PIECES[s.queue[0] as usize-1].surface_inventory};
                 let mut counts=[0usize;3];
                 for i in bits(s.active) {counts[kind(i)-1]+=1;}

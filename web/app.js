@@ -282,8 +282,8 @@ function update(message) {
   $("message").textContent = state[S.PENDING_FACES]
     ? "This piece has multiple placements. Choose where to place it."
     : state[S.OVER]
-      ? isSpatial(state[S.PIECE]) ? "Top out: no non-core placement fits." : "Top out: no face, surface, or internal placement fits."
-      : message || (isSpatial(p) ? `Build ${names[p]} around the core.` : `Build ${names[p]} on any free face.`);
+      ? "Top out: no face, surface, or internal placement fits."
+      : message || ((state[S.ACTIVE]&(1<<13)) ? "Core choice: use the arrows to preview an orientation, then Place here." : isSpatial(p) ? `Build ${names[p]} around the core.` : `Build ${names[p]} on any free face.`);
   $("groupRequirements").textContent=groupRequirementsText(state,renderers[0]);
   updateFaceMaps(state);
   syncOverlayControls();
@@ -296,7 +296,30 @@ function update(message) {
   }
   invalidate();
 }
+function coreOptions(){const masks=[];if(!engine?.game_core_option)return masks;for(let i=0;i<144;i++){const mask=engine.game_core_option(i);if(!mask)break;masks.push(mask);}return masks;}
+function syncCoreChoices(){
+  const masks=coreOptions(),index=masks.indexOf(state[S.ACTIVE]);
+  $('coreChoices').hidden=!masks.length;
+  $('coreChoiceStatus').textContent=index<0?`${masks.length} core orientations — choose one`:`Core orientation ${index+1} / ${masks.length}`;
+  $('corePrevious').disabled=$('coreNext').disabled=busy;
+  $('corePlace').disabled=busy||index<0||!!(state[S.FLOATING]&state[S.ACTIVE])||!!state[S.FLOATING_OVERLAPS];
+}
+async function selectCore(direction,place=false){
+  if(!engine||busy||session?.starting)return;
+  const masks=coreOptions();if(!masks.length)return;
+  const current=masks.indexOf(state[S.ACTIVE]);
+  const mask=place?state[S.ACTIVE]:masks[(current<0?(direction<0?masks.length-1:0):(current+direction+masks.length)%masks.length)];
+  const before=copyState(state);
+  if(!engine[place?'game_place_core':'game_preview_core'](mask)){update('Freed groups must be ready before placing the core piece.');return;}
+  if(!place){update('Core orientation preview. Place here to confirm, or keep turning.');return;}
+  const after=snapshot(),trace=events();setBusy(true);
+  try{await resolveAnimations(before,after,trace);}finally{setBusy(false);update();}
+}
+$('corePrevious').onclick=()=>selectCore(-1);
+$('coreNext').onclick=()=>selectCore(1);
+$('corePlace').onclick=()=>selectCore(0,true);
 function syncChoices() {
+  syncCoreChoices();
   $("choice").hidden = !state[S.PENDING_FACES];
   $("moves").hidden = !!state[S.PENDING_FACES];
   faceButtons.forEach(
@@ -348,6 +371,7 @@ const spatialButtons=Array.from({length:15},(_,i)=>{
 
 function setBusy(value) {
   busy = value;
+  if(engine&&state)syncCoreChoices();
   spatialButtons.forEach(b=>b.disabled=value||b.hidden);
   refreshSettings();
   syncOverlayControls();

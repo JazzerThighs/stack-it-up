@@ -40,6 +40,9 @@ export function adaptEngine(w,{trackSolids=true}={}) {
       new Uint32Array(w.memory.buffer, ptr, data.length).set(data);
       return !!w.game_import(data.length);
     },
+    game_core_option:w.game_core_option,
+    game_preview_core:mask=>w.game_select_core(mask,0),
+    game_place_core:mask=>w.game_select_core(mask,1),
     game_turn: w.game_turn,
     game_choose: w.game_choose,
     game_undo: w.game_undo,
@@ -119,7 +122,7 @@ export function adaptEngine(w,{trackSolids=true}={}) {
   api.game_init=(...args)=>{orientations=Array.from({length:27},()=>IDENTITY);orientationHistory.clear();shapeHistory.clear();shapeEvents=[];const result=init(...args);shapes=seedStackShapes(api.snapshot());return result;};
   const load=api.importState;
   api.importState=data=>{const before=api.snapshot(),old=orientations,ok=load(data);if(ok){saveVisualHistory(before[S.UNDO_COUNT],old,shapes);shapeEvents=[];shapes=seedStackShapes(api.snapshot());orientations=Array.from({length:27},()=>IDENTITY);}return ok;};
-  for(const name of ['game_set_piece_pool','game_configure_rules','game_debug_piece','game_turn','game_choose','game_hold','game_lock_band','game_set_next','game_set_gravity','game_set_gravity_rules','game_set_slice_clears','game_set_modes','game_set_early_lock','game_set_fragments','game_set_release_rules','game_undo']) {
+  for(const name of ['game_preview_core','game_place_core','game_set_piece_pool','game_configure_rules','game_debug_piece','game_turn','game_choose','game_hold','game_lock_band','game_set_next','game_set_gravity','game_set_gravity_rules','game_set_slice_clears','game_set_modes','game_set_early_lock','game_set_fragments','game_set_release_rules','game_undo']) {
     const original=api[name];if(!original)continue;
     api[name]=(...args)=>{
       const before=api.snapshot(),old=orientations;
@@ -128,7 +131,7 @@ export function adaptEngine(w,{trackSolids=true}={}) {
       const result=original(...args),after=api.snapshot();
       if(name==='game_undo' && result){orientations=orientationHistory.get(after[S.UNDO_COUNT]) || Array.from({length:27},()=>IDENTITY);shapes=shapeHistory.get(after[S.UNDO_COUNT])||seedStackShapes(after);shapeEvents=[];}
       else {
-        if(after[S.UNDO_COUNT]>before[S.UNDO_COUNT] || result && before[S.UNDO_COUNT]===100 && after[S.REVISION]!==before[S.REVISION] && ['game_turn','game_hold','game_lock_band','game_debug_piece','game_set_piece_pool','game_set_next'].includes(name))saveVisualHistory(before[S.UNDO_COUNT],old,oldShapes);
+        if(after[S.UNDO_COUNT]>before[S.UNDO_COUNT] || result && before[S.UNDO_COUNT]===100 && after[S.REVISION]!==before[S.REVISION] && ['game_preview_core','game_place_core','game_turn','game_hold','game_lock_band','game_debug_piece','game_set_piece_pool','game_set_next'].includes(name))saveVisualHistory(before[S.UNDO_COUNT],old,oldShapes);
         if(name==='game_turn' && result) {
           shapes=moveFreedShapes(shapes,args[0]);
           orientations=old.slice();const move=args[0],rotation=turnTransform(move,1);
@@ -142,7 +145,7 @@ export function adaptEngine(w,{trackSolids=true}={}) {
       }
       // Only these successful commands produce fresh animation traces. Settings
       // setters leave the old trace intact and must never replay its gravity.
-      if(result && after[S.REVISION]!==before[S.REVISION] && ['game_turn','game_choose','game_hold','game_lock_band','game_debug_piece','game_set_piece_pool'].includes(name)){
+      if(result && after[S.REVISION]!==before[S.REVISION] && ['game_preview_core','game_place_core','game_turn','game_choose','game_hold','game_lock_band','game_debug_piece','game_set_piece_pool'].includes(name)){
         shapeEvents=[];
         for(const event of api.events()){shapes=applyStackShapeEvent(shapes,event);shapeEvents.push(shapes);}
       }

@@ -1,6 +1,7 @@
 import {moveLabels} from '../engine/coordinates.js';
 import {stateKey} from '../engine/forecast-search.js';
 export function actionLabel(step) {
+ if (step.method === 'game_place_core') return 'Place core orientation';
  if (step.method === 'game_turn') return moveLabels[step.arg % 15] + (step.arg >= 15 ? "'" : '');
  if (step.method === 'game_choose') return step.arg>=6 ? `Choose placement ${step.arg-5}` : 'Choose ' + ['U','D','F','B','L','R'][step.arg];
  return `Lock white group at cell ${step.arg}`;

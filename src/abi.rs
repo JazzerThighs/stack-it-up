@@ -427,3 +427,8 @@ pub extern "C" fn group_requirement_at(cell:u32)->u32 {
             .fold(0,|mask,color|mask|1<<(color-1))
     })
 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn game_core_option(index:u32)->u32 {APP.with_borrow(|a|a.game.core_options().get(index as usize).copied().unwrap_or(0))}
+#[unsafe(no_mangle)]
+pub extern "C" fn game_select_core(mask:u32,place:u32)->u32 {APP.with_borrow_mut(|a|a.game.select_core(mask,place!=0) as u32)}

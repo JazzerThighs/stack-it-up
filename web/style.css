@@ -2691,3 +2691,7 @@ input, textarea, [contenteditable="true"], [contenteditable="true"] * {
   -webkit-user-select: text;
   user-select: text;
 }
+
+.core-choices { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px; padding:8px; background:var(--panel); border:1px solid var(--accent); border-radius:12px; }
+.core-choices[hidden] { display:none; }
+.core-choices button { min-height:42px; }

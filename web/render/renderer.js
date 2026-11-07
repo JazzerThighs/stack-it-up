@@ -233,7 +233,7 @@ class Renderer {
         groups.set(id,(groups.get(id)||0)|(1<<i));
       }
       for(const [id,mask] of groups) {
-        const kind=assemblyKind(displaySettings.activePieces,!!identifyMask(mask),id.startsWith('extra:'));
+        const kind=id==='current'&&(s[S.ACTIVE]&(1<<13))?'solids':assemblyKind(displaySettings.activePieces,!!identifyMask(mask),id.startsWith('extra:'));
         for(let i=0;i<27;i++)if(mask&(1<<i))this.activeKinds[i]=kind;
         if(kind!=='whole')continue;
         assembledMask|=mask;
@@ -255,7 +255,7 @@ class Renderer {
     if (this.isStack) wire(lines, [0, 0, 0], 1.5, [0.29, 0.38, 0.4]);
     else
       for (let i = 0; i < 27; i++) {
-        if (i === 13 && !(s[S.FLOATING] & (1 << i))) continue;
+        if (i === 13 && !((s[S.ACTIVE]|s[S.FLOATING]) & (1 << i))) continue;
         const floating = !!(s[S.FLOATING] & (1 << i));
         const p = xyz(i),
           active = !!((s[S.ACTIVE] | s[S.FLOATING]) & (1 << i)),

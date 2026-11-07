@@ -9,7 +9,7 @@ pub struct Tables {
     /// Connected nonplanar tetracubes: both screws and the branch.
     pub tetracubes: Vec<u32>,
     pub placements: [Vec<Placement>; 11],
-    /// Non-facebound planar placements, ordered surface-only then core-containing.
+    /// Fallback placements: non-facebound planar surfaces, then core fits for every piece.
     pub fallback: [Vec<(u32, u8)>; 11],
     /// All legal inventories, sorted by minimum separation then total separation.
     pub spawns: [Vec<(u32, u32)>; 11],
@@ -86,11 +86,11 @@ impl Tables {
                     .unwrap(),
             )
         });
-        let fallback = std::array::from_fn(|piece| if piece < 6 { spatial_placements(piece, &faces) } else if piece>=9 {spatial_placements(if piece==9 {2}else{4}, &faces)} else { vec![] });
+        let fallback = std::array::from_fn(|piece| if piece < 6 { spatial_placements(piece, &faces) } else if piece>=9 {spatial_placements(if piece==9 {2}else{4}, &faces)} else { crate::pieces::PIECES[piece].placements.iter().copied().filter(|m|m&(1<<13)!=0).map(|m|(m,2)).collect() });
         let spawns = std::array::from_fn(|piece| {
             let (ne, nc) = inventory[piece];
             let ns = if piece < 6 || piece>=9 {1} else {crate::pieces::PIECES[piece].surface_inventory[0]};
-            let center_sets = combinations(centers, ns);
+            let center_sets = combinations(centers, ns).into_iter().filter(|&m|adjacent_centers(m)).collect::<Vec<_>>();
             let es = combinations(edges, ne);
             let cs = combinations(corners, nc);
             let mut all = Vec::new();
@@ -276,4 +276,20 @@ pub fn queue_color_on(piece:u8,mask:u32,face:Option<usize>)->u8 {
         }
     }
     choices(piece)[0]
+}
+
+/// Centers on different, non-opposite faces remain mutually adjacent under cube turns.
+pub fn adjacent_centers(mask:u32)->bool {
+    let centers=bits(mask).filter(|&i|kind(i)==1).collect::<Vec<_>>();
+    !centers.iter().any(|&a|centers.iter().any(|&b|a!=b && (0..3).all(|k|xyz(a)[k]+xyz(b)[k]==2)))
+}
+impl Tables {
+    /// Distinct occupied-cell masks, so face/alias duplicates do not hide a forced move.
+    pub fn available(&self,piece:usize,blocked:u32)->Vec<(u32,u8)> {
+        let mut result=Vec::new();
+        for (mask,tier) in self.placements[piece].iter().map(|p|(p.mask,if (6..9).contains(&piece){1}else{0})).chain(self.fallback[piece].iter().copied()) {
+            if mask&blocked==0 && !result.iter().any(|&(m,_)|m==mask){result.push((mask,tier));}
+        }
+        result
+    }
 }

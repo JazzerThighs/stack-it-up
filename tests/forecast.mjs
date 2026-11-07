@@ -96,3 +96,12 @@ const freeForecast=run(engine,freeState,1,10000);assert.equal(freeForecast.statu
 assert(engine.importState(freeState));for(const step of freeForecast.steps)assert(engine[step.method](step.arg));
 assert.equal(stateKey(engine.exportState()),stateKey(freeForecast.finalState));
 console.log('PASS: free queue choices and plane gravity survive v7 forecast/replay.');
+
+const {coreFixture}=await import('./core-fixture.mjs');
+const coreStart=coreFixture(engine);assert(engine.importState(coreStart));
+const coreForecast=run(engine,coreStart,1,1000);assert.equal(coreForecast.status,'safe');
+assert(coreForecast.steps.some(s=>s.method==='game_place_core'));
+assert(engine.importState(coreStart));for(const step of coreForecast.steps)assert(engine[step.method](step.arg));
+assert.equal(stateKey(engine.exportState()),stateKey(coreForecast.finalState));
+assert.equal(actionLabel({method:'game_place_core',arg:0}),'Place core orientation');
+console.log('PASS: explicit core orientations participate in forecast search and replay through the real engine.');

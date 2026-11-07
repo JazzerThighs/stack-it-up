@@ -41,6 +41,10 @@ export function* forecast(engine, initial, horizon, maxStates = 150000) {
     const actions = words[19] ? Array.from({length:21},(_,f)=>['game_choose',f]) :
       [...Array.from({length:30},(_,m)=>['game_turn',m]),
        ...Array.from({length:27},(_,c)=>['game_lock_band',c])];
+    if(!words[19] && (words[3]&(1<<13))){
+      if(!engine.importState(words))throw Error('Core forecast state rejected');
+      for(let i=0;i<144;i++){const mask=engine.game_core_option(i);if(!mask)break;actions.push(['game_place_core',mask]);}
+    }
     for (const [method, arg] of actions) {
       if (!engine.importState(words)) throw Error('Forecast state rejected');
       if (engine[method](arg)) next.push({words:engine.exportState(), parent:node, action:{method,arg}});

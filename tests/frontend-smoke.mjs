@@ -339,3 +339,18 @@ renderer.setState(clearTo);renderer.setMesh(new Float32Array());assert(renderer.
 assert.equal(clearTo.stackShapes[3].source,retainedBefore[3].source);
 renderer.setState(context.state);renderer.setMesh(context.engine.mesh());
 console.log('PASS: retained game-stack assembly renders original cut fragments through clear animation and final stack upload.');
+
+const {coreFixture}=await import('./core-fixture.mjs');
+const crowdedCore=coreFixture(context.engine);assert(context.engine.importState(crowdedCore));context.update();flush();
+assert(!$('coreChoices').hidden);assert($('corePlace').disabled);
+const initialCore=context.state[54],beforeCoreCount=context.state[62];
+assert(initialCore&(1<<13));assert(context.renderers[0].activeOnly.count>0);
+await $('coreNext').onclick();flush();
+assert.equal(context.state[62],beforeCoreCount);assert(!$('corePlace').disabled);
+const firstCore=context.state[54];assert.notEqual(firstCore,initialCore);
+await $('coreNext').onclick();flush();assert.notEqual(context.state[54],firstCore);
+await $('corePrevious').onclick();flush();assert.equal(context.state[54],firstCore);
+assert(context.engine.importState(context.engine.exportState()));context.update();
+await $('corePlace').onclick();flush();assert(context.state[62]>beforeCoreCount);assert($('coreChoices').hidden);
+assert(context.engine.game_undo());context.update();flush();assert.equal(context.state[54],firstCore);assert(!$('coreChoices').hidden);
+console.log('PASS: core spheres render, orientation preview changes no placements, previous/next and confirm work, and undo restores the choice.');

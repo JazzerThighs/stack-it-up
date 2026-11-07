@@ -7,6 +7,7 @@ export function groupRequirementsText(state,renderer) {
  const current=choices(state[S.PIECE]).map(id=>names[id-1]).join(' / ');
  const slots=rebuildSlots(state,renderer?.rebuildSlots);
  const parts=[`Current piece: ${current}.`],seen=new Set();
+ if(state[S.ACTIVE]&(1<<13))parts.push('Pale spheres: core choice. Preview an orientation, then confirm.');
  for(let i=0;i<27;i++) {
   const id=state.rebuildIds?.[i],rule=state.groupRequirements?.[i];
   if(!id||seen.has(id))continue;seen.add(id);

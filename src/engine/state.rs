@@ -171,6 +171,11 @@ impl State {
             return vec![];
         }
         let occupied = self.occupied() | self.floating_mask();
+        if self.active&(1<<13)!=0 {
+            return t.fallback[self.queue[0] as usize-1].iter()
+                .filter(|(mask,tier)|*tier==2 && mask&occupied==0 && mask&self.active==*mask)
+                .enumerate().map(|(i,&(mask,_))|Placement{face:6+i,mask,required:mask}).collect();
+        }
         t.placements[self.queue[0] as usize - 1]
             .iter()
             .filter(|p| p.mask & occupied == 0 && p.mask & self.active == p.mask)
@@ -216,56 +221,52 @@ impl State {
         let occupied = self.occupied();
         let blocked = occupied | self.floating_mask();
         let can_finish = !self.floating_blocked() && self.rebuild_ready(t);
-        if t.placements[piece].iter().any(|p| p.mask & occupied == 0) {
-            let (mut chosen, mut best, mut count) = (0, 0, 0);
-            for &(active, score) in &t.spawns[piece] {
-                if count > 0 && score < best {
-                    break;
+        let fits=t.available(piece,occupied);
+        if fits.is_empty(){return SpawnDecision::TopOut;}
+        // A unique geometric fit is forced, including a fit through the core.
+        if fits.len()==1 && can_finish && fits[0].0&blocked==0 {
+            return SpawnDecision::Automatic{mask:fits[0].0,tier:fits[0].1};
+        }
+        if fits.len()==1 && !can_finish && !self.floating_blocked() && fits[0].0&blocked==0 && fits[0].1<2 {
+            self.active=fits[0].0;return SpawnDecision::Active;
+        }
+        if t.placements[piece].iter().any(|p|p.mask&occupied==0) {
+            // Prefer empty slots. If that cannot preserve a useful inventory,
+            // overlap the stack rather than spawn an unreachable center pairing.
+            for allow_overlap in [false,true] {
+                let (mut chosen, mut best, mut count) = (0, 0, 0);
+                for &(active,score) in &t.spawns[piece] {
+                    if count>0 && score<best {break;}
+                    if active&self.floating_mask()!=0 {continue;}
+                    if !allow_overlap && active&blocked!=0 {continue;}
+                    if t.placements[piece].iter().any(|p|p.mask&blocked==0 && p.mask&active==p.mask){continue;}
+                    best=score;count+=1;
+                    if self.range(count)==0 {chosen=active;}
                 }
-                if active & blocked != 0 {
-                    continue;
-                }
-                self.active = active;
-                if can_finish
-                    && t.placements[piece]
-                        .iter()
-                        .any(|p| p.mask & blocked == 0 && p.mask & active == p.mask)
-                {
-                    continue;
-                }
-                best = score;
-                count += 1;
-                if self.range(count) == 0 {
-                    chosen = active;
-                }
-            }
-            self.active = chosen;
-            if count > 0 {
-                return SpawnDecision::Active;
+                if count>0 {self.active=chosen;return SpawnDecision::Active;}
             }
         }
-        // A complete current piece can wait in a face gap while another
-        // released piece is reconstructed. Do not top out just because the
-        // larger unfinished inventory cannot fit alongside released groups.
-        if !can_finish
-            && !self.floating_blocked()
-            && let Some(p) = t.placements[piece].iter().find(|p| p.mask & blocked == 0)
-        {
-            self.active = p.mask;
+        // Multiple core fits are a decision, not an arbitrary automatic lock.
+        // A core marker enables explicit orientation selection. Start at an
+        // overlapping orientation when one exists; choosing previews never locks.
+        let core=fits.iter().filter(|(_,tier)|*tier==2).collect::<Vec<_>>();
+        if !core.is_empty() && !fits.iter().any(|(_,tier)|*tier<2) {
+            self.active=t.fallback[piece].iter().filter(|(_,tier)|*tier==2)
+                .max_by_key(|(mask,_)|(mask&blocked).count_ones()).unwrap().0;
+            if !adjacent_centers(self.active) {
+                let centers=(0..27).filter(|&i|kind(i)==1).fold(0,|m,i|m|1<<i);
+                let count=(self.active&centers).count_ones() as usize;
+                let adjacent=combinations(centers,count).into_iter().filter(|&m|adjacent_centers(m))
+                    .max_by_key(|m|(m&blocked).count_ones()).unwrap();
+                self.active=(self.active&!centers)|adjacent;
+            }
             return SpawnDecision::Active;
         }
-        if !self.floating_blocked() && self.rebuild_ready(t) {
-            if let Some(p) = t.placements[piece].iter().find(|p| p.mask & blocked == 0) {
-                return SpawnDecision::Automatic {
-                    mask: p.mask,
-                    tier: if piece < 6 || piece>=9 {0} else {1},
-                };
-            }
-            for &(mask, tier) in &t.fallback[piece] {
-                if mask & blocked == 0 {
-                    return SpawnDecision::Automatic { mask, tier };
-                }
-            }
+        if !can_finish && !self.floating_blocked() {
+            if let Some(&(mask,_))=fits.iter().find(|(mask,_)|mask&blocked==0){self.active=mask;return SpawnDecision::Active;}
+        }
+        if can_finish {
+            if let Some(&(mask,tier))=fits.iter().find(|(mask,_)|mask&blocked==0){return SpawnDecision::Automatic{mask,tier};}
         }
         SpawnDecision::TopOut
     }

@@ -284,3 +284,21 @@ impl Game {
         }
     }
 }
+
+impl Game {
+    pub fn core_options(&self)->Vec<u32> {
+        if self.state.over || self.state.active&(1<<13)==0 || !self.pending.is_empty(){return vec![];}
+        self.tables.available(self.state.queue[0] as usize-1,self.state.occupied())
+            .into_iter().filter(|(_,tier)|*tier==2).map(|(mask,_)|mask).collect()
+    }
+    /// Special crowded-core inventories may change composition between previews.
+    /// Selection is undoable and never places a piece until explicitly confirmed.
+    pub fn select_core(&mut self,mask:u32,place:bool)->bool {
+        if !self.core_options().contains(&mask){return false;}
+        if place && (mask&self.state.floating_mask()!=0 || self.state.floating_blocked() || !self.state.rebuild_ready(&self.tables)){return false;}
+        self.save_history();self.state.events.clear();self.state.active=mask;
+        self.lock=None;self.lock_mask=0;
+        if place {self.pending=self.state.matches(&self.tables);if !self.finish_choice(6){return false;}}
+        self.revision+=1;true
+    }
+}

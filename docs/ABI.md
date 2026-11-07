@@ -135,3 +135,28 @@ Version 8 appends one original mask per `free_groups` entry after the v7 free-ch
 `game_can_undo()` reports whether the last history entry is available under the current rules. Non-debug undo cannot cross a placement-count boundary; history depth stays unchanged for renderer orientation tracking.
 
 `group_requirement_at(cell)` returns allowed tetromino bits 0–8, or one of bits 16 (connected), 17 (scattered), 18 (single), 19 (domino), 20 (bar), 21 (V). Zero means no group or no permitted four-cell shape. The frontend combines this with `active_group_at` to distinguish those cases.
+
+## Crowded-core placement choices
+
+An active inventory containing bit 13 is a special core-choice inventory. These
+pale spheres may overlap the stack initially. Normal spawns still exclude the
+core and require mutually adjacent centers. Stack overlap is allowed when no
+empty-slot inventory satisfies this constraint; overlap with freed cubies is not
+introduced by normal spawning.
+
+`game_core_option(index)` enumerates currently stack-free core masks (zero ends
+this list). `game_select_core(mask, place)` previews a listed mask when `place=0`
+and confirms it when nonzero. Confirmation also requires all freed groups to be
+ready and unblocked. Both operations follow the existing undo rules. A preview never locks by itself;
+ordinary turns may still complete the selected shape. The selector can change the
+center/edge/corner composition of this special inventory to cover every core fit.
+
+The existing active mask carries this mode through shared states; validation
+accepts the core compositions of the current queue piece. No snapshot words or
+transport fields were added. Forecast search and replay include explicit core
+confirmation as a legal action.
+
+Spawn decisions count distinct placement masks across all tiers. A sole fit is
+automatic when freed groups can lock; unresolved freed groups still prevent lock.
+Multiple core-only fits wait for a player decision. Branch and both screws now
+have core fallbacks as well as their ordinary surface placements.
