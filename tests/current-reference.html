@@ -497,6 +497,19 @@ function lock(s,hit){
 }
 function spawn(s){s.auto=0;s.tiers=0;let allClears=s.lastClears.slice();
 while(true){refill(s);s.active=[];s.over=false;const name=s.queue[0],gap=placements[name].find(p=>p.cells.every(i=>!s.board[i]));
+// Match Rust's forced single-fit rule before searching for an unfinished spawn.
+// Count distinct geometry across all tiers, preserving face-first priority.
+const fits=new Map();
+for(const p of [...placements[name],...fallback[name]]){
+ const key=mask(p.cells);
+ if(!fits.has(key)&&p.cells.every(i=>!s.board[i]))fits.set(key,p);
+}
+if(fits.size===1&&!floatingBlocked(s)){
+ const only=fits.values().next().value;
+ if(only.cells.every(i=>!(floatingMask(s)&(1<<i)))){
+  lock(s,only);s.auto++;s.tiers|=1<<(only.f?0:only.tier);allClears.push(...s.lastClears);continue;
+ }
+}
 if(gap){let chosen=null,best=-1,count=0;for(const p of spawnTables[name]){if(chosen&&p.score<best)break;if(p.cells.some(i=>s.board[i]||(floatingMask(s)&(1<<i))))continue;s.active=p.cells;if(match(s))continue;best=p.score;if(range(s,++count)===0)chosen=p.cells;}s.active=chosen||[];if(chosen){s.lastClears=allClears;if(s.gravityMode!==2)s.gravity=null;return true;}}
 // Automatic placements must be disjoint from the fragments that lock with them.
 const free=p=>p.cells.every(i=>!s.board[i]&&!(floatingMask(s)&(1<<i)));
