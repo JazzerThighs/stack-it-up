@@ -235,7 +235,7 @@ export async function initializeSpatialExplorer(
     try {
       if(lockedFamily!==null)$('familySelect').value=String(lockedFamily);
       const f = filters();
-      if(lockedFamily!==null && action.line){const requested=await client.record(action.line);if(requested?.familyId!==lockedFamily)throw Error(`Shapes are locked to family ${lockedFamily}. Unlock shapes to change families.`);}
+      if(lockedFamily!==null && action.line){const requested=await client.record(action.line);if(requested?.familyId!==lockedFamily)throw Error(`Shapes are locked to family ${lockedFamily}. Unlock the family lock to change families.`);}
       provider.refreshDetection?.();
       $('filterFamilyStatus').textContent = f.family
         ? `Family ${f.family}`

@@ -8,6 +8,18 @@ While locked, Choose Packing, Random, arrows, and line navigation remain within 
 
 The family assembly preference is temporarily overridden while locked; unlocking restores it. Recognition and metadata still follow the filters. The lock is session-only.
 
+## Opposite mode: Lock colors
+
+**Lock colors** captures the visible colors of the current matched packing. Shapes
+are rebuilt from the current detected tetracubes after each turn, using the current
+filters. Incomplete or excluded groups appear as individual cubies. Starting color
+assignments stay attached to physical piece IDs even if their tetracube letters change.
+
+Like Lock shapes, this pins the family and replays each new destination from the
+captured starter. The modes are exclusive; unlock one to select the other. Color-mode
+changes are deferred while colors are locked, and apply when unlocked. Custom palette
+edits still change the palette itself. Leaving Family Explorer releases the lock.
+
 ## Game stack
 
 Piece assembly → Stack → **Placed Shapes - Keep Cut Pieces** preserves the surfaces captured at placement. Clearing removes segments; gravity translates the survivors without remeshing their shape. Released stack cells carry their original surface and orientation invisibly while active, and restore those surfaces when they lock again. Active Pieces keeps its own assembly preference. Colors follow the current game state.

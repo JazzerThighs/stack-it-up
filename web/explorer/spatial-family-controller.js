@@ -1,5 +1,7 @@
 import {detectPieces} from './family-exploration.js';
+import {detectedColor} from './family-colors.js';
 import {displayIndex,practicePair} from './model.js';
+import {assemblyUsesSolids} from '../render/assembly.js';
 import {displaySettings} from '../ui/display-settings.js';
 const inverse=Array.from({length:27},(_,i)=>Array.from({length:27},(_,j)=>j).find(j=>displayIndex(j)===i));
 const recolor=(cells,reference)=>{
@@ -14,8 +16,16 @@ export function packingFromCells(cells){
 }
 export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   let view,source,family,lookupGeneration=0,matched=null,locked=null,run=0,busy=false,worker=null,cancelJob=null;
-  const button=$('familyLockShapes');
-  function syncButton(){button.disabled=!locked&&(busy||!matched);button.textContent=locked?'Unlock shapes':'Lock shapes';button.setAttribute('aria-pressed',String(!!locked));button.title=locked?`Starter line ${locked.record.lineNumber}; navigation stays in family ${family}.`:'Keep the current matched packing’s cut shapes through turns and family navigation.';}
+  const button=$('familyLockShapes'),colorButton=$('familyLockColors');
+  function syncButton(){
+    for(const [control,mode,label] of [[button,'shapes','shapes'],[colorButton,'colors','colors']]){
+      const active=locked?.mode===mode;
+      control.disabled=!!locked&&!active || !locked&&(busy||!matched);
+      control.textContent=active?`Unlock ${label}`:`Lock ${label}`;
+      control.setAttribute('aria-pressed',String(active));
+      control.title=active?`Starter line ${locked.record.lineNumber}; navigation stays in family ${family}.`:mode==='colors'?'Keep starting piece colors; rebuild shapes as valid tetracubes are found.':'Keep starting cut shapes; update colors for each destination packing.';
+    }
+  }
   function cancel(){run++;worker?.terminate();worker=null;cancelJob?.();cancelJob=null;busy=false;if(view){view.generation++;view.busy=false;view.orbitOnly=false;view.playbackMs=null;}syncButton();}
   function path(a,b){
     if(typeof Worker==='undefined')return import('./practice-path.js').then(m=>m.planPracticePath(a,b));
@@ -43,7 +53,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   }
   async function load(p) {
     if(!p)return;
-    if(locked&&p.familyId!==family)throw Error(`Unlock shapes to leave family ${family}.`);
+    if(locked&&p.familyId!==family)throw Error(`Unlock ${locked.mode} to leave family ${family}.`);
     cancel();++lookupGeneration;source=p;family=p.familyId;
     $('familyExploreTitle').textContent=`Family ${family} · Line ${p.lineNumber}`;
     view=get('familyExploreCube',{onChange:changed});view.familyExploration=true;
@@ -52,10 +62,10 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     const token=run;
     busy=true;view.orbitOnly=true;syncButton();
     try{
-      const pair=practicePair(locked.packing,shown.packing,{targetColors:true});
+      const pair=practicePair(locked.packing,shown.packing,{targetColors:locked.mode==='shapes'});
       if(!pair.compatible)throw Error('No compatible physical-piece mapping for this packing.');
       view.fixedPieceColors=true;
-      // Every destination starts from the same captured geometry, never the last destination.
+      // Always replay from the captured starter; preserve either its colors or its geometry.
       view.setCells(recolor(locked.cells,pair.right));
       $('familyExploreProgress').textContent='Finding and verifying a family path…';
       const moves=await path(pair.left.map(c=>c.piece),pair.right.map(c=>c.piece));
@@ -72,25 +82,31 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   }
   function refreshColors() {
     if(!view||!source)return;
+    if(locked?.mode==='colors'){view.fixedPieceColors=true;view.setState(view.cells,view.currentAnimation);return;}
     const shown=data.presentation(source),reference=locked?practicePair(locked.packing,shown.packing,{targetColors:true}).right:shown.cells;
     view.fixedPieceColors=locked?true:shown.fixed;view.cells=recolor(view.cells,reference);view.initial=recolor(view.initial,reference);
     for(const h of view.history)h.cells=recolor(h.cells,reference);
     view.setState(view.cells,view.currentAnimation);
   }
-  function unlock(){cancel();locked=null;if(view){view.lockedAssembly=null;view.assembly=displaySettings.familyPieces;view.setState(view.cells);}data.lockFamily?.(null);refreshColors();if(view)changed(view);}
-  button.onclick=async()=>{
+  function unlock(){cancel();locked=null;if(view){view.lockedAssembly=null;view.assembly=displaySettings.familyPieces;view.individualPieces=view.assembly==='cubies';view.explorationSolids=assemblyUsesSolids(view.assembly);view.setState(view.cells);}data.lockFamily?.(null);refreshColors();if(view)changed(view);}
+  async function lock(mode){
     if(locked){unlock();return;}
     if(busy)return;
     if(!matched||!view||view.busy)return;
-    locked={record:matched,cells:view.cells.slice(),packing:packingFromCells(view.cells)};
+    // Capture what is actually visible, including canonical recoloring after manual turns.
+    const detected=new Map(detectPieces(view.cells,view.detectionFilters).map(p=>[p.id,p.letter]));
+    const cells=recolor(view.cells,view.cells.map(c=>c.piece<0||view.fixedPieceColors?c:{...c,color:detectedColor(detected.get(c.piece),c.color)}));
+    locked={mode,record:matched,cells,packing:packingFromCells(cells)};
     source=matched;
     $('familyExploreTitle').textContent=`Family ${family} · Line ${source.lineNumber}`;
-    view.lockedAssembly='retained';view.assembly='retained';view.fixedPieceColors=true;view.setCells(locked.cells);
+    view.lockedAssembly=mode==='shapes'?'retained':'whole';view.assembly=view.lockedAssembly;view.individualPieces=false;view.explorationSolids=false;view.fixedPieceColors=true;view.setCells(locked.cells);
     const token=run;
     await data.selectionChanged?.(source);
     if(!locked||token!==run)return;
     await data.lockFamily?.(family);syncButton();
   };
+  button.onclick=()=>lock('shapes');
+  colorButton.onclick=()=>lock('colors');
   function enter(){if(!source||source.lineNumber!==getSelected()?.lineNumber)return load(getSelected());}
   $('familySolidIdentities').onchange=()=>{if(view){view.setState(view.cells,view.currentAnimation);changed(view);}};
   syncButton();

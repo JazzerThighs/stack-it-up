@@ -173,9 +173,28 @@ if(process.env.FAMILY_LOCK_ONLY){
   $('officialColors').onchange();
   await initial.query({line:50152});assert.deepEqual(cube.cells.map(c=>c.piece),starter);assert.equal(cube.history.length,0);
   const other=await client.query({filters:{counts:[{type:'O',min:6,max:6}]}});
-  await initial.query({line:other.record.lineNumber});assert.match($('status').textContent,/Unlock shapes/);assert.equal(initial.current.lineNumber,50152);
+  await initial.query({line:other.record.lineNumber});assert.match($('status').textContent,/Unlock/);assert.equal(initial.current.lineNumber,50152);
   await $('familyLockShapes').onclick();assert.equal(cube.assembly,'cubies');assert(!$('familySelect').disabled);
-  console.log('PASS: lock matched packing, pin family across filter resets, replay verified path from starter, update colors, reject other families, unlock and restore assembly.');process.exit(0);
+  console.log('PASS: lock matched packing, pin family across filter resets, replay verified path from starter, update colors, reject other families, unlock and restore assembly.');
+  await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
+  $('canonicalColors').onchange();
+  await $('familyLockColors').onclick();assert.equal(cube.assembly,'whole');assert(cube.fixedPieceColors);
+  const lockedColors=new Map(cube.cells.filter(c=>c.piece>=0).map(c=>[c.piece,c.color]));
+  assert($('familyLockShapes').disabled);assert($('familySelect').disabled);
+  await initial.query({line:target.record.lineNumber});assert.equal(cube.assembly,'whole');
+  for(const cell of cube.cells)if(cell.piece>=0)assert.equal(cell.color,lockedColors.get(cell.piece));
+  const {explorationMeshes}=await import(new URL('explorer/exploration-mesh.js',assetRoot));
+  const {joinMeshes}=await import(new URL('render/cell-fragments.js',assetRoot));
+  const expected=joinMeshes(explorationMeshes(cube.cells,cube.meshGenerator,cube.modelShape,false,cube.explorationGray,true,false,cube.detectionFilters,false,'whole'));
+  assert.deepEqual(cube.solid.data,expected,'geometry follows current detected tetracubes');
+  const live=cube.cells,liveHistory=cube.history;
+  $('officialColors').onchange();assert.equal(cube.cells,live);assert.equal(cube.history,liveHistory);
+  for(const cell of cube.cells)if(cell.piece>=0)assert.equal(cell.color,lockedColors.get(cell.piece));
+  await cube.play(0);for(const cell of cube.cells)if(cell.piece>=0)assert.equal(cell.color,lockedColors.get(cell.piece));
+  cube.undo();assert.deepEqual(cube.solid.data,expected);
+  await initial.query({line:50152});assert.deepEqual(cube.cells.map(c=>c.piece),starter);
+  await $('familyLockColors').onclick();assert.equal(cube.assembly,'cubies');assert(!$('familySelect').disabled);
+  console.log('PASS: original colors persist across family navigation, manual turns, undo and color-mode changes while detected shapes rebuild; unlock restores preferences.');process.exit(0);
 }
 if(process.env.RETAINED_ONLY){
   $('practiceMode').checked=true;await $('practiceMode').onchange();
