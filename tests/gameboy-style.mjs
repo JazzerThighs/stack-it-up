@@ -63,9 +63,9 @@ for(const letter of ['D','F']) {
  }
 }
 const d=gameboyPattern('D'),f=gameboyPattern('F');
-for(let y=1;y<7;y++)for(let x=1;x<7;x++)assert.equal(d[y*8+x]===.006,f[y*8+7-x]===.035,'opposite spiral motifs retain mirrored outlines');
+for(let y=1;y<7;y++)for(let x=1;x<7;x++)assert.equal(d[y*8+x]===.006,f[y*8+7-x]===.032,'opposite spiral motifs retain mirrored outlines');
 assert.equal(d[4*8+3],.006,'right spiral center is inset');
-assert.equal(f[4*8+4],.035,'left spiral center is raised');
+assert.equal(f[4*8+4],.032,'left spiral center is raised');
 console.log('PASS: all six outward faces preserve spiral handedness, dark inset D and colored raised F.');
 
 const leftPlane=gameboyPattern('F');
@@ -142,3 +142,19 @@ jellyCell(activeLoose,13,[.2,.5,.8],()=>{},.438,'gameboy');
 gameboyCell(expectedLoose,[0,0,0],.438,[.2,.5,.8],'loose');
 assert.deepEqual(activeLoose,expectedLoose);
 console.log('PASS: loose cubies use a unique raised X motif in stack and active rendering, preserving relief colors.');
+
+// Every raised motif reaches the same face plane, including inner J/S/T tiles.
+for(const letter of ['O','T','J','L','S','Z','B','D','F','J/L','S/Z','bomb','loose']) {
+ const pattern=gameboyPattern(letter);
+ assert.equal(Math.max(...pattern),.032,`${letter} raised height`);
+ for(const height of pattern)if(height>.008)assert.equal(height,.032,`${letter} raised tiles are coplanar`);
+ for(const halfSize of [.438,.465,.487]) {
+  const mesh=[];gameboyCell(mesh,[0,0,0],halfSize,[.2,.5,.8],letter);
+  for(let axis=0;axis<3;axis++)for(const sign of [-1,1]) {
+   let top=-Infinity;
+   for(let i=0;i<mesh.length;i+=9)if(mesh[i+3+axis]===sign)top=Math.max(top,sign*mesh[i+axis]);
+   assert(Math.abs(top-halfSize)<1e-6,`${letter} face ${axis}/${sign} reaches the common outer plane at size ${halfSize}`);
+  }
+ }
+}
+console.log('PASS: every raised motif uses one relief height and all six faces share the requested outer bounds.');

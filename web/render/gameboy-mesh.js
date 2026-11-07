@@ -4,6 +4,7 @@ import {xyz} from './geometry.js';
 const cache=new Map();
 // Every dark motif and perimeter uses the same palette-relative shade.
 const DARK_TONE=.12;
+const BASE_HEIGHT=.455,RELIEF_HEIGHT=.032;
 // Tetris 2 bomb: colored tile, dark round body, colored center and short fuse.
 const bombRows=['........','....##..','..####..','.##..##.','.##..##.','..####..','...##...','........'];
 export function gameboyPattern(letter='O') {
@@ -14,18 +15,18 @@ export function gameboyPattern(letter='O') {
     const edge=Math.min(x,y,7-x,7-y);let h=0;
     if(edge>0) {
       // Raised pixel X: loose cubies have no square-ring or tetracube motif.
-      if(letter==='loose')h=(x===y||x+y===7)?.032:0;
-      else if(letter==='bomb')h=bombRows[y][x]==='#'?0:.032;
-      else if(letter==='L')h=.018;
-      else if(letter==='Z')h=(x>=3&&x<=4&&y>=3&&y<=4)?0:.028;
-      else if(letter==='O')h=edge===1?.032:0;
-      else if(letter==='B')h=(x===3||x===4||y===3||y===4)?.035:.008;
+      if(letter==='loose')h=(x===y||x+y===7)?RELIEF_HEIGHT:0;
+      else if(letter==='bomb')h=bombRows[y][x]==='#'?0:RELIEF_HEIGHT;
+      else if(letter==='L')h=RELIEF_HEIGHT;
+      else if(letter==='Z')h=(x>=3&&x<=4&&y>=3&&y<=4)?0:RELIEF_HEIGHT;
+      else if(letter==='O')h=edge===1?RELIEF_HEIGHT:0;
+      else if(letter==='B')h=(x===3||x===4||y===3||y===4)?RELIEF_HEIGHT:.008;
       else if(letter==='D'||letter==='F') {
         const u=letter==='F'?7-x:x;
         // From the center: up, right, down, left = clockwise (D).
         const spiral=(y===2&&u>=2&&u<=5)||(u===5&&y>=2&&y<=5)||(y===5&&u>=3&&u<=5)||(u===3&&y===4);
-        h=letter==='F'?(spiral?.035:0):(spiral?.006:.035);
-      } else h=edge===1?.032:edge===2?0:.024;
+        h=letter==='F'?(spiral?RELIEF_HEIGHT:0):(spiral?.006:RELIEF_HEIGHT);
+      } else h=edge===1?RELIEF_HEIGHT:edge===2?0:RELIEF_HEIGHT;
     }
     heights.push(h);
   }
@@ -33,7 +34,7 @@ export function gameboyPattern(letter='O') {
 }
 function unitMesh(letter) {
   if(cache.has(letter))return cache.get(letter);
-  const heights=gameboyPattern(letter),out=[],base=.455,step=base*2/8;
+  const heights=gameboyPattern(letter),out=[],base=BASE_HEIGHT,step=base*2/8;
   const quad=(points,n,tone)=>{for(const i of [0,1,2,0,2,3])out.push(...points[i],...n,tone,tone,tone);};
   for(let axis=0;axis<3;axis++)for(const sign of [-1,1]) {
     const a=(axis+1)%3,b=(axis+2)%3;
@@ -66,10 +67,10 @@ function unitMesh(letter) {
   const mesh=new Float32Array(out);cache.set(letter,mesh);return mesh;
 }
 export function gameboyCell(out,p,h,color,letter='loose') {
-  const mesh=unitMesh(letter),scale=h/.487;
+  const mesh=unitMesh(letter),scale=h/(BASE_HEIGHT+RELIEF_HEIGHT);
   for(let i=0;i<mesh.length;i+=9)out.push(...p.map((v,a)=>v+mesh[i+a]*scale),...mesh.subarray(i+3,i+6),...color.map((v,a)=>{const tone=mesh[i+6+a];return tone>1?v*(2-tone)+(tone-1):v*tone;}));
 }
 export function gameboyPiece(mask,color,letter) {
-  const out=[];for(let i=0;i<27;i++)if(mask&(1<<i))gameboyCell(out,xyz(i),.487,color,letter);
+  const out=[];for(let i=0;i<27;i++)if(mask&(1<<i))gameboyCell(out,xyz(i),BASE_HEIGHT+RELIEF_HEIGHT,color,letter);
   return out;
 }
