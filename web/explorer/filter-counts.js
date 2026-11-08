@@ -287,9 +287,9 @@ export function presetCounts(name, current = {}, currentFamily = 0) {
       ranges.L = { min: 1, max: 6 };
       ranges.JL = { min: 0, max: 6 };
       ranges.SZ = { min: 0, max: 6 };
-      ranges.B = { min: 0, max: 6 };
-      ranges.F = { min: 0, max: 6 };
-      ranges.D = { min: 0, max: 6 };
+      ranges.B = { min: 0, max: 0 };
+      ranges.F = { min: 0, max: 0 };
+      ranges.D = { min: 0, max: 0 };
       ranges.ExtraSingle = { min: 0, max: 3 };
       ranges.ExtraDomino = { min: 0, max: 1 };
       ranges.ExtraV = { min: 0, max: 1 };
