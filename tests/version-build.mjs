@@ -12,7 +12,7 @@ try {
       'index.html':'<head><link href="./style.css" /></head><script type="module" src="./app.js"></script><a href="#game">Game</a>',
       'app.js':'import("./explorer/script.js");',
       'style.css':'body{color:white}',
-      'explorer/index.html':'<head><link href="./style.css" /></head><script type="module" src="./script.js"></script>',
+      'explorer/index.html':'<head><link href="../style.css" /><link href="./style.css" /></head><script type="module" src="./script.js"></script>',
       'explorer/script.js':`export const revision=${attempt>=2?2:1};`,
       'explorer/style.css':'canvas{width:100%}',
       'cube_stack.wasm':'wasm fixture',

@@ -20,7 +20,7 @@ Current baseline — preserve, do not rebuild
   Recognition changes in place; explicit packing navigation still loads a cube.
 - Piece assembly has five shared combinations for complete pieces, fragments and
   extras. Practice Start also offers retained cut pieces from the loaded packing.
-- Rendering includes Angular/Tengen, Jelly, Voxel and Gameboy models, appearance
+- Rendering includes Angular/Tengen, Jelly and Gameboy models, appearance
   effects, shared palettes, transparency controls and configurable UI themes.
 - Free Drag and XYZ Orbit, configurable mouse bindings, mobile orbit toggle,
   shared hover controls and independent view-size controls are implemented.

@@ -13,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install pinned development tools
+        run: npm ci --ignore-scripts
       - name: Reject unresolved merge conflicts
         run: node tools/check-conflicts.mjs
       - name: Install Rust toolchain
@@ -23,15 +29,17 @@ jobs:
         run: |
           node tools/generate-pieces.mjs --check
           node tests/piece-catalog.mjs
+      - name: Test shared settings
+        run: node tools/test.mjs settings
       - name: Test rules
-        run: cargo test --offline
+        run: cargo test --workspace --offline
       - name: Install local archive extractor
         run: sudo apt-get update && sudo apt-get install -y p7zip-full
       - name: Build browser app
         run: node tools/build.mjs
       - name: Verify current rules and browser modules
         run: |
-          node tests/current-parity.cjs
+          node tests/engine-contract.mjs
           node tests/frontend-smoke.mjs
           node tests/packing-data.mjs
           node tests/packing-performance.mjs
@@ -43,6 +51,8 @@ jobs:
           node tests/render-performance.mjs
           node tests/spatial-rendering.mjs
           node tests/solid-identities.mjs
+      - name: Real browser loading and recovery smoke
+        run: node tests/real-browser.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

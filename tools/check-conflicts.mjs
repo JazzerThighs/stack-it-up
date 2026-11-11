@@ -1,17 +1,24 @@
-import {execFileSync} from 'node:child_process';
-import {readFileSync} from 'node:fs';
-const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z'],{encoding:'utf8'}).split('\0').filter(Boolean);
+import {readdirSync,readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+const root=fileURLToPath(new URL('..',import.meta.url));
+const ignored=new Set(['.git','target','dist','node_modules','.packing-cache']);
 let failed=false;
-for(const file of files){
- let data;
- try {data=readFileSync(file);}catch(error){if(error.code==='ENOENT')continue;throw error;}
- if(data.includes(0))continue;
- const lines=data.toString('utf8').split(/\r?\n/);
- lines.forEach((line,i)=>{
-  if(/^(<{7} |={7}$|>{7} )/.test(line)){
-   console.error(`${file}:${i+1}: unresolved merge conflict`);failed=true;
+function scan(directory) {
+  for(const entry of readdirSync(directory,{withFileTypes:true})) {
+    if(ignored.has(entry.name)||entry.isSymbolicLink())continue;
+    const file=path.join(directory,entry.name);
+    if(entry.isDirectory()){scan(file);continue;}
+    if(!entry.isFile())continue;
+    const data=readFileSync(file);
+    if(data.includes(0))continue;
+    data.toString('utf8').split(/\r?\n/).forEach((line,i)=>{
+      if(/^(<{7} |={7}$|>{7} )/.test(line)){
+        console.error(`${path.relative(root,file)}:${i+1}: unresolved merge conflict`);failed=true;
+      }
+    });
   }
- });
 }
+scan(root);
 if(failed)process.exit(1);
-console.log('PASS: no unresolved merge conflict markers.');
+console.log('PASS: no unresolved merge conflict markers (Git not required).');

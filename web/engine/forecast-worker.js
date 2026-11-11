@@ -1,8 +1,8 @@
-import {createEngine} from './wasm.js';
+import {createTransport} from './transport.js';
 import {forecast} from './forecast-search.js';
 self.onmessage = async ({data}) => {
   try {
-    const engine = await createEngine({trackSolids:false});
+    const engine = await createTransport();
     engine.game_init(1); // Initialize thread-local tables before importing the snapshot.
     const search = forecast(engine, data.words, data.horizon);
     let last = 0;
@@ -18,3 +18,4 @@ self.onmessage = async ({data}) => {
     }
   } catch (error) { self.postMessage({status:'error', message:String(error)}); }
 };
+

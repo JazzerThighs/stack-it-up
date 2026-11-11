@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {createWorkerTask} from '../web/workers/task.js';
+const workers=[];
+const task=createWorkerTask({createWorker:()=>{const w={terminated:0,postMessage(payload){this.payload=payload;},terminate(){this.terminated++;}};workers.push(w);return w;},runFallback:()=>[]});
+const first=task.run({source:[1],target:[2]}),oldReply=workers[0].onmessage;
+const rejected=assert.rejects(first,/cancelled/);
+const second=task.run({source:[2],target:[3]});await rejected;
+assert.equal(workers[0].terminated,1);assert.equal(workers[0].onmessage,null);
+oldReply({data:{moves:[99]}});assert.equal(workers[1].terminated,0);assert(task.running);
+workers[1].onmessage({data:{moves:[3,4]}});assert.deepEqual(await second,[3,4]);assert.equal(workers[1].terminated,1);assert(!task.running);
+const failed=task.run({});const failure=assert.rejects(failed,/Worker task failed/);workers[2].onerror();await failure;assert(!task.running);
+const bad=task.run({});const badResult=assert.rejects(bad,/bad path/);workers[3].onmessage({data:{error:'bad path'}});await badResult;
+let finish;
+const fallback=createWorkerTask({createWorker:()=>null,runFallback:()=>new Promise(resolve=>{finish=resolve;})});
+const pending=fallback.run({});await Promise.resolve();const cancelled=assert.rejects(pending,/cancelled/);fallback.cancel();await cancelled;finish([1]);await Promise.resolve();assert(!fallback.running);
+const broken=createWorkerTask({createWorker:()=>({terminate(){},postMessage(){throw Error('cannot post');}})});
+await assert.rejects(broken.run({}),/cannot post/);assert(!broken.running);
+console.log('PASS: worker replacement, cancellation, stale messages, errors and fallback cleanup settle only the owned job.');

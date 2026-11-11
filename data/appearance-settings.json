@@ -1,0 +1,380 @@
+{
+  "version": 1,
+  "storageKey": "stack-it-up.visual",
+  "groups": [
+    "dither",
+    "ascii",
+    "jelly",
+    "cubie",
+    "transparency"
+  ],
+  "availability": {
+    "jellyShaping": {
+      "id": "modelShape",
+      "values": [
+        "angular",
+        "jelly"
+      ]
+    },
+    "jellyProfileOptions": {
+      "id": "modelShape",
+      "values": [
+        "jelly"
+      ]
+    },
+    "jellyElbowsOptions": {
+      "id": "modelShape",
+      "values": [
+        "jelly"
+      ]
+    },
+    "jellyOpeningOptions": {
+      "id": "jellyCornerO",
+      "checked": true
+    },
+    "ditherInline": {
+      "id": "pieceAppearance",
+      "values": [
+        "dither"
+      ]
+    },
+    "asciiInline": {
+      "id": "pieceAppearance",
+      "values": [
+        "ascii"
+      ]
+    },
+    "transparencyTuning": {
+      "any": [
+        {
+          "id": "pieceAppearance",
+          "values": [
+            "dither"
+          ]
+        },
+        {
+          "id": "ditherTransparency",
+          "checked": true
+        }
+      ]
+    }
+  },
+  "fields": {
+    "solidUniform": {
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "checkbox": true,
+      "label": "One color for all solids",
+      "group": null,
+      "commit": "change"
+    },
+    "solidColor": {
+      "value": "#c8c8c8",
+      "color": true,
+      "label": "Solid color",
+      "group": null,
+      "commit": "input"
+    },
+    "solidFixed": {
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "checkbox": true,
+      "label": "Keep solids aligned during turns",
+      "group": null,
+      "commit": "change"
+    },
+    "solidGray": {
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "checkbox": true,
+      "label": "Gray shades",
+      "group": null,
+      "commit": "change"
+    },
+    "ditherTransparency": {
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "checkbox": true,
+      "label": "Dither-style transparency",
+      "group": null,
+      "commit": "change"
+    },
+    "lightAzimuth": {
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "value": -20,
+      "unit": "°",
+      "label": "Light azimuth",
+      "group": null,
+      "commit": "input"
+    },
+    "lightElevation": {
+      "min": -85,
+      "max": 85,
+      "step": 1,
+      "value": 25,
+      "unit": "°",
+      "label": "Light elevation",
+      "group": null,
+      "commit": "input"
+    },
+    "lightIntensity": {
+      "min": 0,
+      "max": 3,
+      "step": 0.05,
+      "value": 1,
+      "unit": "×",
+      "label": "Light intensity",
+      "group": null,
+      "commit": "input"
+    },
+    "lightAmbient": {
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "value": 0.35,
+      "unit": "",
+      "label": "Ambient light",
+      "group": null,
+      "commit": "input"
+    },
+    "ditherLevels": {
+      "min": 2,
+      "max": 17,
+      "step": 1,
+      "value": 5,
+      "unit": "",
+      "label": "Shading levels",
+      "group": "dither",
+      "commit": "input"
+    },
+    "ditherSize": {
+      "min": 1,
+      "max": 6,
+      "step": 0.5,
+      "value": 2,
+      "unit": "px",
+      "label": "Pixel size",
+      "group": "dither",
+      "commit": "input"
+    },
+    "ditherContrast": {
+      "min": 0.5,
+      "max": 5,
+      "step": 0.1,
+      "value": 2.5,
+      "unit": "×",
+      "label": "Contrast",
+      "group": "dither",
+      "commit": "input"
+    },
+    "ditherMidpoint": {
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "value": 0.6,
+      "unit": "",
+      "label": "Light / dark balance",
+      "group": "dither",
+      "commit": "input"
+    },
+    "asciiSize": {
+      "min": 0.5,
+      "max": 2,
+      "step": 0.1,
+      "value": 1,
+      "unit": "×",
+      "label": "Character size",
+      "group": "ascii",
+      "commit": "input"
+    },
+    "asciiExposure": {
+      "min": 0.5,
+      "max": 3,
+      "step": 0.1,
+      "value": 1,
+      "unit": "×",
+      "label": "Brightness",
+      "group": "ascii",
+      "commit": "input"
+    },
+    "asciiDensity": {
+      "min": 0.5,
+      "max": 2,
+      "step": 0.1,
+      "value": 1,
+      "unit": "×",
+      "label": "Character density",
+      "group": "ascii",
+      "commit": "input"
+    },
+    "asciiCoverage": {
+      "min": 0.02,
+      "max": 0.6,
+      "step": 0.02,
+      "value": 0.16,
+      "unit": "",
+      "label": "Edge coverage required",
+      "group": "ascii",
+      "commit": "input"
+    },
+    "asciiBlend": {
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "value": 1,
+      "unit": "",
+      "label": "Character blending",
+      "group": "ascii",
+      "commit": "input"
+    },
+    "lightPieces": {
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 0,
+      "unit": "",
+      "select": true,
+      "label": "Whole pieces",
+      "group": null,
+      "commit": "change"
+    },
+    "lightCubies": {
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "select": true,
+      "label": "Individual cubies",
+      "group": null,
+      "commit": "change"
+    },
+    "lightSolids": {
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "select": true,
+      "label": "Solids",
+      "group": null,
+      "commit": "change"
+    },
+    "lightOther": {
+      "min": 0,
+      "max": 2,
+      "step": 1,
+      "value": 1,
+      "unit": "",
+      "select": true,
+      "label": "Other elements",
+      "group": null,
+      "commit": "change"
+    },
+    "jellyCornerO": {
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 0,
+      "checkbox": true,
+      "label": "O rings (Jelly / Angular)",
+      "help": "Smooth beveled ring with a rounded-square opening. Cosmetic only.",
+      "group": "jelly",
+      "commit": "change"
+    },
+    "jellyBevel": {
+      "min": 1,
+      "max": 41,
+      "step": 1,
+      "value": 15,
+      "unit": "",
+      "label": "Bevel width",
+      "help": "Higher: bevels start closer to the face centers.",
+      "group": "jelly",
+      "commit": "change"
+    },
+    "jellyProfile": {
+      "min": 1.05,
+      "max": 6,
+      "step": 0.05,
+      "value": 2,
+      "unit": "",
+      "label": "Bevel profile",
+      "help": "Low: nearly straight chamfer. Middle: rounded. High: near-square corner. Width stays independent.",
+      "group": "jelly",
+      "commit": "change",
+      "wrapper": "jellyProfileOptions"
+    },
+    "jellyElbows": {
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "value": 100,
+      "unit": "%",
+      "label": "Elbow smoothing",
+      "help": "Lower values keep inside corners sharper. Angular models use flat faces and straight bevels; width and O-ring controls apply.",
+      "group": "jelly",
+      "commit": "change",
+      "wrapper": "jellyElbowsOptions"
+    },
+    "jellyOpening": {
+      "min": 1,
+      "max": 48,
+      "step": 1,
+      "value": 24,
+      "unit": "",
+      "label": "O opening",
+      "help": "Opening size when rounded-square O rings are enabled.",
+      "group": "jelly",
+      "commit": "change",
+      "wrapper": "jellyOpeningOptions"
+    },
+    "cubieScale": {
+      "min": 40,
+      "max": 100,
+      "step": 1,
+      "value": 100,
+      "unit": "%",
+      "label": "Cubie size",
+      "help": "Sizes individual cubies while keeping whole Tengen and Jelly pieces connected.",
+      "group": "cubie",
+      "commit": "change"
+    },
+    "transparencyGrain": {
+      "min": 1,
+      "max": 6,
+      "step": 0.5,
+      "value": 1,
+      "unit": "px",
+      "label": "Transparency grain",
+      "help": "Smaller grains make finer holes; larger grains make a coarser pattern.",
+      "group": "transparency",
+      "commit": "input"
+    },
+    "transparencyResponse": {
+      "min": 0.25,
+      "max": 3,
+      "step": 0.05,
+      "value": 1,
+      "unit": "",
+      "label": "Opacity response",
+      "help": "1 follows the opacity slider. Lower values keep more pixels; higher values reveal more of the scene behind the piece.",
+      "group": "transparency",
+      "commit": "input"
+    }
+  }
+}

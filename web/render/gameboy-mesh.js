@@ -1,3 +1,4 @@
+import {cubieScale} from './cubie-size.js';
 // Hand-traced motifs from the reference's Original Game Boy row.
 // Height, not baked white highlights: live lighting follows every relief wall.
 import {xyz} from './geometry.js';
@@ -67,6 +68,7 @@ function unitMesh(letter) {
   const mesh=new Float32Array(out);cache.set(letter,mesh);return mesh;
 }
 export function gameboyCell(out,p,h,color,letter='loose') {
+  h*=cubieScale();
   const mesh=unitMesh(letter),scale=h/(BASE_HEIGHT+RELIEF_HEIGHT);
   for(let i=0;i<mesh.length;i+=9)out.push(...p.map((v,a)=>v+mesh[i+a]*scale),...mesh.subarray(i+3,i+6),...color.map((v,a)=>{const tone=mesh[i+6+a];return tone>1?v*(2-tone)+(tone-1):v*tone;}));
 }

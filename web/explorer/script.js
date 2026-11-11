@@ -5,5 +5,5 @@ export async function initializeExplorer(root=document, options={}) {
   catch(e){root.getElementById('status').textContent=`Could not load local tetracube data: ${e.message}`;throw e;}
 }
 export const ready=document.getElementById('cubeLayout')
-  ?initializeExplorer(document,{dataset:new URLSearchParams(globalThis.location?.search||'').get('packings')==='classic'?'classic':'spatial'})
+  ?initializeExplorer(document,{dataset:new URLSearchParams(globalThis.location?.search||'').get('packings')==='classic'?'classic':undefined})
   :null;

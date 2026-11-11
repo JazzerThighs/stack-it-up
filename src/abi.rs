@@ -1,11 +1,12 @@
-//! Dependency-free Rust game engine with a small, versioned Wasm ABI.
+//! Browser command and buffer adapter for the puzzle core.
+use crate::abi_layout::{s, e, ABI_VERSION, SNAPSHOT_WORDS, EVENT_WORDS};
 use crate::engine::{Game, SHAPES, cell};
 use crate::mesh;
 use std::cell::RefCell;
 
 struct App {
     game: Game,
-    snapshot: [u32; 226],
+    snapshot: [u32; SNAPSHOT_WORDS],
     mesh: Vec<f32>,
     mesh_revision: u32,
     events: Vec<u32>,
@@ -16,7 +17,7 @@ impl App {
     fn new() -> Self {
         Self {
             game: Game::new(1),
-            snapshot: [0; 226],
+            snapshot: [0; SNAPSHOT_WORDS],
             mesh: vec![],
             mesh_revision: u32::MAX,
             events: vec![],
@@ -29,80 +30,80 @@ impl App {
         let v = &mut self.snapshot;
         v.fill(0);
         for i in 0..27 {
-            v[i] = s.board[i] as u32;
-            v[27 + i] = s.ids[i];
+            v[s::BOARD + i] = s.board[i] as u32;
+            v[s::IDS + i] = s.ids[i];
         }
-        v[166] = s.bandaged as u32;
-        v[167] = s.random_cubies as u32;
-        v[168] = s.rebuild_mode;
-        v[169] = s.rebuilding_mask();
-        v[170] = if s.rebuild_ready(&self.game.tables) {
+        v[s::BANDAGED] = s.bandaged as u32;
+        v[s::RANDOM_CUBIES] = s.random_cubies as u32;
+        v[s::REBUILD_MODE] = s.rebuild_mode;
+        v[s::REBUILD_MASK] = s.rebuilding_mask();
+        v[s::REBUILD_PENDING] = if s.rebuild_ready(&self.game.tables) {
             0
         } else {
             (s.rebuild_ids.len()+s.free_groups.len()) as u32
         };
-        v[171] = (0..30)
+        v[s::ALLOWED_MOVES] = (0..30)
             .filter(|&m| s.move_allowed(m))
             .fold(0, |mask, m| mask | 1 << m);
         for f in &s.floating {
             if s.rebuild_ids.contains(&f.id) {
-                v[172 + f.cell] = f.color as u32;
+                v[s::REBUILD_COLORS + f.cell] = f.color as u32;
             }
         }
         for (b, &mask) in s.bands.iter().enumerate() {
             for i in crate::engine::bits(mask) {
-                v[199 + i] = b as u32 + 1;
+                v[s::BAND_IDS + i] = b as u32 + 1;
             }
         }
-        v[158] = s.gravity_mode;
-        v[159] = s.floating_mask();
-        v[160] = s.fragment_turns;
-        v[161] = s.fragment_enabled as u32;
-        v[162] = s.floating.len() as u32;
-        v[163] = s.floating.iter().filter(|f| s.board[f.cell] != 0).count() as u32;
-        v[164] = s.held as u32;
-        v[165] = s.hold_used as u32;
-        v[54] = s.active;
-        v[55] = s.queue[0] as u32;
+        v[s::GRAVITY_MODE] = s.gravity_mode;
+        v[s::FLOATING] = s.floating_mask();
+        v[s::FRAGMENT_TURNS] = s.fragment_turns;
+        v[s::FRAGMENTS_ENABLED] = s.fragment_enabled as u32;
+        v[s::FLOATING_COUNT] = s.floating.len() as u32;
+        v[s::FLOATING_OVERLAPS] = s.floating.iter().filter(|f| s.board[f.cell] != 0).count() as u32;
+        v[s::HELD] = s.held as u32;
+        v[s::HOLD_USED] = s.hold_used as u32;
+        v[s::ACTIVE] = s.active;
+        v[s::PIECE] = s.queue[0] as u32;
         for (i, &p) in s.queue.iter().skip(1).take(6).enumerate() {
-            v[56 + i] = p as u32;
+            v[s::QUEUE + i] = p as u32;
         }
-        v[62] = s.pieces;
-        v[63] = s.clears;
-        v[64] = s.score;
-        v[65] = s.gravity.map_or(0, |f| f as u32 + 1);
-        v[66] = s.over as u32;
-        v[67] = self.game.hints();
-        v[68] = self.game.history.len() as u32;
+        v[s::PIECES] = s.pieces;
+        v[s::CLEARS] = s.clears;
+        v[s::SCORE] = s.score;
+        v[s::GRAVITY] = s.gravity.map_or(0, |f| f as u32 + 1);
+        v[s::OVER] = s.over as u32;
+        v[s::WINNING_MOVES] = self.game.hints();
+        v[s::UNDO_COUNT] = self.game.history.len() as u32;
         if let Some((f, p, mask)) = s.last_lock {
-            v[69] = f.map_or(0, |f| f as u32 + 1);
-            v[70] = p as u32;
-            v[79] = mask;
+            v[s::LAST_FACE] = f.map_or(0, |f| f as u32 + 1);
+            v[s::LAST_PIECE] = p as u32;
+            v[s::LAST_MASK] = mask;
         }
-        v[71] = s.last_clears.iter().fold(0, |m, &f| m | 1 << f);
-        v[72] = self.game.revision;
-        v[73] = s.occupied().count_ones() + s.floating.len() as u32;
-        v[74] = 4; // ABI version
-        v[75] = s.auto_placements;
-        v[76] = s.auto_tiers;
-        v[77] = s.last_clears.len() as u32;
-        v[78] = self.game.pending.iter().fold(0, |m, p| m | 1 << p.face);
+        v[s::CLEARED_FACES] = s.last_clears.iter().fold(0, |m, &f| m | 1 << f);
+        v[s::REVISION] = self.game.revision;
+        v[s::OCCUPIED_COUNT] = s.occupied().count_ones() + s.floating.len() as u32;
+        v[s::ABI_VERSION] = ABI_VERSION; // ABI version
+        v[s::AUTO_PLACEMENTS] = s.auto_placements;
+        v[s::AUTO_TIERS] = s.auto_tiers;
+        v[s::CLEAR_COUNT] = s.last_clears.len() as u32;
+        v[s::PENDING_FACES] = self.game.pending.iter().fold(0, |m, p| m | 1 << p.face);
         for p in &self.game.pending {
-            if p.face < 6 && v[152 + p.face] == 0 {
-                v[152 + p.face] = p.mask;
+            if p.face < 6 && v[s::PENDING_MASKS + p.face] == 0 {
+                v[s::PENDING_MASKS + p.face] = p.mask;
             }
         }
         for f in 0..6 {
             for i in 0..9 {
-                v[80 + f * 9 + i] = cell(f, (i % 3) as i32, (i / 3) as i32) as u32;
+                v[s::FACE_CELLS + f * 9 + i] = cell(f, (i % 3) as i32, (i / 3) as i32) as u32;
             }
         }
         for p in 0..6 {
-            v[134 + p] = SHAPES[p]
+            v[s::SHAPES + p] = SHAPES[p]
                 .iter()
                 .fold(0, |m, xy| m | 1 << (xy[1] * 3 + xy[0]));
-            v[140 + p * 2] = self.game.tables.inventory[p].0 as u32;
-            v[141 + p * 2] = self.game.tables.inventory[p].1 as u32;
+            v[s::INVENTORY + p * 2] = self.game.tables.inventory[p].0 as u32;
+            v[s::INVENTORY + p * 2 + 1] = self.game.tables.inventory[p].1 as u32;
         }
     }
     fn sync_mesh(&mut self) {
@@ -166,6 +167,10 @@ pub extern "C" fn band_mesh_profiled_ptr(mask: u32, corner_o: u32, softness: f32
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn band_mesh_elbows_ptr(mask: u32, corner_o: u32, softness: f32, opening: f32, profile: f32, elbow: f32) -> *const f32 {
+    band_mesh_sized_ptr(mask,corner_o,softness,opening,profile,elbow,1.)
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn band_mesh_sized_ptr(mask: u32, corner_o: u32, softness: f32, opening: f32, profile: f32, elbow: f32, scale: f32) -> *const f32 {
     let mut s = crate::engine::State::empty(1);
     for i in 0..27 {
         if mask & (1 << i) != 0 {
@@ -174,7 +179,7 @@ pub extern "C" fn band_mesh_elbows_ptr(mask: u32, corner_o: u32, softness: f32, 
         }
     }
     BAND_MESH.with_borrow_mut(|out| {
-        *out = mesh::build_elbows(&s, corner_o != 0, softness, opening, profile, elbow);
+        *out = mesh::build_sized(&s, corner_o != 0, softness, opening, profile, elbow, scale);
         for v in out.chunks_exact_mut(9) {
             v[6..9].fill(1.0);
         }
@@ -216,11 +221,16 @@ pub extern "C" fn events_ptr() -> *const u32 {
     APP.with_borrow_mut(|a| {
         a.events.clear();
         for e in &a.game.state.events {
-            a.events.extend([e.kind, e.mask, e.face]);
-            a.events.extend(e.board.map(u32::from));
-            a.events.extend(e.ids);
-            a.events.extend(e.origins.map(|i| i as u32));
-            a.events.extend([e.float_mask, e.fragment_turns]);
+            let mut record = [0; EVENT_WORDS];
+            record[e::KIND] = e.kind;
+            record[e::MASK] = e.mask;
+            record[e::FACE] = e.face;
+            record[e::BOARD..e::BOARD + e::BOARD_LEN].copy_from_slice(&e.board.map(u32::from));
+            record[e::IDS..e::IDS + e::IDS_LEN].copy_from_slice(&e.ids);
+            record[e::ORIGINS..e::ORIGINS + e::ORIGINS_LEN].copy_from_slice(&e.origins.map(|i| i as u32));
+            record[e::FLOAT_MASK] = e.float_mask;
+            record[e::FRAGMENT_TURNS] = e.fragment_turns;
+            a.events.extend(record);
         }
         a.events.as_ptr()
     })
@@ -239,7 +249,7 @@ pub extern "C" fn state_ptr() -> *const u32 {
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn state_len() -> u32 {
-    226
+    SNAPSHOT_WORDS as u32
 }
 /// Interleaved f32 position / normal / RGB, nine floats per vertex.
 #[unsafe(no_mangle)]

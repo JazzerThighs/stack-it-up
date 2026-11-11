@@ -14,6 +14,6 @@ game.elements.showArrows.checked=true;game.elements.showArrows.change();
 assert(explorer.elements.showArrows.checked);assert(!explorer.elements.arrowGuides.disabled);
 explorer.elements.explorerCamera.value='orthographic';explorer.elements.explorerCamera.change();assert(!game.elements.perspectiveCamera.checked);
 setControlSetting('wideTurns',true);assert(explorer.elements.wideTurns.checked);
-assert(JSON.parse(saved.get('stack-it-up.controls')).wideTurns);
+assert(JSON.parse(saved.get('stack-it-up.controls')).values.wideTurns);
 offGame();offExplorer();const before=updates;setControlSetting('wideTurns',false);assert.equal(before,updates);
 console.log('PASS: bidirectional control settings, camera mapping, dependencies, persistence and unsubscribe.');

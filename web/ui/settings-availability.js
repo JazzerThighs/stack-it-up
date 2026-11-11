@@ -1,3 +1,4 @@
+import {refreshStyleTuning} from './style-tuning.js';
 import {assemblyUsesSolids} from '../render/assembly.js';
 import {displaySettings} from './display-settings.js';
 import {S} from '../engine/snapshot.js';
@@ -11,6 +12,7 @@ export function refreshSettingsAvailability(root = document, state = null) {
     $(id).disabled = !on;
     $(id + 'Reason').hidden = !!on;
   };
+  refreshStyleTuning(root);
   const fragments = checked('fragmentPerk');
   const random = value('releaseTrigger') !== '0';
   const rebuilding = value('rebuildMode') !== '0' || !!state?.[S.REBUILD_MASK];

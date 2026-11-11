@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "storageKey": "stack-it-up.display",
+  "optionSets": {
+    "assembly": [
+      [
+        "cubies",
+        "Individual Cubies Only"
+      ],
+      [
+        "whole",
+        "Whole Tetracubes + Individual Cubie Fragments"
+      ],
+      [
+        "solids",
+        "Balls & Platonic Solids + Cubie Extras"
+      ],
+      [
+        "wholeSolids",
+        "Whole Tetracubes + Balls & Platonic Solid Fragments + Cubie Extras"
+      ],
+      [
+        "cubiesSolids",
+        "Individual Cubie Tetracubes + Balls & Platonic Solid Fragments + Cubie Extras"
+      ]
+    ]
+  },
+  "groups": [
+    "assembly",
+    "viewSizes",
+    "theme"
+  ],
+  "availability": {},
+  "legacyAliases": [
+    {
+      "from": "gameCombinedSize",
+      "to": "gameActiveSize",
+      "replaceDefault": 100
+    },
+    {
+      "from": "targetSize",
+      "to": "practiceTargetSize",
+      "replaceDefault": 100
+    },
+    {
+      "from": "startSize",
+      "to": "practiceStartSize",
+      "replaceDefault": 100
+    },
+    {
+      "from": "gamePieces",
+      "to": "stackPieces",
+      "replaceFalsy": true,
+      "truthySource": true
+    }
+  ],
+  "fields": {
+    "familyPieces": {
+      "value": "whole",
+      "label": "Family Explorer",
+      "group": "assembly",
+      "commit": "change",
+      "optionSet": "assembly"
+    },
+    "practiceStartPieces": {
+      "value": "cubies",
+      "label": "Start Cube (Two-Cube Practice)",
+      "group": "assembly",
+      "commit": "change",
+      "optionSet": "assembly",
+      "extraOptions": [
+        [
+          "retained",
+          "Whole Tetracubes - Keep Cut Pieces"
+        ]
+      ]
+    },
+    "practiceTargetPieces": {
+      "value": "whole",
+      "label": "Target Cube (Two-Cube Practice)",
+      "group": "assembly",
+      "commit": "change",
+      "optionSet": "assembly"
+    },
+    "activePieces": {
+      "value": "solids",
+      "label": "Active Pieces",
+      "group": "assembly",
+      "commit": "change",
+      "optionSet": "assembly"
+    },
+    "stackPieces": {
+      "value": "whole",
+      "label": "Stack",
+      "group": "assembly",
+      "commit": "change",
+      "optionSet": "assembly",
+      "extraOptions": [
+        [
+          "retained",
+          "Placed Shapes - Keep Cut Pieces"
+        ]
+      ]
+    },
+    "gameActiveSize": {
+      "value": 100,
+      "min": 50,
+      "max": 160,
+      "label": "Active Pieces",
+      "group": "viewSizes",
+      "commit": "input",
+      "step": 1,
+      "unit": "%",
+      "quantize": false,
+      "rangePolicy": "reject"
+    },
+    "gameStackSize": {
+      "value": 100,
+      "min": 50,
+      "max": 160,
+      "label": "Stack",
+      "group": "viewSizes",
+      "commit": "input",
+      "step": 1,
+      "unit": "%",
+      "quantize": false,
+      "rangePolicy": "reject"
+    },
+    "familySize": {
+      "value": 100,
+      "min": 50,
+      "max": 160,
+      "label": "Family Explorer",
+      "group": "viewSizes",
+      "commit": "input",
+      "step": 1,
+      "unit": "%",
+      "quantize": false,
+      "rangePolicy": "reject"
+    },
+    "practiceStartSize": {
+      "value": 100,
+      "min": 50,
+      "max": 160,
+      "label": "Start Cube (Two-Cube Practice)",
+      "group": "viewSizes",
+      "commit": "input",
+      "step": 1,
+      "unit": "%",
+      "quantize": false,
+      "rangePolicy": "reject"
+    },
+    "practiceTargetSize": {
+      "value": 100,
+      "min": 50,
+      "max": 160,
+      "label": "Target Cube (Two-Cube Practice)",
+      "group": "viewSizes",
+      "commit": "input",
+      "step": 1,
+      "unit": "%",
+      "quantize": false,
+      "rangePolicy": "reject"
+    },
+    "uiTheme": {
+      "value": "teal",
+      "options": [
+        "teal",
+        "slate",
+        "violet",
+        "amber"
+      ],
+      "label": "Color theme",
+      "group": "theme",
+      "commit": "change",
+      "optionLabels": [
+        "Teal",
+        "Slate blue",
+        "Violet",
+        "Amber"
+      ]
+    }
+  }
+}

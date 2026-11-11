@@ -1,11 +1,10 @@
+import {RULE_CHECKS as checks,RULE_RADIOS as radios,SHAPE_RULES_BIT} from '../engine/game-contract.js';
 import {assemblyUsesSolids} from '../render/assembly.js';
 import {displaySettings} from './display-settings.js';
 import {S} from '../engine/snapshot.js';
-const checks = {scienceMode:0,clearFullFace:1,clearRingFace:2,clearFullSlice:3,clearRingSlice:4,gravityEnabled:5,freedomEnabled:9,freeSize1:10,freeSize2:11,freeSize3:12,freeSize4:13,fragmentsConnected:14,rebuildQueueShapes:21,rebuildOriginalShape:22,fallOneCell:20,planeGravity:24};
-const radios = {gravityDirection:[6,4],gravityOccurrence:[8,2],freedomEvent:[16,3],freedomMethod:[18,4]};
 export const gameplayIds = [...Object.keys(checks),...Object.entries(radios).flatMap(([key,[,n]])=>Array.from({length:n},(_,i)=>key+i))];
 export function readGameplay(root=document) {
-  const $=id=>root.getElementById(id);let word=1<<23;
+  const $=id=>root.getElementById(id);let word=1<<SHAPE_RULES_BIT;
   for(const [id,bit] of Object.entries(checks)) if($(id).checked)word|=1<<bit;
   for(const [key,[bit,n]] of Object.entries(radios))for(let i=0;i<n;i++)if($(key+i).checked)word|=i<<bit;
   return word;
@@ -14,7 +13,7 @@ export function writeGameplay(word,root=document) {
   if(word===0xffffffff)return;
   const $=id=>root.getElementById(id);
   for(const [id,bit] of Object.entries(checks))$(id).checked=!!(word&(1<<bit));
-  if(!(word&(1<<23))){$('rebuildQueueShapes').checked=true;$('rebuildOriginalShape').checked=false;}
+  if(!(word&(1<<SHAPE_RULES_BIT))){$('rebuildQueueShapes').checked=true;$('rebuildOriginalShape').checked=false;}
   for(const [key,[bit,n]] of Object.entries(radios))for(let i=0;i<n;i++)$(key+i).checked=((word>>bit)&(n===2?1:3))===i;
 }
 export function validateGameplay(root=document,changed=null) {

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "types": []
+  },
+  "files": [
+    "web/engine/transport.js",
+    "tests/types/engine.ts",
+    "web/explorer/view-controller.js",
+    "tests/types/view-controller.ts",
+    "web/engine/presentation.js",
+    "web/engine/stack-shapes.js",
+    "tests/types/presentation.ts",
+    "web/game/controller.js",
+    "tests/types/game-controller.ts"
+  ]
+}

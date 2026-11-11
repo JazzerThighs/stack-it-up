@@ -1,4 +1,11 @@
 import assert from 'node:assert/strict';
+import {appearances,appearanceIndex} from '../web/render/appearance.js';
+import {FS} from '../web/render/shaders.js';
+assert.deepEqual(appearances.map(([id])=>id),['jelly','dither','matte','cel','ascii','gameboy']);
+for(const [style,expression]of [['cel','rgb*(illumination<.4?'],['ascii','clamp(rgb*'],['gameboy','rgb*illumination']]) {
+ assert(FS.includes(`if(appearance==${appearanceIndex(style)}) shaded=${expression}`),`${style} selects its intended shader branch`);
+}
+assert.equal(appearanceIndex('unknown'),0);
 const storage=new Map();
 Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}});
 const palette=await import('../web/render/palette.js');

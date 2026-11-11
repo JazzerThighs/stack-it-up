@@ -1,3 +1,4 @@
+import {refreshStyleTuning} from '../ui/style-tuning.js';
 import {assemblyUsesSolids} from '../render/assembly.js';
 // Explorer settings keep their original controls/listeners; only their layout moves.
 export function initializeExplorerSettings(root) {
@@ -40,7 +41,7 @@ export function initializeExplorerSettings(root) {
   $('targetComposite').closest('label').hidden=true;add(views,$('targetComposite').closest('label'));
   unpack(page('Cube sizes',views),$('cubeSizeSettings'));
   help(views,'Visible-cube switches apply to standard browsing. Family and practice modes use their own views.');
-  const appearance=page('Appearance',home);add(appearance,$('modelShape').closest('label'),$('pieceAppearance').closest('label'));
+  const appearance=page('Appearance',home);add(appearance,$('modelStyleBox'),$('effectStyleBox'));
   unpack(page('Piece assembly',appearance),$('pieceAssemblySettings'));
   unpack(page('Interface theme',appearance),$('interfaceSettings'));
   const colors=page('Colors',appearance);unpack(colors,find('.color-controls'));
@@ -49,9 +50,9 @@ export function initializeExplorerSettings(root) {
   const solids=page('Balls & Platonic Solids',appearance);
   const solidField=$('familySolidIdentities').closest('fieldset');unpack(solids,solidField);
   const tuning={};
-  for(const [name,id]of [['Transparency','ditherTransparency'],['Lighting','lightAzimuth'],['Dither tuning','ditherLevels'],['ASCII tuning','asciiSize']]) {
+  for(const [name,id]of [['Transparency','ditherTransparency'],['Lighting','lightAzimuth']]) {
     const sub=page(name,appearance);unpack(sub,$(id).closest('details'));tuning[id]=sub;
-    if(id==='lightAzimuth')add(page('Jelly shaping',appearance),$('jellyShaping'));
+
   }
   const lightClasses=page('Lighting by element',tuning.lightAzimuth);
   const classes=body.querySelector('#lightingClasses');
@@ -59,6 +60,7 @@ export function initializeExplorerSettings(root) {
 
   let current=home;
   function refresh() {
+    refreshStyleTuning(root);
     const family=$('familyExploreMode').checked,practice=$('practiceMode').checked;
     for(const id of ['showSolved','showScrambled'])$(id).disabled=family||practice;
     $('targetComposite').disabled=family;

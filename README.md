@@ -1,20 +1,12 @@
 # Stack It Up — Rust + WebAssembly
 
+The current dual game and packing explorer are the reference application. This folder is the independent refactoring copy; the original checkout is unchanged.
 
-
-Current feature baseline: `stack-it-up-codepen.html` version 24. Rust owns all game
-
-rules; the browser owns input and presentation. The JavaScript edition stays separate.
-
-
+Start with [the refactor master plan](docs/REFACTOR_PLAN.md) and [the current architecture](docs/ARCHITECTURE.md). The first migration separates the Rust computational core from the browser ABI and replaces historical-HTML parity with current engine contracts.
 
 ## Run the included build
 
-
-
 Install Node.js and run from this extracted project folder:
-
-
 
 ```powershell
 
@@ -22,25 +14,17 @@ node tools/serve.mjs
 
 ```
 
-
-
 Open **http://127.0.0.1:4173**. The archive includes compiled `dist/`; Rust is only
 
 needed to rebuild. Opening HTML through `file://` will not load Wasm correctly.
 
-
-
 ## Build and test
 
-
-
-Requires Rust 1.91+, its Wasm target, and Node.js 22+. No Cargo/npm dependencies and
-
-no `npm install` step are needed.
-
-
+Requires Rust 1.91+, its Wasm target, and Node.js 22+. The Cargo workspace currently uses a local core dependency; run `npm ci` once to install the pinned TypeScript development tool. External dependencies are allowed as the migration progresses.
 
 ```powershell
+
+npm ci
 
 rustup target add wasm32-unknown-unknown
 
@@ -48,23 +32,21 @@ node tools/build.mjs
 
 npm test
 
-cargo clippy --offline --all-targets -- -D warnings
+cargo clippy --workspace --offline --all-targets -- -D warnings
 
 ```
 
-
-
 `start.ps1` builds, opens the browser and starts the server. `npm test` runs native
 
-rules tests, builds Wasm, checks parity against the pinned JavaScript reference,
+rules tests, builds Wasm, checks the production engine contract,
 
 and imports the actual browser modules with real Wasm and mock DOM/WebGL.
 
+Focused suites: `npm run test:core`, `npm run test:engine`, `npm run test:game`, `npm run test:explorer`, and `npm run test:render`. Build first when running browser suites. See [validation notes](docs/REFACTOR_VALIDATION.md) for known baseline failures.
 
+`npm run typecheck` checks the engine transport implementation and compile-time usage tests without producing JavaScript. Browser runtime remains plain JavaScript/Wasm; TypeScript is a development dependency only.
 
 ## Included features
-
-
 
 - Real movable centers; face, slice and wide turns; ambiguous placement choice.
 
@@ -96,29 +78,25 @@ and imports the actual browser modules with real Wasm and mock DOM/WebGL.
 
 - Practice colors follow physical pieces; aligned targets, undo/reset and match detection.
 
-
-
 ## Code map
-
-
 
 | Location | Responsibility |
 
 | --- | --- |
 
-| `src/engine/coordinates.rs` | Coordinates, face conventions, constants |
+| `crates/puzzle-core/src/engine/coordinates.rs` | Coordinates, face conventions, constants |
 
-| `src/engine/tables.rs` | Moves, placements, inventories, ranked spawn masks |
+| `crates/puzzle-core/src/engine/tables.rs` | Moves, placements, inventories, ranked spawn masks |
 
-| `src/engine/state.rs` | State, spawning, locking, queue, fragment identities |
+| `crates/puzzle-core/src/engine/state.rs` | State, spawning, locking, queue, fragment identities |
 
-| `src/engine/gravity.rs` | Connected groups, gravity and clearing cascades |
+| `crates/puzzle-core/src/engine/gravity.rs` | Connected groups, gravity and clearing cascades |
 
-| `src/engine/game.rs` | Commands, hold, undo, choices, predictions |
+| `crates/puzzle-core/src/engine/game.rs` | Commands, hold, undo, choices, predictions |
 
 | `src/abi.rs` | Wasm commands and serialized buffers |
 
-| `src/mesh.rs` | Connected stack geometry |
+| `crates/puzzle-core/src/mesh.rs` | Connected stack geometry |
 
 | `web/engine/` | Wasm adapter, named snapshot fields, coordinate helpers |
 
@@ -132,23 +110,15 @@ and imports the actual browser modules with real Wasm and mock DOM/WebGL.
 
 | `web/explorer/` | Existing packing browser and data |
 
-
-
 See [architecture](docs/ARCHITECTURE.md) and [ABI contract](docs/ABI.md).
 
-
-
 ## Package or deploy
-
-
 
 ```powershell
 
 python tools/package.py
 
 ```
-
-
 
 Produces `stack-it-up-rust.zip`, containing source, tests, docs and the compiled
 
@@ -158,17 +128,11 @@ support. The game and packing explorer have no external runtime network dependen
 
 The database and graphics modules are bundled locally.
 
-
-
 Automated graphics checks use mock WebGL. Real-browser visual approval and GPU
 
 profiling remain separate checks.
 
-
-
 ## Packing practice
-
-
 
 Open **Packing**, then enable **Two-packing practice**. Enter any two database
 
@@ -180,8 +144,6 @@ different members; broaden the filters if none qualify. You can also copy the
 
 current browser selection into either line field.
 
-
-
 Drag stickers on the start cube to turn slices; Alt-drag makes a wide turn.
 
 Right-drag or drag outside the cube to orbit. The target is orbit-only. Turn
@@ -191,8 +153,6 @@ buttons, a move selector, undo and reset provide alternatives. Keyboard U/D/F/B/
 M/E/S perform turns; Shift reverses, Home resets the camera. Target recognition
 
 accepts all 24 whole-cube orientations.
-
-
 
 Practice assigns six distinct physical-piece colors and transports them to the
 
@@ -208,19 +168,13 @@ no solver for arbitrary practice pairs; solution playback belongs to the normal
 
 scrambled view.
 
-
-
 `web/explorer/AnimCube3.js` and `web/explorer/legacy/` preserve the original
 
 integration. Active facelet generation and its debug panel remain available.
 
 These legacy renderers are not loaded by the new explorer.
 
-
-
 ## Combinable clear rewards
-
-
 
 Settings → Gameplay has independent switches for broken-fragment release (the
 
@@ -230,8 +184,6 @@ face. Reconstruction offers Off, All intact pieces, or One random intact piece p
 
 cleared face. The new options default off. All 24 combinations are supported.
 
-
-
 Rewards apply after a placement's clear/gravity cascade. Whole pieces are selected
 
 first, broken fragments second, individual cubies last, without duplicate selection.
@@ -239,8 +191,6 @@ first, broken fragments second, individual cubies last, without duplicate select
 Selections stop when eligible pieces/cubies run out. Random selections and mode
 
 state are included in undo; new games retain your selected settings.
-
-
 
 Bandaging connects adjacent white cubies of the same original piece. A slice/wide
 
@@ -264,49 +214,29 @@ Switching off a release mode stops future rewards; existing releases finish thei
 
 current turn. The old multi-clear credit behavior remains for broken fragments.
 
-
-
 ## Wide face controls
-
-
 
 Use the bottom **Regular turns / Wide turns** toggle, or hold **Shift** while dragging a face, to turn the outer two layers together. Alt remains supported. Inner slices stay single-layer. The width locks when the drag direction is selected; bandage legality is still enforced by the engine.
 
-
-
 ## Early locking of bandaged fragments
-
-
 
 Bandaging and **Allow early locking** are enabled by default. Select **Lock white pieces**, then click any member of a connected white group to settle the entire group into the static stack. Choose **Resume turns** to return to slice dragging. Right-drag still orbits. Groups overlapping the stack cannot lock; colored active cubies may overlap temporarily and can move away afterward.
 
-
-
 This action preserves the active piece, queue, score, fragment-turn allowance and other floating groups. Undo restores it. Face clears and reward processing wait for normal colored-piece placement, so early locking does not immediately free the group again. Groups you do not click still lock normally.
-
-
 
 White bands use the same connected rounded surface as placed pieces, independent of the sphere preference. They breathe inward as a single surface. Other active cubies breathe below the cell boundary; overlap markers sit outside their maximum extent.
 
-
-
 ## Face and slice clearing
-
-
 
 Gameplay clears outer faces and all three middle slices. **Full slice — interior required** is the default: a 3×3 middle slice needs all nine cells, including the core. **Surface ring — interior not required** needs eight surface cells. Both remove the entire slice, including any occupied interior cells. Completed planes are detected together, their union is removed once, and each plane grants 500 points and the usual clear rewards.
 
-
-
 With clear-triggered gravity, an internal slice pulls separate fragments inward from both sides toward that plane. Gravity-off and always-on modes retain their behavior. Internal plane ids are 6/7/8 (X/Y/Z), after the six face ids. A simultaneous batch uses the last plane in deterministic clear order for clear-triggered gravity.
-
 
 ## Full-page packing explorer
 
 The Packing tab mounts directly in the application page, without an iframe. Switching tabs preserves game and explorer state. Cubes fill the workspace; filters, packing details and practice setup open as overlays. Small screens use view tabs.
 
 The **Target cube** is an orbitable reference. **Whole tetrominoes** follows either the scrambled cube (default) or target, including drag/turn frames, undo and reset. This third view always uses connected geometry, with adjustable transparency. Facelet generation and AnimCubeJS references are preserved.
-
 
 ## Family exploration
 
@@ -338,7 +268,6 @@ solids return. The choice works with every material and filter. Internal J/L
 and S/Z placements use a compatible ID color when possible because they have
 no unique outward-facing handedness.
 
-
 ## Deployment asset versions
 
 The build gives each release a content-hashed assets directory. Both entry pages
@@ -347,7 +276,6 @@ Wasm, data and lazy modules in the same release. This avoids mixing cached files
 from an older deployment with newer controls. Build details are available in
 `build-info.json`. After deploying this change for the first time, hard-refresh
 an already-open Pages tab (Ctrl+Shift+R) to refresh its old entry page.
-
 
 ## Retained fragments and transparency
 
@@ -364,7 +292,6 @@ off restores smooth transparency for other styles. Dithered rendering and recent
 placement ghosts always use pixel coverage. At 0% transparency all pixels remain;
 at 100% the geometry contributes no pixels.
 
-
 Transparency style and percentages now share a **Transparency** menu in each app.
 The explorer percentage applies to every cube, including Family exploration.
 Dither coverage uses distinct, stable patterns per cubie and render category, so
@@ -377,7 +304,8 @@ for solid ID shapes** is enabled by default and shared between the apps; disable
 it to use the original piece colors. Completed family tetrominos keep canonical
 colors. Loose white fragments and the current target retain their existing shapes.
 
-
 Gameplay now includes an independent **Random stack piece** perk (off by default): release one connected stack group per cleared plane or once at the start of each placement turn. Singletons, broken components and whole tetrominos are eligible. Slice turns, hold swaps and recovery spawns do not grant an extra release during the same turn. Groups can remain rigid or split, and **Let freed pieces lock scattered** allows arbitrary nonoverlapping positions when the target sphere piece succeeds, including reconstruction pieces. Otherwise random groups reconnect and reconstruction groups form tetrominos.
 
 **Freed-piece selection and locking** groups the shared selection policy and early-lock control. Policies include equal eligible-piece chances, cubie-weighted odds, a single 27-cell attempt (misses are intentional), and largest/smallest connected component with random tie-breaking. Free-all modes still free all eligible candidates. Random-single-cubie rewards retain their original cell-uniform default, or select a group by the chosen policy before taking one cubie. New rules and active groups are included in shared states and undo; older shared states remain supported.
+
+

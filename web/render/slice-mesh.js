@@ -3,13 +3,41 @@ import {withCoverage,vertexCoverage} from './transparency.js';
 // Vertices have position, normal, RGB (9 floats). Built once per drag/turn.
 const EPS=1e-5;
 const key=v=>v.node ?? v.slice(0,3).map(x=>Math.round(x/EPS)).join(',');
+// Write geometry and ownership together, without an interleaved JS-array copy.
+class ClipOutput {
+  constructor(capacity){this.geometry=new Float32Array(capacity);this.coverage=new Float32Array(capacity/3);this.length=0;}
+  reserve(count){
+    if(this.length+count<=this.geometry.length)return;
+    const capacity=Math.max(this.length+count,this.geometry.length*2,27);
+    const geometry=new Float32Array(capacity),coverage=new Float32Array(capacity/3);
+    geometry.set(this.geometry);coverage.set(this.coverage);this.geometry=geometry;this.coverage=coverage;
+  }
+  triangle(mesh,start){
+    this.reserve(27);const offset=this.length;
+    for(let k=0;k<27;k++)this.geometry[offset+k]=mesh[start+k];
+    if(mesh.coverage)for(let k=0;k<9;k++)this.coverage[offset/3+k]=mesh.coverage[start/3+k];
+    else for(let v=0;v<27;v+=9)for(let a=0;a<3;a++)
+      this.coverage[(offset+v)/3+a]=Math.floor(mesh[start+v+a]-mesh[start+v+3+a]*.002+.5);
+    this.length+=27;
+  }
+  vertex(v,axis=-1,normal=0){
+    this.reserve(9);const offset=this.length;
+    for(let k=0;k<9;k++)this.geometry[offset+k]=k>=3&&k<6&&axis>=0?(k===axis+3?normal:0):v[k];
+    for(let k=0;k<3;k++)this.coverage[offset/3+k]=v[9+k];
+    this.length+=9;
+  }
+  finish(){return withCoverage(this.geometry.slice(0,this.length),this.coverage.slice(0,this.length/3));}
+}
 export function clipMesh(mesh,axis,plane,side) {
   let low=Infinity,high=-Infinity;
   for(let i=axis;i<mesh.length;i+=9){low=Math.min(low,mesh[i]);high=Math.max(high,mesh[i]);}
   if(side>0 ? low>=plane : high<=plane)return mesh;
   if(side>0 ? high<=plane : low>=plane)return new Float32Array(0);
-  const out=[], segments=[];
+  const out=new ClipOutput(mesh.length), segments=[];
   for(let i=0;i<mesh.length;i+=27) {
+    const a=side*(mesh[i+axis]-plane)>=0,b=side*(mesh[i+9+axis]-plane)>=0,c=side*(mesh[i+18+axis]-plane)>=0;
+    if(a&&b&&c){out.triangle(mesh,i);continue;}
+    if(!a&&!b&&!c)continue;
     const tri=[[...mesh.slice(i,i+9),...vertexCoverage(mesh,i)],[...mesh.slice(i+9,i+18),...vertexCoverage(mesh,i+9)],[...mesh.slice(i+18,i+27),...vertexCoverage(mesh,i+18)]];
     const polygon=[],cuts=[];
     for(let j=0;j<3;j++) {
@@ -20,7 +48,7 @@ export function clipMesh(mesh,axis,plane,side) {
         polygon.push(v);cuts.push(v);
       }
     }
-    for(let j=1;j+1<polygon.length;j++) out.push(...polygon[0],...polygon[j],...polygon[j+1]);
+    for(let j=1;j+1<polygon.length;j++){out.vertex(polygon[0]);out.vertex(polygon[j]);out.vertex(polygon[j+1]);}
     if(cuts.length===2 && key(cuts[0])!==key(cuts[1])) segments.push(cuts);
   }
   // Join intersection edges into loops, separately for disconnected cross-sections.
@@ -29,7 +57,7 @@ export function clipMesh(mesh,axis,plane,side) {
     const cell=v.slice(0,3).map(x=>Math.floor(x/EPS));let match;
     for(let x=-1;x<=1&&!match;x++) for(let y=-1;y<=1&&!match;y++) for(let z=-1;z<=1&&!match;z++) {
       const nearby=buckets.get([cell[0]+x,cell[1]+y,cell[2]+z].join(',')) || [];
-      match=nearby.find(p=>p.slice(0,3).every((n,k)=>Math.abs(n-v[k])<EPS));
+      match=nearby.find(p=>Math.abs(p[0]-v[0])<EPS&&Math.abs(p[1]-v[1])<EPS&&Math.abs(p[2]-v[2])<EPS);
     }
     if(match) v.node=match.node;
     else {
@@ -52,9 +80,7 @@ export function clipMesh(mesh,axis,plane,side) {
     }
     if(key(current)===start) cap(out,loop,axis,-side);
   }
-  const geometry=[],coverage=[];
-  for(let i=0;i<out.length;i+=12){geometry.push(...out.slice(i,i+9));coverage.push(...out.slice(i+9,i+12));}
-  return withCoverage(new Float32Array(geometry),new Float32Array(coverage));
+  return out.finish();
 }
 function cap(out,loop,axis,normal) {
   const a=(axis+1)%3,b=(axis+2)%3;
@@ -68,7 +94,7 @@ function cap(out,loop,axis,normal) {
   const area=loop.reduce((sum,p,i)=>{const q=loop[(i+1)%loop.length];return sum+p[a]*q[b]-q[a]*p[b];},0);
   if(area<0) loop.reverse();
   const emit=(p,q,r)=>{
-    for(const v of normal>0?[p,q,r]:[r,q,p]) {const n=[0,0,0];n[axis]=normal;out.push(...v.slice(0,3),...n,...v.slice(6,12));}
+    for(const v of normal>0?[p,q,r]:[r,q,p])out.vertex(v,axis,normal);
   };
   while(loop.length>3) {
     let found=false;

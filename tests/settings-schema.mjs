@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import {appearanceSchema as schema} from '../web/ui/appearance-schema.js';
+import {createSettingsStore} from '../web/ui/settings-store.js';
+const memory=new Map(),storage={getItem:k=>memory.get(k),setItem:(k,v)=>memory.set(k,v)};
+memory.set(schema.storageKey,JSON.stringify({cubieScale:67,asciiSize:1.5,solidColor:'#123456',missing:9,lightIntensity:'bad'}));
+let store=createSettingsStore(schema,storage);
+assert.equal(store.values.cubieScale,67);assert.equal(store.values.asciiSize,1.5);assert.equal(store.values.lightIntensity,1);
+let calls=0;const off=store.subscribe(()=>calls++);
+assert(!store.set('missing',1));assert(!store.set('cubieScale',NaN));assert(!store.set('cubieScale','50'));assert(!store.set('solidColor','red'));assert.equal(calls,0);
+store.set('cubieScale',0);assert.equal(store.values.cubieScale,40);
+const envelope=JSON.parse(memory.get(schema.storageKey));assert.equal(envelope.version,1);assert.equal(envelope.values.asciiSize,1.5);assert(!Object.hasOwn(envelope.values,'missing'));
+store=createSettingsStore(schema,storage);assert.equal(store.values.cubieScale,40);assert.equal(store.values.solidColor,'#123456');
+assert(!store.patch({lightAzimuth:30,unknown:1}));assert.equal(store.values.lightAzimuth,-20);
+store.set('asciiSize',1.6);store.reset('dither');assert.equal(store.values.asciiSize,1.6);off();
+memory.set(schema.storageKey,JSON.stringify({version:999,values:{cubieScale:50}}));store=createSettingsStore(schema,storage);assert.equal(store.values.cubieScale,100);const future=memory.get(schema.storageKey);store.set('cubieScale',60);assert.equal(memory.get(schema.storageKey),future,'Do not overwrite future formats');
+for(const broken of [null,'{bad','42','[]','"bad"']){memory.set(schema.storageKey,broken);assert.equal(createSettingsStore(schema,storage).values.cubieScale,100);}
+const denied=createSettingsStore(schema,{getItem(){throw Error('denied');},setItem(){throw Error('denied');}});assert(denied.set('cubieScale',70));assert.equal(denied.values.cubieScale,70);
+// A schema-declared control receives binding, output, visibility and persistence.
+const nodes=new Map(),root={getElementById(id){if(!nodes.has(id))nodes.set(id,{value:'',checked:false,hidden:false,listeners:{},addEventListener(name,fn){this.listeners[name]=fn;}});return nodes.get(id);}},el=id=>root.getElementById(id);
+globalThis.localStorage=storage;memory.delete(schema.storageKey);
+const {initializeVisualControls}=await import('../web/ui/visual-controls.js');
+const {visualSettings}=await import('../web/render/visual-settings.js');
+el('modelShape').value='jelly';el('pieceAppearance').value='ascii';
+let refreshes=0;const unsubscribe=initializeVisualControls(root,()=>refreshes++);
+assert(!el('asciiInline').hidden);assert(el('ditherInline').hidden);
+el('cubieScale').value='55';el('cubieScale').listeners.input();assert.equal(el('cubieScaleValue').textContent,'55%');assert.equal(visualSettings.cubieScale,100);
+el('cubieScale').listeners.change();assert.equal(visualSettings.cubieScale,55);assert.equal(JSON.parse(memory.get(schema.storageKey)).values.cubieScale,55);
+el('asciiSize').value='1.7';el('asciiSize').listeners.input();assert.equal(visualSettings.asciiSize,1.7);
+el('modelShape').value='angular';el('modelShape').listeners.change();assert(el('jellyProfileOptions').hidden);assert(!el('jellyShaping').hidden);
+const before=refreshes;unsubscribe();el('asciiSize').listeners.input();assert.equal(refreshes,before);
+console.log('PASS: legacy/versioned preference migration, invalid values, future formats, unavailable storage, resets, and schema-driven control integration.');

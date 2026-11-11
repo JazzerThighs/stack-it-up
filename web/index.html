@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#111519" />
     <title>Stack It Up</title>
     <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./ui/settings-components.css" />
   </head>
   <body>
     <section id="startupScreen" class="startup-screen" aria-label="Startup checks">
@@ -127,18 +128,6 @@
                   aria-label="Middle slice turns"
                 ></div>
 
-                <div id="gameOver" class="game-over" role="alert" hidden>
-                  <div>
-                    <span class="hud-caption">NO ROOM LEFT</span>
-                    <h1>TOP OUT</h1>
-                    <p>No placement fits. Undo your last turn or try again.</p>
-                    <strong id="finalScore"></strong>
-                    <div class="end-actions">
-                      <button id="overUndo">↶ Undo</button
-                      ><button id="overNew" class="primary">New game</button>
-                    </div>
-                  </div>
-                </div>
                 <div
                   id="choice"
                   class="choice"
@@ -180,6 +169,18 @@
                 ><span id="emptyStack" class="empty-stack"
                   >Your first piece starts here.</span
                 >
+              </div>
+              <div id="gameOver" class="game-over" role="alert" hidden>
+                <div>
+                  <span class="hud-caption">NO ROOM LEFT</span>
+                  <h1>TOP OUT</h1>
+                  <p>No placement fits. Undo your last turn or try again.</p>
+                  <strong id="finalScore"></strong>
+                  <div class="end-actions">
+                    <button id="overUndo">↶ Undo</button
+                    ><button id="overNew" class="primary">New game</button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -649,18 +650,11 @@
 </fieldset>
 <fieldset id="orbitGestureSettings">
 <legend>Drag response</legend>
-<label class="camera-range">
-<span>Rotation per pixel <output id="orbitSensitivityValue">0.5</output> degrees</span>
-<input id="orbitSensitivity" type="range" min="0.1" max="2" step="0.05" value="0.5">
-</label>
-<label class="camera-range">
-<span>Drag smoothing <output id="orbitSmoothingValue">70</output> ms</span>
-<input id="orbitSmoothing" type="range" min="0" max="300" step="10" value="70">
-</label>
-<label class="camera-range">
-<span>Initial dead-zone radius <output id="orbitDeadZoneValue">24</output> px</span>
-<input id="orbitDeadZone" type="range" min="0" max="96" step="2" value="24">
-</label>
+<!-- settings:orbitResponse:start -->
+<label class="camera-range" for="orbitSensitivity"><span>Rotation per pixel <output id="orbitSensitivityValue" for="orbitSensitivity">0.5</output> degrees</span><input id="orbitSensitivity" type="range" min="0.1" max="2" step="0.05" value="0.5"></label>
+<label class="camera-range" for="orbitSmoothing"><span>Drag smoothing <output id="orbitSmoothingValue" for="orbitSmoothing">70</output> ms</span><input id="orbitSmoothing" type="range" min="0" max="300" step="10" value="70"></label>
+<label class="camera-range" for="orbitDeadZone"><span>Initial dead-zone radius <output id="orbitDeadZoneValue" for="orbitDeadZone">24</output> px</span><input id="orbitDeadZone" type="range" min="0" max="96" step="2" value="24"></label>
+<!-- settings:orbitResponse:end -->
 <label>
 <input id="orbitAxisLock" type="checkbox" checked> Keep chosen axis until release</label>
 <label>
@@ -687,26 +681,13 @@
 <input id="orbitSnap" type="checkbox" checked> Settle toward nearest face</label>
 <p id="orbitSnapHelp" class="muted">
 </p>
-<label class="camera-range">
-<span>Face normal: horizontal <output id="orbitHorizontalValue">-20</output> degrees</span>
-<input id="orbitHorizontal" type="range" min="-60" max="60" step="1" value="-20">
-</label>
-<label class="camera-range">
-<span>Face normal: vertical <output id="orbitVerticalValue">15</output> degrees</span>
-<input id="orbitVertical" type="range" min="-60" max="60" step="1" value="15">
-</label>
-<label class="camera-range">
-<span>Face roll <output id="orbitRollValue">0</output> degrees</span>
-<input id="orbitRoll" type="range" min="-45" max="45" step="1" value="0">
-</label>
-<label class="camera-range">
-<span>Settle duration <output id="orbitSettleTimeValue">700</output> ms</span>
-<input id="orbitSettleTime" type="range" min="100" max="2500" step="50" value="700">
-</label>
-<label class="camera-range">
-<span>Release delay <output id="orbitSettleDelayValue">80</output> ms</span>
-<input id="orbitSettleDelay" type="range" min="0" max="600" step="20" value="80">
-</label>
+<!-- settings:orbitAlignment:start -->
+<label class="camera-range" for="orbitHorizontal"><span>Face normal: horizontal <output id="orbitHorizontalValue" for="orbitHorizontal">-20</output> degrees</span><input id="orbitHorizontal" type="range" min="-60" max="60" step="1" value="-20"></label>
+<label class="camera-range" for="orbitVertical"><span>Face normal: vertical <output id="orbitVerticalValue" for="orbitVertical">15</output> degrees</span><input id="orbitVertical" type="range" min="-60" max="60" step="1" value="15"></label>
+<label class="camera-range" for="orbitRoll"><span>Face roll <output id="orbitRollValue" for="orbitRoll">0</output> degrees</span><input id="orbitRoll" type="range" min="-45" max="45" step="1" value="0"></label>
+<label class="camera-range" for="orbitSettleTime"><span>Settle duration <output id="orbitSettleTimeValue" for="orbitSettleTime">700</output> ms</span><input id="orbitSettleTime" type="range" min="100" max="2500" step="50" value="700"></label>
+<label class="camera-range" for="orbitSettleDelay"><span>Release delay <output id="orbitSettleDelayValue" for="orbitSettleDelay">80</output> ms</span><input id="orbitSettleDelay" type="range" min="0" max="600" step="20" value="80"></label>
+<!-- settings:orbitAlignment:end -->
 </fieldset>
 <fieldset id="orbitDebugSettings">
 <legend>Diagnostics</legend>
@@ -771,7 +752,49 @@
 <div class="settings-section-body">
 <fieldset>
 <legend>Rendering style</legend>
-<label for="modelShape">Model shape</label><select id="modelShape"><option value="angular" selected>Angular (Tengen)</option><option value="jelly">Jelly</option><option value="voxel">Voxel</option><option value="gameboy">Gameboy Tetronimos</option></select><label for="pieceAppearance">Rendering effect</label><select id="pieceAppearance"><option value="jelly">None</option><option value="dither">Dithered</option><option value="matte">Matte</option><option value="cel">Cel shaded</option><option value="ascii">ASCII</option></select>
+<div id="modelStyleBox" class="style-selector-box"><label for="modelShape">Model shape</label><select id="modelShape"><option value="angular" selected>Angular (Tengen)</option><option value="jelly">Jelly</option><option value="gameboy">Gameboy Tetronimos</option><option value="text">Extruded text []</option></select><!-- settings:cubie:start -->
+<div class="setting-row"><label for="cubieScale">Cubie size <output id="cubieScaleValue" for="cubieScale">100%</output></label><input id="cubieScale" type="range" min="40" max="100" step="1" value="100" aria-describedby="cubieScaleHelp"><p class="muted" id="cubieScaleHelp">Sizes individual cubies while keeping whole Tengen and Jelly pieces connected.</p></div>
+<!-- settings:cubie:end --><fieldset id="jellyShaping"><legend>Jelly shaping</legend><!-- settings:jelly:start -->
+<div class="setting-row"><label for="jellyCornerO"><input id="jellyCornerO" type="checkbox" aria-describedby="jellyCornerOHelp"> O rings (Jelly / Angular) <output id="jellyCornerOValue" for="jellyCornerO">Off</output></label><p class="muted" id="jellyCornerOHelp">Smooth beveled ring with a rounded-square opening. Cosmetic only.</p></div>
+<div class="setting-row"><label for="jellyBevel">Bevel width <output id="jellyBevelValue" for="jellyBevel">15</output></label><input id="jellyBevel" type="range" min="1" max="41" step="1" value="15" aria-describedby="jellyBevelHelp"><p class="muted" id="jellyBevelHelp">Higher: bevels start closer to the face centers.</p></div>
+<div id="jellyProfileOptions" class="setting-row"><label for="jellyProfile">Bevel profile <output id="jellyProfileValue" for="jellyProfile">2</output></label><input id="jellyProfile" type="range" min="1.05" max="6" step="0.05" value="2" aria-describedby="jellyProfileHelp"><p class="muted" id="jellyProfileHelp">Low: nearly straight chamfer. Middle: rounded. High: near-square corner. Width stays independent.</p></div>
+<div id="jellyElbowsOptions" class="setting-row"><label for="jellyElbows">Elbow smoothing <output id="jellyElbowsValue" for="jellyElbows">100%</output></label><input id="jellyElbows" type="range" min="0" max="100" step="5" value="100" aria-describedby="jellyElbowsHelp"><p class="muted" id="jellyElbowsHelp">Lower values keep inside corners sharper. Angular models use flat faces and straight bevels; width and O-ring controls apply.</p></div>
+<div id="jellyOpeningOptions" class="setting-row"><label for="jellyOpening">O opening <output id="jellyOpeningValue" for="jellyOpening">24</output></label><input id="jellyOpening" type="range" min="1" max="48" step="1" value="24" aria-describedby="jellyOpeningHelp"><p class="muted" id="jellyOpeningHelp">Opening size when rounded-square O rings are enabled.</p></div>
+<!-- settings:jelly:end --></fieldset></div><div id="effectStyleBox" class="style-selector-box"><label for="pieceAppearance">Rendering effect</label><select id="pieceAppearance"><option value="jelly">None</option><option value="dither">Dithered</option><option value="matte">Matte</option><option value="cel">Cel shaded</option><option value="ascii">ASCII</option></select><div id="ditherInline" class="inline-tuning">
+
+<div class="setting-dependency">
+<p class="setting-reason" id="ditherTuningReason">Select this rendering style first.</p>
+<fieldset id="ditherTuning" aria-describedby="ditherTuningReason">
+<p class="muted">Pixel size sets view resolution. Fewer levels make stronger shading bands.</p>
+<!-- settings:dither:start -->
+<div class="setting-row"><label for="ditherLevels">Shading levels <output id="ditherLevelsValue" for="ditherLevels">5</output></label><input id="ditherLevels" type="range" min="2" max="17" step="1" value="5"></div>
+<div class="setting-row"><label for="ditherSize">Pixel size <output id="ditherSizeValue" for="ditherSize">2px</output></label><input id="ditherSize" type="range" min="1" max="6" step="0.5" value="2"></div>
+<div class="setting-row"><label for="ditherContrast">Contrast <output id="ditherContrastValue" for="ditherContrast">2.5×</output></label><input id="ditherContrast" type="range" min="0.5" max="5" step="0.1" value="2.5"></div>
+<div class="setting-row"><label for="ditherMidpoint">Light / dark balance <output id="ditherMidpointValue" for="ditherMidpoint">0.6</output></label><input id="ditherMidpoint" type="range" min="0" max="1" step="0.05" value="0.6"></div>
+<!-- settings:dither:end -->
+<button id="resetdither" type="button">Reset dither tuning</button>
+</fieldset>
+</div>
+</div><div id="asciiInline" class="inline-tuning">
+
+<div class="setting-dependency">
+<p class="setting-reason" id="asciiTuningReason">Select this rendering style first.</p>
+<fieldset id="asciiTuning" aria-describedby="asciiTuningReason">
+<p class="muted">Lower coverage keeps more edge characters. Blending reduces flicker.</p>
+<!-- settings:ascii:start -->
+<div class="setting-row"><label for="asciiSize">Character size <output id="asciiSizeValue" for="asciiSize">1×</output></label><input id="asciiSize" type="range" min="0.5" max="2" step="0.1" value="1"></div>
+<div class="setting-row"><label for="asciiExposure">Brightness <output id="asciiExposureValue" for="asciiExposure">1×</output></label><input id="asciiExposure" type="range" min="0.5" max="3" step="0.1" value="1"></div>
+<div class="setting-row"><label for="asciiDensity">Character density <output id="asciiDensityValue" for="asciiDensity">1×</output></label><input id="asciiDensity" type="range" min="0.5" max="2" step="0.1" value="1"></div>
+<div class="setting-row"><label for="asciiCoverage">Edge coverage required <output id="asciiCoverageValue" for="asciiCoverage">0.16</output></label><input id="asciiCoverage" type="range" min="0.02" max="0.6" step="0.02" value="0.16"></div>
+<div class="setting-row"><label for="asciiBlend">Character blending <output id="asciiBlendValue" for="asciiBlend">1</output></label><input id="asciiBlend" type="range" min="0" max="1" step="0.1" value="1"></div>
+<!-- settings:ascii:end -->
+<button id="resetascii" type="button">Reset ascii tuning</button>
+</fieldset>
+</div>
+</div><div id="transparencyTuning" class="inline-tuning"><strong>Pixel transparency</strong><!-- settings:transparency:start -->
+<div class="setting-row"><label for="transparencyGrain">Transparency grain <output id="transparencyGrainValue" for="transparencyGrain">1px</output></label><input id="transparencyGrain" type="range" min="1" max="6" step="0.5" value="1" aria-describedby="transparencyGrainHelp"><p class="muted" id="transparencyGrainHelp">Smaller grains make finer holes; larger grains make a coarser pattern.</p></div>
+<div class="setting-row"><label for="transparencyResponse">Opacity response <output id="transparencyResponseValue" for="transparencyResponse">1</output></label><input id="transparencyResponse" type="range" min="0.25" max="3" step="0.05" value="1" aria-describedby="transparencyResponseHelp"><p class="muted" id="transparencyResponseHelp">1 follows the opacity slider. Lower values keep more pixels; higher values reveal more of the scene behind the piece.</p></div>
+<!-- settings:transparency:end --></div>
 <label
               ><input id="animations" type="checkbox" checked />
               Animations</label
@@ -826,45 +849,23 @@
 </label><input id="lightAmbient" type="range" min="0" max="1" step="0.05" value="0.35" />
 <fieldset id="lightingClasses"><legend>Lighting by element</legend><p class="muted">Model default uses positional light for Gameboy, surface light otherwise. Unlit guides stay unlit.</p><label>Placed pieces & packing blocks<select id="lightPieces"><option value="0" selected>Model default</option><option value="1">Surface angle</option><option value="2">Light proximity</option></select></label><label>Active cubies & loose fragments<select id="lightCubies"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Balls &amp; Platonic Solids<select id="lightSolids"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label><label>Other lit elements<select id="lightOther"><option value="0">Model default</option><option value="1" selected>Surface angle</option><option value="2">Light proximity</option></select></label></fieldset><button id="faceLight" type="button">Light from camera</button> <button id="resetlight" type="button">Reset lighting</button>
 </details>
-<fieldset id="pieceAssemblySettings"><legend>Piece assembly</legend><label>Family Explorer<select id="familyPieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><label>Start Cube (Two-Cube Practice)<select id="practiceStartPieces"><option value="retained">Whole Tetracubes — Keep Cut Pieces</option><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><label>Target Cube (Two-Cube Practice)<select id="practiceTargetPieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><label>Active Pieces<select id="activePieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><label>Stack<select id="stackPieces"><option value="retained">Placed Shapes - Keep Cut Pieces</option><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label><p class="muted">Tetracubes are complete, valid groups of four. Fragments belong to incomplete or excluded groups; extra cubies stay cubes. Explorer detection follows the packing filters. Keep Cut Pieces preserves original surfaces through cuts and moves; stack colors still follow the game.</p></fieldset><fieldset id="cubeSizeSettings"><legend>Cube sizes</legend><label class="camera-range"><span>Family Explorer <output id="familySizeValue">100%</output></span><input id="familySize" type="range" min="50" max="160" step="1" value="100"></label><label class="camera-range"><span>Start Cube (Two-Cube Practice) <output id="practiceStartSizeValue">100%</output></span><input id="practiceStartSize" type="range" min="50" max="160" step="1" value="100"></label><label class="camera-range"><span>Target Cube (Two-Cube Practice) <output id="practiceTargetSizeValue">100%</output></span><input id="practiceTargetSize" type="range" min="50" max="160" step="1" value="100"></label><label class="camera-range"><span>Active Pieces <output id="gameActiveSizeValue">100%</output></span><input id="gameActiveSize" type="range" min="50" max="160" step="1" value="100"></label><label class="camera-range"><span>Stack <output id="gameStackSizeValue">100%</output></span><input id="gameStackSize" type="range" min="50" max="160" step="1" value="100"></label><p class="muted">100% uses automatic fit. Active Pieces also sizes the combined game cube; Stack sizes the separate stack view. Larger sizes may crop corners.</p></fieldset><fieldset id="interfaceSettings"><legend>Interface theme</legend><label>Color theme<select id="uiTheme"><option value="teal">Teal</option><option value="slate">Slate blue</option><option value="violet">Violet</option><option value="amber">Amber</option></select></label><p class="muted">Shared by both apps. Piece colors are unchanged.</p></fieldset><fieldset id="jellyShaping"><legend>Jelly shaping</legend><label><input id="jellyCornerO" type="checkbox" checked > O rings (Jelly / Angular) <output id="jellyCornerOValue">On</output></label><p class="muted">Smooth beveled ring with a rounded-square opening. Cosmetic only.</p><label>Bevel width <input id="jellyBevel" type="range" min="1" max="48" step="1" value="15"><output id="jellyBevelValue">15</output></label><p class="muted">Higher: bevels start closer to the face centers.</p><label>Bevel profile <input id="jellyProfile" type="range" min="1.05" max="6" step="0.05" value="2"><output id="jellyProfileValue">2</output></label><p class="muted">Low: nearly straight chamfer. Middle: rounded. High: near-square corner. Width stays independent.</p><label>Elbow smoothing <input id="jellyElbows" type="range" min="0" max="100" step="5" value="100"><output id="jellyElbowsValue">100%</output></label><p class="muted">Lower values keep inside corners sharper. Angular models use flat faces and straight bevels; width and O-ring controls apply.</p><label>O opening <input id="jellyOpening" type="range" min="18" max="40" step="1" value="24"><output id="jellyOpeningValue">24</output></label><p class="muted">Opening size when rounded-square O rings are enabled.</p></fieldset>
-<details class="visual-tuning">
-<summary>Dither tuning</summary>
-<div class="setting-dependency">
-<p class="setting-reason" id="ditherTuningReason">Select this rendering style first.</p>
-<fieldset id="ditherTuning" aria-describedby="ditherTuningReason">
-<p class="muted">Pixel size sets view resolution. Fewer levels make stronger shading bands.</p>
-<label for="ditherLevels">Shading levels<output id="ditherLevelsValue">5</output>
-</label><input id="ditherLevels" type="range" min="2" max="17" step="1" value="5" />
-<label for="ditherSize">Pixel size<output id="ditherSizeValue">2px</output>
-</label><input id="ditherSize" type="range" min="1" max="6" step="0.5" value="2" />
-<label for="ditherContrast">Contrast<output id="ditherContrastValue">2.5×</output>
-</label><input id="ditherContrast" type="range" min="0.5" max="5" step="0.1" value="2.5" />
-<label for="ditherMidpoint">Light / dark balance<output id="ditherMidpointValue">0.6</output>
-</label><input id="ditherMidpoint" type="range" min="0" max="1" step="0.05" value="0.6" />
-<button id="resetdither" type="button">Reset dither tuning</button>
-</fieldset>
-</div>
-</details>
-<details class="visual-tuning">
-<summary>ASCII tuning</summary>
-<div class="setting-dependency">
-<p class="setting-reason" id="asciiTuningReason">Select this rendering style first.</p>
-<fieldset id="asciiTuning" aria-describedby="asciiTuningReason">
-<p class="muted">Lower coverage keeps more edge characters. Blending reduces flicker.</p>
-<label for="asciiSize">Character size<output id="asciiSizeValue">1×</output>
-</label><input id="asciiSize" type="range" min="0.5" max="2" step="0.1" value="1" />
-<label for="asciiExposure">Brightness<output id="asciiExposureValue">1×</output>
-</label><input id="asciiExposure" type="range" min="0.5" max="3" step="0.1" value="1" />
-<label for="asciiDensity">Character density<output id="asciiDensityValue">1×</output>
-</label><input id="asciiDensity" type="range" min="0.5" max="2" step="0.1" value="1" />
-<label for="asciiCoverage">Edge coverage required<output id="asciiCoverageValue">0.16</output>
-</label><input id="asciiCoverage" type="range" min="0.02" max="0.6" step="0.02" value="0.16" />
-<label for="asciiBlend">Character blending<output id="asciiBlendValue">1</output>
-</label><input id="asciiBlend" type="range" min="0" max="1" step="0.1" value="1" />
-<button id="resetascii" type="button">Reset ascii tuning</button>
-</fieldset>
-</div>
-</details>
+<fieldset id="pieceAssemblySettings"><legend>Piece assembly</legend><!-- settings:assembly:start -->
+<div class="setting-row"><label for="familyPieces">Family Explorer<select id="familyPieces"><option value="cubies">Individual Cubies Only</option><option value="whole" selected>Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label></div>
+<div class="setting-row"><label for="practiceStartPieces">Start Cube (Two-Cube Practice)<select id="practiceStartPieces"><option value="cubies" selected>Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="retained">Whole Tetracubes - Keep Cut Pieces</option></select></label></div>
+<div class="setting-row"><label for="practiceTargetPieces">Target Cube (Two-Cube Practice)<select id="practiceTargetPieces"><option value="cubies">Individual Cubies Only</option><option value="whole" selected>Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label></div>
+<div class="setting-row"><label for="activePieces">Active Pieces<select id="activePieces"><option value="cubies">Individual Cubies Only</option><option value="whole">Whole Tetracubes + Individual Cubie Fragments</option><option value="solids" selected>Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option></select></label></div>
+<div class="setting-row"><label for="stackPieces">Stack<select id="stackPieces"><option value="cubies">Individual Cubies Only</option><option value="whole" selected>Whole Tetracubes + Individual Cubie Fragments</option><option value="solids">Balls &amp; Platonic Solids + Cubie Extras</option><option value="wholeSolids">Whole Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="cubiesSolids">Individual Cubie Tetracubes + Balls &amp; Platonic Solid Fragments + Cubie Extras</option><option value="retained">Placed Shapes - Keep Cut Pieces</option></select></label></div>
+<!-- settings:assembly:end --><p class="muted">Tetracubes are complete, valid groups of four. Fragments belong to incomplete or excluded groups; extra cubies stay cubes. Explorer detection follows the packing filters. Keep Cut Pieces preserves original surfaces through cuts and moves; stack colors still follow the game.</p></fieldset><fieldset id="cubeSizeSettings"><legend>Cube sizes</legend><!-- settings:viewSizes:start -->
+<div class="setting-row"><label for="gameActiveSize">Active Pieces <output id="gameActiveSizeValue" for="gameActiveSize">100%</output></label><input id="gameActiveSize" type="range" min="50" max="160" step="1" value="100"></div>
+<div class="setting-row"><label for="gameStackSize">Stack <output id="gameStackSizeValue" for="gameStackSize">100%</output></label><input id="gameStackSize" type="range" min="50" max="160" step="1" value="100"></div>
+<div class="setting-row"><label for="familySize">Family Explorer <output id="familySizeValue" for="familySize">100%</output></label><input id="familySize" type="range" min="50" max="160" step="1" value="100"></div>
+<div class="setting-row"><label for="practiceStartSize">Start Cube (Two-Cube Practice) <output id="practiceStartSizeValue" for="practiceStartSize">100%</output></label><input id="practiceStartSize" type="range" min="50" max="160" step="1" value="100"></div>
+<div class="setting-row"><label for="practiceTargetSize">Target Cube (Two-Cube Practice) <output id="practiceTargetSizeValue" for="practiceTargetSize">100%</output></label><input id="practiceTargetSize" type="range" min="50" max="160" step="1" value="100"></div>
+<!-- settings:viewSizes:end --><p class="muted">100% uses automatic fit. Active Pieces also sizes the combined game cube; Stack sizes the separate stack view. Larger sizes may crop corners.</p></fieldset><fieldset id="interfaceSettings"><legend>Interface theme</legend><!-- settings:theme:start -->
+<div class="setting-row"><label for="uiTheme">Color theme<select id="uiTheme"><option value="teal" selected>Teal</option><option value="slate">Slate blue</option><option value="violet">Violet</option><option value="amber">Amber</option></select></label></div>
+<!-- settings:theme:end --><p class="muted">Shared by both apps. Piece colors are unchanged.</p></fieldset>
+
+
 <fieldset class="piece-colors">
 <legend>Tetromino colors</legend>
 <p class="muted">Shared and saved on this device. J/L and S/Z use their constituent colors.</p>

@@ -2,7 +2,7 @@
 name = "cube-stack"
 version = "0.1.0"
 edition = "2024"
-description = "A facebound tetromino puzzle engine and browser WebAssembly game"
+description = "Browser adapter for the Stack It Up game and packing explorer"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -17,3 +17,10 @@ codegen-units = 1
 panic = "abort"
 strip = true
 
+
+[workspace]
+members = ["crates/puzzle-core"]
+resolver = "3"
+
+[dependencies]
+stack-it-up-core = { path = "crates/puzzle-core" }

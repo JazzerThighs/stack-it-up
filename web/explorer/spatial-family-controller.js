@@ -1,3 +1,5 @@
+import {createFamilySession} from './family-session.js';
+import {createWorkerTask} from '../workers/task.js';
 import {detectPieces} from './family-exploration.js';
 import {detectedColor} from './family-colors.js';
 import {displayIndex,practicePair} from './model.js';
@@ -15,26 +17,26 @@ export function packingFromCells(cells){
   return {masks,extras,cellColors};
 }
 export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
-  let view,source,family,lookupGeneration=0,matched=null,locked=null,run=0,busy=false,worker=null,cancelJob=null;
-  const ledger=new Map(),recentLedger=[],lookups=new Map(),paths=new Map();
+  let view,source,family,lookupGeneration=0,matched=null,locked=null,run=0,busy=false;
+  const pathJob=createWorkerTask({
+    createWorker:()=>typeof Worker==='undefined'?null:new Worker(new URL('./practice-worker.js',import.meta.url),{type:'module'}),
+    runFallback:({source,target})=>import('./practice-path.js').then(m=>m.planPracticePath(source,target)),
+    errorMessage:'Could not construct the family path',
+  });
+  const session=createFamilySession({
+    lookup:(family,masks)=>data.lookup(family,masks),filters:()=>data.filters?.(),
+    constructPath:(source,target)=>pathJob.run({source,target}),
+  });
   function remember(records) {
-    let added=false;
-    for(const p of records){const key=`${p.dataset}:${p.lineNumber}`;if(!ledger.has(key)){ledger.set(key,p);recentLedger.push(p);if(recentLedger.length>50)recentLedger.shift();added=true;}}
-    if(!added)return;
-    // Keep the ledger compact on screen; its entries never retain mesh/history data.
-    $('familyLedgerStatus').textContent=`${ledger.size} distinct packings encountered · showing the latest ${recentLedger.length}`;
-    $('familyPackingLedger').replaceChildren(...recentLedger.slice().reverse().map(p=>{
-      const row=document.createElement('li');row.textContent=`${p.dataset} · Line ${p.lineNumber} · Family ${p.familyId} · ${p.identities.join('')}`;return row;
+    if(!session.remember(records))return;
+    const {count,recent}=session.ledger;
+    $('familyLedgerStatus').textContent=`${count} distinct packings encountered â€” showing the latest ${recent.length}`;
+    $('familyPackingLedger').replaceChildren(...recent.reverse().map(p=>{
+      const row=document.createElement('li');row.textContent=`${p.dataset} Â· Line ${p.lineNumber} Â· Family ${p.familyId} Â· ${p.identities.join('')}`;return row;
     }));
   }
-  function lookup(masks) {
-    const key=JSON.stringify([family,masks.slice().sort((a,b)=>a-b),data.filters?.()]);
-    if(lookups.has(key))return lookups.get(key);
-    const promise=data.lookup(family,masks).catch(error=>{lookups.delete(key);throw error;});
-    lookups.set(key,promise);
-    if(lookups.size>256)lookups.delete(lookups.keys().next().value);
-    return promise;
-  }
+  const lookup=masks=>session.lookup(family,masks);
+  const path=(source,target)=>session.path(source,target);
   const button=$('familyLockShapes'),colorButton=$('familyLockColors');
   function syncButton(){
     for(const [control,mode,label] of [[button,'shapes','shapes'],[colorButton,'colors','colors']]){
@@ -45,18 +47,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
       control.title=active?`Starter line ${locked.record.lineNumber}; navigation stays in family ${family}.`:mode==='colors'?'Keep starting piece colors; rebuild shapes as valid tetracubes are found.':'Keep starting cut shapes; update colors for each destination packing.';
     }
   }
-  function cancel(){run++;worker?.terminate();worker=null;cancelJob?.();cancelJob=null;busy=false;if(view){view.generation++;view.busy=false;view.orbitOnly=false;view.playbackMs=null;}syncButton();}
-  function constructPath(a,b){
-    if(typeof Worker==='undefined')return import('./practice-path.js').then(m=>m.planPracticePath(a,b));
-    return new Promise((resolve,reject)=>{worker=new Worker(new URL('./practice-worker.js',import.meta.url),{type:'module'});cancelJob=()=>reject(Error('Path cancelled'));worker.onmessage=({data})=>{worker?.terminate();worker=null;cancelJob=null;data.error?reject(Error(data.error)):resolve(data.moves);};worker.onerror=()=>{worker?.terminate();worker=null;cancelJob=null;reject(Error('Could not construct the family path'));};worker.postMessage({source:a,target:b});});
-  }
-  async function path(a,b) {
-    const key=JSON.stringify([a,b]);
-    if(paths.has(key))return paths.get(key);
-    const moves=await constructPath(a,b);paths.set(key,moves);
-    if(paths.size>32)paths.delete(paths.keys().next().value);
-    return moves;
-  }
+  function cancel(){run++;pathJob.cancel();busy=false;if(view){view.generation++;view.busy=false;view.orbitOnly=false;view.playbackMs=null;}syncButton();}
   async function changed(cube) {
     if(busy){
       const groups=detectPieces(cube.cells,cube.detectionFilters);
@@ -136,7 +127,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     locked={mode,record:matched,cells:view.cells,packing:packingFromCells(view.cells)};
     source=matched;
     $('familyExploreTitle').textContent=`Family ${family} Â· Line ${source.lineNumber}`;
-    view.lockedAssembly=mode==='shapes'?'retained':'whole';view.assembly=view.lockedAssembly;view.individualPieces=false;view.explorationSolids=false;view.fixedPieceColors=true;view.cells=locked.cells;view.initial=locked.cells.slice();view.retainedSource=null;view.setState(view.cells);
+    view.lockedAssembly=mode==='shapes'?'retained':'whole';view.assembly=view.lockedAssembly;view.individualPieces=false;view.explorationSolids=false;view.fixedPieceColors=true;view.rebaseInitial();view.retainedSource=null;view.setState(view.cells);
     const token=run;
     await data.selectionChanged?.(source);
     if(!locked||token!==run)return;

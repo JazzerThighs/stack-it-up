@@ -1,3 +1,4 @@
+import {startupDefaults} from './startup-defaults.js';
 import {assemblyUsesSolids} from '../render/assembly.js';
 import {displaySettings,initializeDisplayControls} from './display-settings.js';
 import {jellyStyleKey} from '../render/visual-settings.js';
@@ -41,7 +42,9 @@ const defaultLayers = [
   ["stack", "Placed stack"],
   ["empty", "Empty cells"],
 ];
-export let layerOrder = defaultLayers.map(([id]) => id);
+const initialLayers=startupDefaults.layerOrder;
+if(new Set(initialLayers).size!==defaultLayers.length||defaultLayers.some(([id])=>!initialLayers.includes(id)))throw Error('Startup layerOrder must contain every rendering layer exactly once.');
+export let layerOrder = initialLayers.slice();
 export function renderLayerSettings(focusId = null) {
   const custom = $("customLayers").checked;
   const list = $("renderLayers");

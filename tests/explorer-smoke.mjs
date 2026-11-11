@@ -1,124 +1,23 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
+import {createBrowserFixture} from "./fixtures/browser.mjs";
 const buildInfo=JSON.parse(fs.readFileSync(new URL('../dist/build-info.json',import.meta.url),'utf8'));
 const assetRoot=new URL(`../dist/${buildInfo.assets}/`,import.meta.url);
 const html = fs.readFileSync(
   new URL("explorer/index.html", assetRoot),
   "utf8",
 );
-const enums = new Map(),
-  frames = [],
-  elements = new Map();
-let buffer;
-const gl = new Proxy(
-  {
-    createVertexArray: () => ({}),
-    createBuffer: () => ({}),
-    createProgram: () => ({}),
-    createShader: () => ({}),
-    getShaderParameter: () => true,
-    checkFramebufferStatus: () => gl.FRAMEBUFFER_COMPLETE,
-    getProgramParameter: () => true,
-    getAttribLocation: () => 0,
-    getUniformLocation: () => ({}),
-    bindBuffer: (_, b) => (buffer = b),
-    bufferData: (_, data) => {
-      buffer.data = data;
-    },
-  },
-  {
-    get: (o, k) =>
-      k in o
-        ? o[k]
-        : k === k.toUpperCase()
-          ? enums.has(k)
-            ? enums.get(k)
-            : (enums.set(k, enums.size + 1), enums.get(k))
-          : () => {},
-  },
-);
-function element() {
-  return {
-    checked: false,
-    value: "",
-    style: {},
-    dataset: {},
-    children: [],
-    hidden: false,
-    disabled: false,
-    textContent: "",
-    classList: { toggle() {}, add() {}, remove() {} },
-    append(...x) {
-      this.children.push(...x);
-    },
-    replaceChildren(...x) {
-      this.children = x;
-    },
-    setAttribute() {},
-    addEventListener(t, f) {
-      (this.listeners ??= {})[t] = f;
-    },
-    querySelector() {
-      return (this.child ??= element());
-    },
-    closest() {
-      return (this.parent ??= element());
-    },
-    getContext(type) {
-      return type === "webgl2" ? gl : new Proxy({}, { get: () => () => {} });
-    },
-    getBoundingClientRect() {
-      return { left: 0, top: 0, width: 1200, height: 800 };
-    },
-    setPointerCapture() {},
-    focus() {},
-    showModal() {
-      this.open = true;
-    },
-    close() {
-      this.open = false;
-    },
-  };
-}
-for (const tag of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)) {
-  const e = element();
-  e.checked = /\bchecked\b/.test(tag[0]);
-  e.hidden = /\bhidden\b/.test(tag[0]);
-  e.value = tag[0].match(/\bvalue="([^"]*)"/)?.[1] || "";
-  elements.set(tag[1], e);
-}
-const $ = (id) => {
-  assert(elements.has(id), `missing ${id}`);
-  return elements.get(id);
-};
-Object.assign(globalThis, {
-  window: {},
-  cancelAnimationFrame: () => {},
-  document: {
-    hidden: false,
-    getElementById: $,
-    createElement: element,
-    querySelector: element,
-    querySelectorAll: () => [],
-    addEventListener() {},
-  },
-  devicePixelRatio: 1,
-  matchMedia: () => ({ matches: true }),
-  ResizeObserver: class {
-    observe() {}
-    disconnect() {}
-  },
-  requestAnimationFrame: (fn) => (frames.push(fn), frames.length),
-  fetch: async (url) => ({
-    ok: true,
-    arrayBuffer:async()=>fs.readFileSync(url),
-    text: async () =>
-      fs.readFileSync(
-        new URL(url, new URL("explorer/", assetRoot)),
-        "utf8",
-      ),
+const browser=createBrowserFixture(html,{
+  defaultValue:'',
+  uniformLocation:()=>({}),
+  globals:{window:{},cancelAnimationFrame:()=>{}},
+  fetch:async url=>({
+    ok:true,arrayBuffer:async()=>fs.readFileSync(url),
+    text:async()=>fs.readFileSync(new URL(url,new URL('explorer/',assetRoot)),'utf8'),
   }),
 });
+const {$,elements,element,gl,frames,flush}=browser;
+browser.install();
 
 $("targetTransparency").value = "0";
 for (const id of ["extraEdges", "extraCorners", "extraCenters"])
@@ -256,10 +155,6 @@ assert(!html.includes('ungroupedOnly'));
 assert($("familyExploreMode").checked && !$("familyExplorePanel").hidden);
 assert($("cubeLayout").hidden && $("practicePanel").hidden);
 assert(observed.has($("familyExploreCube")),"family cube is initialized on startup");
-const flush = () => {
-  let n = 0;
-  while (frames.length && n++ < 100) frames.shift()(800);
-};
 flush();
 assert.match($('solvedFacelets').textContent,/Native tetracube/);
 assert($("solvedCube").children.length >= 2);
@@ -366,7 +261,7 @@ for(const camera of ['orthographic','perspective']) {
   $('explorerCamera').value=camera;$('explorerCamera').listeners.change();flush();
   assert.equal(source.perspective,camera==='perspective');assert.equal(target.perspective,source.perspective);
 }
-for(const shape of ['jelly','voxel','gameboy']) for(const style of ['jelly','dither','matte','cel','ascii']) {
+for(const shape of ['jelly','gameboy','text']) for(const style of ['jelly','dither','matte','cel','ascii']) {
   $('modelShape').value=shape;
   $('pieceAppearance').value=style;$('pieceAppearance').listeners.change();flush();
   assert.equal(target.modelShape,shape);assert.equal(source.modelShape,shape);assert.equal(target.appearance,style);assert.equal(source.appearance,style);
@@ -379,7 +274,7 @@ assert.equal(palette.colors[1],'#123456');assert.equal(palette.packingPalette.y,
 assert(target.solid.data.some((value,i)=>i%9===6 && Math.abs(value-0x12/255)<1e-6));
 assert.deepEqual([source.cells,target.cells],explorerState);
 $('resetPieceColors').onclick();assert.deepEqual(palette.colors,palette.defaultColors);
-console.log('PASS: explorer cameras, all 15 shape/effect combinations and custom colors preserve packings and practice state.');
+console.log('PASS: explorer cameras, all configured shape/effect combinations and custom colors preserve packings and practice state.');
 
 const retainedSurface=target.solid.data;
 $('asciiSize').value='1.5';$('asciiSize').listeners.input();
@@ -710,3 +605,19 @@ assert(detectPieces(inspectedView.cells,inspectedView.detectionFilters).find(p=>
 $('positionalColors').checked=true;$('positionalColors').onchange();
 assert(inspectedView.fixedPieceColors);assert.equal(new Set(inspectedView.cells.filter(c=>c.piece>=0).map(c=>c.color)).size,6);
 console.log('PASS: default inspection preserves the live cube/history across exclusions and resets; recognition and distinct colors update in place.');
+
+// Out-of-order filter results must not replace newer counts or disturb the cube.
+const queryBeforeRace=client.query,filterResponses=[],raceHistory=inspectedView.history,raceCurrent=spatial.current;
+try {
+  client.query=()=>new Promise(resolve=>filterResponses.push(resolve));
+  const olderQuery=spatial.query({},true,false),newerQuery=spatial.query({},true,false);
+  assert.equal(filterResponses.length,2);
+  const result=count=>{const familyCounts=Array(Math.max(...client.info.families.map(f=>f.id))+1).fill(0);familyCounts[raceCurrent.familyId]=count;return {record:raceCurrent,count,position:0,familyCounts};};
+  filterResponses[1](result(22));await newerQuery;
+  const latestStatus=$('status').textContent;
+  assert(latestStatus.startsWith('22 matching'));
+  filterResponses[0](result(11));await olderQuery;
+  assert.equal($('status').textContent,latestStatus);
+  assert.equal(spatial.current,raceCurrent);assert.equal(inspectedView.history,raceHistory);
+} finally {client.query=queryBeforeRace;}
+console.log('PASS: out-of-order filter queries preserve the latest result and live cube history.');

@@ -1,0 +1,8 @@
+[package]
+name = "stack-it-up-core"
+version = "0.1.0"
+edition = "2024"
+description = "Deterministic puzzle rules, piece catalog and mesh computation"
+
+[lib]
+path = "src/lib.rs"

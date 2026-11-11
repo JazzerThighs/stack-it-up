@@ -1,15 +1,13 @@
 import {openSettingsPage} from './settings-pages.js';
 import {refreshGameplay,validateGameplay} from './gameplay-settings.js';
 import {refreshSettingsAvailability} from './settings-availability.js';
-export function initializeSession({engine, snapshot, update, newGame, clearAnimations, isBusy}) {
+export function initializeSession({model, snapshot, update, newGame, clearAnimations, isBusy}) {
   const $ = id => document.getElementById(id);
-  let starting = false, started = false;
   const rules = $("gameplaySettings"), home = $("gameplayHome");
-  function restoreRules() { home.append(rules); starting = false; refreshSettingsAvailability(document, snapshot()); }
+  function restoreRules() { home.append(rules); model.leaveSetup(); refreshSettingsAvailability(document, snapshot()); }
   function setup() {
-    if (isBusy()) return;
-    starting = true;
-    $("setupCancel").hidden = !started;
+    if (!model.beginSetup()) return;
+    $("setupCancel").hidden = !model.started;
     $("setupRules").append(rules); rules.open = true;
     for (const el of rules.querySelectorAll("input,select")) el.disabled = false;
     refreshSettingsAvailability(document);
@@ -18,7 +16,7 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
     $("setupDialog").showModal();
     openSettingsPage("gameplaySettings",true);
   }
-  $("setupDialog").addEventListener("cancel", e => { e.preventDefault(); if(started) $("setupCancel").onclick(); });
+  $("setupDialog").addEventListener("cancel", e => { e.preventDefault(); if(model.started) $("setupCancel").onclick(); });
   $("setupDialog").addEventListener("close", restoreRules);
   $("setupCancel").onclick = () => { $("setupDialog").close(); restoreRules(); update(); };
   $("setupStart").onclick = async () => {
@@ -26,23 +24,20 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
       $("piecePoolNote").textContent="Select at least one queue piece.";openSettingsPage("piecePoolOptions",true);return;
     }
     validateGameplay(document);
-    $("setupDialog").close(); restoreRules(); started = true;
+    $("setupDialog").close(); restoreRules(); model.resume();
     await newGame();
   };
   $("new").onclick = () => { $("settingsDialog").close(); setup(); };
   $("overNew").onclick = () => {if($("topOutNewGame").checked)setup();};
-  const syncTheory = () => { const r=engine()?.game_rules(); $("nextPieceControls").hidden = !$("chooseNext").checked || (r!==0xffffffff && !(r&1)); };
+  const syncTheory = () => { $("nextPieceControls").hidden = !$("chooseNext").checked || !model.canChooseNext; };
   $("chooseNext").onchange = syncTheory;
   $("setNextPiece").onclick = () => {
-    if (!starting && !isBusy() && engine().game_set_next(Number($("nextPiece").value))) update("Next queued piece changed. Undo restores it.");
+    if (model.setNext(Number($("nextPiece").value))) update("Next queued piece changed. Undo restores it.");
   };
   $("shareState").onclick = () => {
     if (isBusy()) return;
-    const e = engine(), s = snapshot();
-    const hex = v => (v >>> 0).toString(16).padStart(7, "0");
-    const masks = {active:hex(s[54]), floating:hex(s[159]), rebuilding:hex(s[169]), stack:[]};
-    for (let color=1;color<=9;color++) masks.stack.push(hex(s.slice(0,27).reduce((m,c,i)=>c===color ? m | (1<<i) : m,0)));
-    $("stateText").value = JSON.stringify({format:"StackItUp-state", version:1, dimensions:[3,3,3], masks, words:e.exportState().map(hex), chooseNext:$("chooseNext").checked});
+    const text=model.share($("chooseNext").checked);if(text===null)return;
+    $("stateText").value=text;
     $("stateStatus").textContent = "Copy this complete state, or paste a shared state to load. Loading can be undone.";
     $("stateDialog").showModal();
   };
@@ -54,16 +49,12 @@ export function initializeSession({engine, snapshot, update, newGame, clearAnima
   $("loadState").onclick = () => {
     if (isBusy()) return;
     try {
-      const text = $("stateText").value;
-      if (text.length > 16000) throw Error("State is too large.");
-      const data = JSON.parse(text);
-      if (data.format !== "StackItUp-state" || data.version !== 1 || JSON.stringify(data.dimensions) !== "[3,3,3]" || !Array.isArray(data.words) || !data.words.every(v=>typeof v === "string" && /^[0-9a-f]{1,8}$/i.test(v))) throw Error("Unsupported state format or dimensions.");
-      if (!engine().importState(data.words.map(v=>parseInt(v,16)))) throw Error("Invalid state. Your current game is unchanged.");
-      clearAnimations(); started = true;
+      const data=model.load($("stateText").value);if(!data)return;
+      clearAnimations(); model.resume();
       $("chooseNext").checked = data.chooseNext === true; syncTheory();
       update("Shared state loaded. Undo returns to your previous puzzle.");
       $("stateDialog").close();
     } catch (e) { $("stateStatus").textContent = e.message; }
   };
-  return {setup, resume(chooseNext=false) { started=true; $('chooseNext').checked=chooseNext; syncTheory(); }, get starting() {return starting;}, get started() {return started;}, syncTheory};
+  return {setup, resume(chooseNext=false) { model.resume(); $('chooseNext').checked=chooseNext; syncTheory(); }, get starting() {return model.starting;}, get started() {return model.started;}, syncTheory};
 }

@@ -1,0 +1,15 @@
+/* Shared tuning components, used by the game and standalone/mounted explorer. */
+.setting-row { display:flex; flex-direction:column; gap:5px; }
+.style-selector-box { border:1px solid var(--line,var(--border,#425762)); border-radius:12px; padding:14px; margin:12px 0; min-width:0; }
+.style-selector-box .setting-row { margin-top:12px; }
+.style-selector-box input[type=range] { width:100%; }
+.style-selector-box output { font-variant-numeric:tabular-nums; }
+.style-selector-box fieldset { margin-top:12px; }
+.inline-tuning { margin-top:16px; }
+.style-selector-box [hidden] { display:none!important; }
+
+/* Orbit controls share layout and disabled feedback across both apps. */
+.camera-range{display:flex!important;flex-direction:column;align-items:stretch!important;gap:.5rem;width:100%;box-sizing:border-box}
+.camera-range input[type="range"]{width:100%;min-width:0}
+.camera-setting-disabled{opacity:.5}
+#orbitDiagnostics{white-space:pre-wrap;overflow-wrap:anywhere}

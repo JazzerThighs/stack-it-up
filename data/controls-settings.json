@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "storageKey": "stack-it-up.controls",
+  "groups": [],
+  "availability": {},
+  "fields": {
+    "hoverRings": {
+      "value": true,
+      "label": "Slice rings",
+      "commit": "change",
+      "checkbox": true,
+      "group": null
+    },
+    "ringLabels": {
+      "value": false,
+      "label": "Move letters on rings",
+      "commit": "change",
+      "checkbox": true,
+      "group": null,
+      "enabledWhen": {
+        "id": "hoverRings",
+        "checked": true
+      }
+    },
+    "hoverOutline": {
+      "value": false,
+      "label": "Outlines on affected cubies",
+      "commit": "change",
+      "checkbox": true,
+      "group": null
+    },
+    "hoverIdentities": {
+      "value": false,
+      "label": "Show piece identities on hover",
+      "commit": "change",
+      "checkbox": true,
+      "group": null
+    },
+    "showArrows": {
+      "value": false,
+      "label": "Show arrow buttons",
+      "commit": "change",
+      "checkbox": true,
+      "group": null
+    },
+    "arrowGuides": {
+      "value": false,
+      "label": "Sticker-to-arrow guide lines",
+      "commit": "change",
+      "checkbox": true,
+      "group": null,
+      "enabledWhen": {
+        "id": "showArrows",
+        "checked": true
+      }
+    },
+    "classicControls": {
+      "value": false,
+      "label": "Show classic button grid",
+      "commit": "change",
+      "checkbox": true,
+      "group": null
+    },
+    "freeOrbit": {
+      "value": true,
+      "label": "Free 360 degree rotation",
+      "commit": "change",
+      "checkbox": true,
+      "group": null
+    },
+    "perspectiveCamera": {
+      "value": true,
+      "label": "Perspective camera",
+      "commit": "change",
+      "checkbox": true,
+      "group": null,
+      "controlIds": {
+        "explorer": "explorerCamera"
+      }
+    },
+    "wideTurns": {
+      "value": false,
+      "label": "Wide turns",
+      "commit": "change",
+      "checkbox": true,
+      "group": null,
+      "controlIds": {
+        "game": null
+      }
+    }
+  }
+}

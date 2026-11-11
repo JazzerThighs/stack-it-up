@@ -1,19 +1,17 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import {createBrowserFixture} from './fixtures/browser.mjs';
 const html=fs.readFileSync(new URL('../web/index.html',import.meta.url),'utf8');
-const enums=new Map(),frames=[],elements=new Map();let buffer;
-const gl=new Proxy({createVertexArray:()=>({}),createBuffer:()=>({}),createProgram:()=>({}),createShader:()=>({}),getShaderParameter:()=>true,checkFramebufferStatus:()=>gl.FRAMEBUFFER_COMPLETE,getProgramParameter:()=>true,getAttribLocation:()=>0,getUniformLocation:(_,name)=>name,bindBuffer:(_,b)=>buffer=b,bufferData:(_,data)=>{buffer.data=data;}},{get:(o,k)=>k in o?o[k]:k===k.toUpperCase()?(enums.has(k)?enums.get(k):(enums.set(k,enums.size+1),enums.get(k))):()=>{}});
-function element(){return {checked:false,value:'0',style:{},dataset:{},children:[],hidden:false,disabled:false,textContent:'',classList:{toggle(){},add(){},remove(){}},append(...x){this.children.push(...x)},replaceChildren(...x){this.children=x},setAttribute(){},addEventListener(t,f){(this.listeners??={})[t]=f},querySelector(){return this.child??=element()},querySelectorAll(){return []},select(){},closest(){return this.parent??=element()},getContext(type){return type==='webgl2'?gl:new Proxy({},{get:()=>()=>{}})},getBoundingClientRect(){return {left:0,top:0,width:1200,height:800}},setPointerCapture(){},focus(){},showModal(){this.open=true},close(){this.open=false}};}
-for(const tag of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)){const e=element();e.checked=/\bchecked\b/.test(tag[0]);e.hidden=/\bhidden\b/.test(tag[0]);e.value=tag[0].match(/\bvalue="([^"]*)"/)?.[1]||'0';elements.set(tag[1],e);}
-const $=id=>{assert(elements.has(id),`missing ${id}`);return elements.get(id);};
-Object.assign(globalThis,{document:{hidden:false,getElementById:$,createElement:element,querySelector:element,querySelectorAll:()=>[],addEventListener(){}},devicePixelRatio:1,matchMedia:()=>({matches:true}),ResizeObserver:class{observe(){}},requestAnimationFrame:fn=>(frames.push(fn),frames.length),fetch:async url=>({ok:true,arrayBuffer:async()=>fs.readFileSync(url)})});
+const browser=createBrowserFixture(html);
+const {$,elements,element,gl,frames,flush}=browser;
+browser.install();
 $('sliceClearMode').value='1';$('rebuildMode').value='2';
 $('pieceAppearance').value='jelly';
 $('explorer').explorerReady=Promise.resolve();
 const {context}=await import('../dist/app.js');
 for(let i=0;i<100&&!context.engine;i++)await new Promise(resolve=>setTimeout(resolve,10));
 assert.equal($('engineStatus').textContent,'Ready');
-const flush=()=>{let n=0;while(frames.length&&n++<100)frames.shift()(800);};flush();
+flush();
 assert($('gamePage').hidden);assert(!$('explorerPage').hidden);assert(!$('setupDialog').open);
 $('gameTab').onclick();
 assert($('setupDialog').open);
@@ -81,7 +79,7 @@ console.log('PASS: setup confirmation, conditional band locking, state sharing/l
 // Display controls may change rendering, never the exported puzzle state.
 const visualState=Array.from(context.engine.exportState());
 $('animations').checked=true;
-for(const shape of ['jelly','voxel','gameboy','angular']) for(const style of ['jelly','dither','matte','cel','ascii']) {
+for(const shape of ['jelly','gameboy','angular','text']) for(const style of ['jelly','dither','matte','cel','ascii']) {
   $('modelShape').value=shape;
   $('pieceAppearance').value=style;
   $('pieceAppearance').listeners.input();flush();
@@ -104,7 +102,7 @@ context.renderers[0].setState(colorState);
 assert(context.renderers[0].activeOnly.count>0);assert.equal(context.renderers[0].floatingMesh.count,0);
 $('resetPieceColors').onclick();flush();
 assert.deepEqual(palette.colors,palette.defaultColors);
-console.log('PASS: explorer-first startup, all 15 shape/effect combinations, breathing, shared palettes, white-piece identity and unchanged puzzle state.');
+console.log('PASS: explorer-first startup, all configured shape/effect combinations, breathing, shared palettes, white-piece identity and unchanged puzzle state.');
 
 const settingsState=Array.from(context.engine.exportState());
 const retainedMesh=context.renderers[0].stackMesh.data;
@@ -354,3 +352,20 @@ assert(context.engine.importState(context.engine.exportState()));context.update(
 await $('corePlace').onclick();flush();assert(context.state[62]>beforeCoreCount);assert($('coreChoices').hidden);
 assert(context.engine.game_undo());context.update();flush();assert.equal(context.state[54],firstCore);assert(!$('coreChoices').hidden);
 console.log('PASS: core spheres render, orientation preview changes no placements, previous/next and confirm work, and undo restores the choice.');
+// Cubie size rebuilds connected native surfaces, while filter tuning stays cheap.
+const sizingState=context.engine.exportState();
+$('modelShape').value='jelly';$('pieceAppearance').value='jelly';$('pieceAppearance').listeners.input();flush();
+const fullSized=cornerMesh.compositeParts(oBoard,oIds,['','#ffff00'],oGenerate,'jelly')[0];
+$('cubieScale').value='40';$('cubieScale').listeners.change();flush();
+const smallSized=cornerMesh.compositeParts(oBoard,oIds,['','#ffff00'],oGenerate,'jelly')[0];
+assert.notEqual(smallSized,fullSized);assert.notDeepEqual(smallSized,fullSized);assert(smallSized.length>0);
+for(let i=0;i<smallSized.length;i+=9)assert(Math.abs(Math.hypot(...smallSized.slice(i+3,i+6))-1)<1e-5);
+const sizedBuffers=context.renderers[0].stackMesh.data;
+$('transparencyGrain').value='3';$('transparencyGrain').listeners.input();
+$('transparencyResponse').value='1.5';$('transparencyResponse').listeners.input();flush();
+assert.equal(cornerVisual.visualSettings.transparencyGrain,3);assert.equal(cornerVisual.visualSettings.transparencyResponse,1.5);
+assert.equal(context.renderers[0].stackMesh.data,sizedBuffers);assert.deepEqual(context.engine.exportState(),sizingState);
+$('cubieScale').value='100';$('cubieScale').listeners.change();flush();
+// Size-specific source meshes may evict the bounded color cache. Restored geometry must still be identical.
+assert.deepEqual(cornerMesh.compositeParts(oBoard,oIds,['','#ffff00'],oGenerate,'jelly')[0],fullSized);
+console.log('PASS: cubie size rebuilds native Jelly meshes, restores full-size geometry, and transparency tuning preserves geometry and puzzle state.');

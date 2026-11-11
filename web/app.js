@@ -1,3 +1,10 @@
+import {initializeSharedSettings,openSharedSettings} from './ui/shared-settings.js';
+import {applyStartupDefaults} from './ui/startup-defaults.js';
+import {bindGameViewSwitching,bindApplicationTabs} from './ui/view-switching.js';
+import {createGameSession} from './game/session.js';
+import {readGameSetup} from './ui/game-setup.js';
+import {createGameController} from './game/controller.js';
+import {createGameEffects} from './ui/game-effects.js';
 import {orbitSettings,bindOrbitToggle} from './input/orbit-settings.js';
 import {bindControlSettings,controlSettings,setControlSetting} from './input/control-settings.js';
 import {createFaceMap} from './ui/face-map.js';
@@ -8,7 +15,7 @@ import {installRecovery} from './render/recovery.js';
 import {createLocalGame} from './ui/local-game.js';
 import {pieces,isSpatial,choices,freePreview} from './engine/queue-pieces.js';
 import {spatialPreview} from './ui/spatial-preview.js';
-import {initializeGameplay,readGameplay,writeGameplay,refreshGameplay} from './ui/gameplay-settings.js';
+import {initializeGameplay,writeGameplay,refreshGameplay} from './ui/gameplay-settings.js';
 import { createReplay } from './ui/forecast-replay.js';
 import { createForecast } from './ui/forecast.js';
 import { initializeSession } from "./ui/session.js";
@@ -30,6 +37,7 @@ import {
   syncDisplaySettings,
   layerOrder,
 } from "./ui/settings.js";
+applyStartupDefaults(document, 'game');
 const $ = (id) => document.getElementById(id);
 const names = ["", ...pieces.map(p=>p.letter)];
 
@@ -47,6 +55,8 @@ let engine,
   busy = false;
 let lockMode = false;
 let session;
+let commands;
+const gameSession=createGameSession({engine:()=>engine,isBusy:()=>busy||!!commands?.running});
 const localGame = createLocalGame({engine:()=>engine, started:()=>session?.started,
   chooseNext:()=>$('chooseNext').checked});
 function saveLocalGame() {
@@ -56,7 +66,7 @@ function saveLocalGame() {
 globalThis.addEventListener?.('pagehide', saveLocalGame);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveLocalGame(); });
 const animations = $("animations");
-animations.checked = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+animations.checked &&= !matchMedia("(prefers-reduced-motion: reduce)").matches;
 const moveButtons = [],
   faceCells = [],stageFaceCells=[],
   queueShapes = [];
@@ -92,14 +102,7 @@ for (let j = 0; j < 5; j++) {
 }
 const forecastReplay = createReplay({engine:()=>engine, refresh:()=>update(), isBusy:()=>busy || session?.starting,
   closeSettings:()=>$("settingsDialog").close(),
-  act:async step=>{
-    const before=state.slice();
-    if(!engine[step.method](step.arg))return false;
-    setBusy(true);
-    try { await resolveAnimations(before,snapshot(),events()); }
-    finally { setBusy(false); }
-    update();return true;
-  }});
+  act:step=>commands.replay(step)});
 const queueForecast = createForecast({enabled:$("queueForecast"), status:$("forecastStatus"),
   onWitness:forecastReplay.setWitness, targets:[$("target"), ...queueShapes.map(q=>q.item)]});
 $("queueForecast").onchange = () => { if (engine) queueForecast.update(engine); };
@@ -296,7 +299,7 @@ function update(message) {
   }
   invalidate();
 }
-function coreOptions(){const masks=[];if(!engine?.game_core_option)return masks;for(let i=0;i<144;i++){const mask=engine.game_core_option(i);if(!mask)break;masks.push(mask);}return masks;}
+function coreOptions(){return commands.coreOptions();}
 function syncCoreChoices(){
   const masks=coreOptions(),index=masks.indexOf(state[S.ACTIVE]);
   $('coreChoices').hidden=!masks.length;
@@ -304,17 +307,7 @@ function syncCoreChoices(){
   $('corePrevious').disabled=$('coreNext').disabled=busy;
   $('corePlace').disabled=busy||index<0||!!(state[S.FLOATING]&state[S.ACTIVE])||!!state[S.FLOATING_OVERLAPS];
 }
-async function selectCore(direction,place=false){
-  if(!engine||busy||session?.starting)return;
-  const masks=coreOptions();if(!masks.length)return;
-  const current=masks.indexOf(state[S.ACTIVE]);
-  const mask=place?state[S.ACTIVE]:masks[(current<0?(direction<0?masks.length-1:0):(current+direction+masks.length)%masks.length)];
-  const before=copyState(state);
-  if(!engine[place?'game_place_core':'game_preview_core'](mask)){update('Freed groups must be ready before placing the core piece.');return;}
-  if(!place){update('Core orientation preview. Place here to confirm, or keep turning.');return;}
-  const after=snapshot(),trace=events();setBusy(true);
-  try{await resolveAnimations(before,after,trace);}finally{setBusy(false);update();}
-}
+function selectCore(direction,place=false){return commands.selectCore(direction,place);}
 $('corePrevious').onclick=()=>selectCore(-1);
 $('coreNext').onclick=()=>selectCore(1);
 $('corePlace').onclick=()=>selectCore(0,true);
@@ -388,140 +381,19 @@ function setBusy(value) {
     $(id).disabled = value || !!state[S.PENDING_FACES];
   $("fragmentPerk").disabled = value || !!state[S.PENDING_FACES];
 }
-function events() {
-  return engine.events();
-}
-async function play(m, fromT = 0) {
-  if (lockMode) { $("message").textContent = "Select Resume turns to turn slices again."; return; }
-  if (!engine || busy || session?.starting || state[S.PENDING_FACES]) return;
-  const before = copyState(state);
-  if (!engine.game_turn(m)) {
-    renderers[0].setState(state);
-    invalidate();
-    $("message").textContent = "That turn would split a bandaged fragment.";
-    return;
-  }
-  const after = snapshot(),
-    trace = events();
-  setBusy(true);
-  try {
-    $("message").textContent =
-      `Turning ${moveLabels[m % 15]}${m >= 15 ? "′" : ""}…`;
-    await animate(220 * (1 - fromT), (t) =>
-      renderers[0].setState(before, {
-        kind: "turn",
-        move: m,
-        t: fromT + (1 - fromT) * t,
-      }),
-    );
-    if (trace.length) await resolveAnimations(before, after, trace, m);
-    else
-      update(
-        `${moveLabels[m % 15]}${m >= 15 ? "′" : ""} · Build ${names[after[S.PIECE]]}.`,
-      );
-  } finally {
-    setBusy(false);
-    syncChoices();
-    invalidate();
-  }
-  if (state[S.PENDING_FACES]) [...faceButtons,...spatialButtons].find((b) => !b.disabled && !b.hidden)?.focus();
-}
-async function lockBand(cell) {
-  if (!engine || busy || !context.lockMode || state[S.OVER] || state[S.PENDING_FACES]) return;
-  const before = copyState(state);
-  engine.game_set_early_lock($("earlyLock").checked);
-  if (!engine.game_lock_band(cell)) {
-    $("message").textContent = "This white group cannot lock here: its cells must be clear of the stack.";
-    return;
-  }
-  renderers[0].hover = null;
-  setBusy(true);
-  try { await resolveAnimations(before, snapshot(), events()); }
-  finally { setBusy(false); }
-  update("White group locked. Your colored piece is unchanged; switch back to turns to continue.");
-}
-async function holdPiece() {
-  if (
-    !engine ||
-    busy ||
-    state[S.OVER] ||
-    state[S.PENDING_FACES] ||
-    state[S.HOLD_USED]
-  )
-    return;
-  const before = copyState(state);
-  if (!engine.game_hold()) return;
-  const after = snapshot(),
-    trace = events();
-  setBusy(true);
-  try {
-    renderers[0].hover = null;
-    if (trace.length) await resolveAnimations(before, after, trace);
-    else {
-      update("Piece held. Build the new target.");
-      await animate(180, (t) =>
-        renderers[0].setState(after, { kind: "spawn", t }),
-      );
-      renderers[0].setState(after);
-    }
-  } finally {
-    setBusy(false);
-    invalidate();
-  }
-}
-async function choose(face) {
-  if (busy || !state[S.PENDING_FACES]) return;
-  const before = copyState(state);
-  if (!engine.game_choose(face)) return;
-  renderers[0].preview = 0;
-  const after = snapshot(),
-    trace = events();
-  setBusy(true);
-  try {
-    await resolveAnimations(before, after, trace);
-  } finally {
-    setBusy(false);
-    syncChoices();
-    invalidate();
-  }
-  ($("classicControls").checked ? $("tab-face") : $("settingsOpen")).focus();
-}
-function undo() {
-  if (busy || session?.starting) return;
-  if (engine?.game_undo()) {
-    animationController.clearGhost();
-    renderers[0].ghost = null;
-    renderers[0].preview = 0;
-    update("Previous turn restored.");
-  }
-}
+function play(move,fromT=0){return commands.play(move,fromT);}
+function lockBand(cell){return commands.lockBand(cell,$('earlyLock').checked);}
+function holdPiece(){return commands.hold();}
+function choose(face){return commands.choose(face);}
+function undo(){return commands.undo();}
 async function newGame() {
   if (busy || session?.starting) return;
   animationController.clearGhost();
   renderers[0].ghost = null;
   renderers[0].preview = 0;
-  const chosenRules=readGameplay();
-  const chosenCurrent=+$("debugCurrent").value, chosenHeld=+$("debugHeld").value;
-  const seed = crypto.getRandomValues(new Uint32Array(1))[0];
-  const gravityMode = +$("gravityMode").value;
-  const releaseRules=[+$('releaseTrigger').value,$('releaseBandaged').checked,$('releaseScattered').checked,+$('releaseSelection').value];
-  engine.game_init(seed);
-  engine.game_set_release_rules(...releaseRules);
-  engine.game_set_early_lock($("earlyLock").checked);
+  const config=readGameSetup($,crypto.getRandomValues(new Uint32Array(1))[0]);
+  if(!gameSession.start(config))return;
   setLockMode(false);
-  engine.game_set_gravity(gravityMode);
-  engine.game_set_gravity_rules($("sliceGravity").checked,$("gravityOneStep").checked);
-  engine.game_set_slice_clears(+$("sliceClearMode").value);
-  engine.game_set_fragments($("fragmentPerk").checked);
-  engine.game_set_modes(
-    $("bandagedFragments").checked,
-    $("fragmentPerk").checked && $("randomCubies").checked,
-    +$("rebuildMode").value,
-  );
-  engine.game_configure_rules(chosenRules);
-  const chosenPool=pieces.reduce((m,p)=>m|($("poolPiece"+p.id).checked ? 1<<(p.id-1):0),0);
-  engine.game_set_piece_pool(chosenPool,true);
-  if(chosenRules&1){if(chosenCurrent)engine.game_debug_piece(0,chosenCurrent);engine.game_debug_piece(1,chosenHeld);}
   update();
   setBusy(true);
   try {
@@ -618,66 +490,11 @@ document.addEventListener("keydown", (e) => {
     play(m + (e.shiftKey ? 15 : 0));
   }
 });
-let viewTransition = 0;
-$("viewMode").onclick = () => {
-  if (viewTransition) return;
-  if ($("stageFaceMap").checked) { $("stageFaceMap").checked=false; syncFaceMapLayout(); return; }
-  const views = document.querySelector(".views"),
-    control = renderers[0],
-    split = $("combined").checked;
-  $("combined").checked = !split;
-  $("viewMode").textContent = split ? "Combine cubes" : "Split cubes";
-  $("viewMode").setAttribute("aria-pressed", String(split));
-  $("viewMode").setAttribute(
-    "aria-label",
-    split ? "Combine active cube and stack" : "Separate active cube and stack",
-  );
-  refreshSettings();
-  // Both canvases start at the same camera, scale, and horizontal position.
-  // The stack is rendered once, on its own canvas throughout the transition.
-  control.combined = false;
-  control.setState(control.state, control.animation);
-  views.classList.add("view-moving");
-  void views.offsetWidth;
-  views.classList.toggle("combined", !split);
-  const reduced =
-    !animations.checked ||
-    matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const finish = () => {
-    control.combined = $("stageFaceMap").checked || !split;
-    control.setState(control.state, control.animation);
-    views.classList.remove("view-moving");
-    viewTransition = 0;
-    invalidate();
-  };
-  if (reduced) {
-    views.classList.add("view-instant");
-    void views.offsetWidth;
-    finish();
-    requestAnimationFrame(() => views.classList.remove("view-instant"));
-    return;
-  }
-  const start = performance.now();
-  viewTransition = 1;
-  const frame = (now) => {
-    renderers.forEach((r) => r.draw());
-    if (now - start < 420) viewTransition = requestAnimationFrame(frame);
-    else finish();
-  };
-  viewTransition = requestAnimationFrame(frame);
-};
+bindGameViewSwitching({$,getRenderers:()=>renderers,animations,refreshSettings,invalidate,syncFaceMapLayout});
 const context = {
   get lockMode() { return lockMode && $("earlyLock").checked; },
   lockBand,
-  async debugPiece(held,piece) {
-    if(busy||session?.starting)return;
-    const before=copyState(state);
-    if(!engine.game_debug_piece(held,piece))return;
-    animationController.clearGhost();renderers[0].ghost=null;renderers[0].preview=0;
-    const after=snapshot(),trace=events();setBusy(true);
-    try {if(trace.length)await resolveAnimations(before,after,trace);update('Debug piece changed. Undo restores the previous state.');}
-    finally {setBusy(false);invalidate();}
-  },
+  debugPiece:(held,piece)=>commands.debugPiece(held,piece),
   get state() {
     return state;
   },
@@ -710,6 +527,15 @@ const context = {
   invalidate,
 };
 const animationController = createAnimations(context);
+commands=createGameController({
+  engine:()=>engine,state:()=>state,isBusy:()=>busy,isStarting:()=>!!session?.starting,
+  isLockMode:()=>context.lockMode,isTurnLocked:()=>lockMode,setBusy,copyState,
+  effects:createGameEffects({
+    $,state:()=>state,renderers:()=>renderers,names,animate,resolveAnimations,update,invalidate,syncChoices,
+    clearGhost:()=>animationController.clearGhost(),
+    focusChoice:()=>[...faceButtons,...spatialButtons].find(b=>!b.disabled&&!b.hidden)?.focus(),
+  }),
+});
 function animate(...args) {
   return animationController.animate(...args);
 }
@@ -809,7 +635,7 @@ $("gravityMode").onchange = () => {
   engine.game_set_gravity(+$("gravityMode").value);
   update();
 };
-$("settingsOpen").onclick = () => {$("settingsDialog").showModal();openSettingsPage();};
+$("settingsOpen").onclick = () => openSharedSettings();
 $("settingsClose").onclick = () => $("settingsDialog").close();
 const requestNew = $("new").onclick;
 $("new").onclick = () => {
@@ -851,6 +677,7 @@ $("freeOrbit").addEventListener("change", () => {
 });
 configureRenderer(context);
 initializeSettings(context);
+initializeSharedSettings({loadExplorer:()=>mountExplorer($('explorer'),packingProgress)});
 initializeGameplay(context);
 selectMode("face");
 async function start() {
@@ -904,7 +731,7 @@ async function start() {
     console.error(error);
   }
 }
-session = initializeSession({engine:()=>engine, snapshot, update, newGame,
+session = initializeSession({model:gameSession, snapshot, update, newGame,
   clearAnimations:()=>{ animationController.clearGhost(); renderers[0].ghost=null; renderers[0].preview=0; setLockMode(false); meshRevision=-1; },
   isBusy:()=>busy});
 start();
@@ -912,36 +739,9 @@ start();
 export { context };
 
 // Keep game state and explorer settings alive while switching applications.
-function selectApplication(explorer) {
-  document.querySelector("main").classList.toggle("explorer-active", explorer);
-  $("gamePage").hidden = explorer;
-  $("explorerPage").hidden = !explorer;
-  for (const [id, selected] of [
-    ["gameTab", !explorer],
-    ["explorerTab", explorer],
-  ]) {
-    $(id).setAttribute("aria-selected", String(selected));
-    $(id).tabIndex = selected ? 0 : -1;
-  }
-  if (explorer && !$("explorer").explorerReady)
-    mountExplorer($("explorer"),packingProgress).then(() => startupCheck('explorer','Packing data, controls and cube views ready',true)).catch(startupError);
-  if (!explorer) {
-    invalidate();
-    if (engine && !busy && !session.started && !session.starting) session.setup();
-  }
-}
-$("gameTab").onclick = () => selectApplication(false);
-$("explorerTab").onclick = () => selectApplication(true);
-for (const id of ["gameTab", "explorerTab"]) {
-  $(id).addEventListener("keydown", (event) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    const explorer =
-      event.key === "End" || (event.key !== "Home" && id === "gameTab");
-    selectApplication(explorer);
-    $(explorer ? "explorerTab" : "gameTab").focus();
-  });
-}
+const selectApplication=bindApplicationTabs({$,mountExplorer,packingProgress,startupCheck,startupError,invalidate,
+  setupGame:()=>{if(engine&&!busy&&!session.started&&!session.starting)session.setup();},
+});
 
 if (globalThis.location?.hash === '#game') startupCheck('explorer','Packing explorer loads when opened',true);
 else startupCheck('explorer','Loading packing data, controls and cube views');

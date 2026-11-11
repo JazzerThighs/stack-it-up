@@ -1,5 +1,4 @@
 import {hoverIdentityPackets} from './hover-identities.js';
-import {voxelMesh} from './voxel-mesh.js';
 import {categorySeed} from './transparency.js';
 import {IDENTITY,transformPoint} from './transforms.js';
 import {appearanceIndex} from "./appearance.js";
@@ -19,19 +18,6 @@ export function renderPackets(packets, context) {
   const gl = this.gl;
   packets=hoverIdentityPackets(this,packets);
   packets=packets.map(p=>({...p,positionalLighting:lightingMode(p,this.modelShape)}));
-  // Keep original buffers intact: changing style never changes game geometry.
-  if(this.modelShape==='voxel' || this.appearance==='voxel') {
-    this.voxelTargets ??= new Map();
-    packets=packets.map(p=>{
-      let entry=this.voxelTargets.get(p.target);
-      if(!entry){entry={target:this.buffer()};this.voxelTargets.set(p.target,entry);}
-      if(entry.source!==p.target.data || entry.type!==p.type) {
-        entry.source=p.target.data;entry.type=p.type;
-        this.upload(entry.target,voxelMesh(p.target.data,p.type===gl.LINES));
-      }
-      return {...p,target:entry.target,type:gl.TRIANGLES};
-    });
-  }
   const pixelRatio=Math.min(globalThis.devicePixelRatio || 1,2);
   const ascii=this.appearance === 'ascii';
   if(this.canvas?.dataset && this.canvas.dataset.appearance !== this.appearance)
@@ -44,7 +30,7 @@ export function renderPackets(packets, context) {
   gl.uniform1i(this.uniforms.appearance,appearanceIndex(this.appearance));
   gl.uniform1f(this.uniforms.pixelRatio,pixelRatio);
   gl.uniform3fv(this.uniforms.lightDirection,lightDirection());
-  for(const key of ['lightIntensity','lightAmbient','ditherLevels','ditherSize','ditherContrast','ditherMidpoint'])
+  for(const key of ['transparencyGrain','transparencyResponse','lightIntensity','lightAmbient','ditherLevels','ditherSize','ditherContrast','ditherMidpoint'])
     gl.uniform1f(this.uniforms[key],visualSettings[key]);
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);

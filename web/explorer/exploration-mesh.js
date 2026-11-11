@@ -1,3 +1,5 @@
+import {cubieScale} from '../render/cubie-size.js';
+import {bracketCell} from '../render/text-mesh.js';
 import {assemblyKind} from '../render/assembly.js';
 import {joinMeshes} from '../render/cell-fragments.js';
 import {gameboyCell} from '../render/gameboy-mesh.js';
@@ -25,7 +27,10 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
     if(indices.length===4) {
       const board=Array(27).fill(0),ids=Array(27).fill(1);
       indices.forEach(i=>board[i]=fixedColors?cells[i].color:detectedColor(detected.get(cells[i].piece),cells[i].color));
-      return joinMeshes(compositeParts(board,ids,PALETTE,generate,appearance,false,0,individual));
+      const parts=compositeParts(board,ids,PALETTE,generate,appearance,false,0,individual);
+      // Keep immutable cached geometry identity: fragment caches are keyed by it.
+      // A one-piece join used to copy every vertex and force the same cuts again.
+      return parts.length===1?parts[0]:joinMeshes(parts);
     }
     const out=[];
     for(const i of indices) {
@@ -33,7 +38,7 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
       const color=rgb(PALETTE[key]||PALETTE.d);
       if(kind(cells[i])==='solids') identitySolid(out,xyz(i),.465,cells[i].piece<0?color:solidColor(cells[i].piece,color,gray),cells[i].piece<0?5:cells[i].piece,cells[i].solidRotation);
       else if(['jelly','angular'].includes(appearance))jellyCell(out,i,color,generate,.465,appearance);
-      else (appearance==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,color,cells[i].piece<0?'bomb':'loose');
+      else (appearance==='text'?bracketCell:appearance==='gameboy'?gameboyCell:scaledBalloon)(out,xyz(i),.465,color,cells[i].piece<0?'bomb':'loose');
     }
     const mesh=tagCoverage(new Float32Array(out),xyz(indices[0]));
     if(kind(cells[indices[0]])==='solids')Object.defineProperty(mesh,"identityCell",{value:indices[0]});
@@ -66,3 +71,5 @@ export function animateSlices(parts,move,t) {
   for(const v of parts.stationary)out.push(v);
   return new Float32Array(out);
 }
+
+function scaledBalloon(out,p,h,color){balloon(out,p,h*cubieScale(),color);}
