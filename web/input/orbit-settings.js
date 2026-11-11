@@ -42,7 +42,7 @@ export function bindOrbitSettings(root){
    el.disabled=!available[k];el.closest?.('label')?.classList?.toggle('camera-setting-disabled',!available[k]);
   }
   if($('orbitModeHelp'))$('orbitModeHelp').textContent=orbitSettings.orbitSettling?'Touch: XYZ Orbit uses only X/Y/Z zones.':'Touch: free camera drags. Mouse assignments are configured separately.';
-  if($('orbitSnapHelp'))$('orbitSnapHelp').textContent=orbitSettings.orbitSnap?'Aligns the nearest face after release. Zero angles give a straight-on face.':'Release alignment is off. Target angles and timing are inactive.';
+  if($('orbitSnapHelp'))$('orbitSnapHelp').textContent=orbitSettings.orbitSnap?'Settles to the nearest resting orientation, including target tilt and roll. Zero angles give a straight-on face.':'Release alignment is off. Target angles and timing are inactive.';
   if($('orbitDiagnostics'))$('orbitDiagnostics').hidden=!available.orbitDebug||!orbitSettings.orbitDebug;
   if($('freeOrbit'))$('freeOrbit').disabled=!usedOrbitActions().includes('free');
  };

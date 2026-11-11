@@ -11,9 +11,33 @@ for(const m of cubeRotations)matrix(quaternion(m)).forEach((v,i)=>close(v,m[i]))
 const tilted=multiply(axisAngle([1,2,3],1.7),axisAngle([0,1,0],2.1));
 for(const q of [identity,tilted,...cubeRotations.map(quaternion)]){
  const s=snapTarget(q,{...settings,orbitHorizontal:23,orbitVertical:-17,orbitRoll:12});
- assert.deepEqual(s.face,frontFace(matrix(q)));
+ close(s.error,distance(q,s.q));
  const m=matrix(s.q),n=m.slice(s.face.axis*3,s.face.axis*3+3).map(v=>v*s.face.sign);
  close(Math.atan2(n[0],n[2])*180/Math.PI,23);close(Math.asin(n[1])*180/Math.PI,-17);
+}
+// Regression: a ten-degree orbit past a 40-degree resting yaw must return
+// to that resting pose, even though another face is now nearer the camera.
+const rad=Math.PI/180,yawSettings={...settings,orbitHorizontal:40,orbitVertical:0,orbitRoll:0};
+const restingYaw=axisAngle([0,1,0],40*rad),smallOrbit=axisAngle([0,1,0],50*rad);
+assert.notDeepEqual(frontFace(matrix(smallOrbit)),{axis:2,sign:1});
+close(distance(snapTarget(smallOrbit,yawSettings).q,restingYaw),0);
+// The switching boundary is halfway between final poses, not camera normals.
+close(distance(snapTarget(axisAngle([0,1,0],84*rad),yawSettings).q,restingYaw),0);
+close(distance(snapTarget(axisAngle([0,1,0],86*rad),yawSettings).q,axisAngle([0,1,0],130*rad)),0);
+// All tilted/rolled resting poses are stable under small perturbations.
+for(const [h,v,r] of [[0,0,0],[40,30,25],[-60,55,-70],[90,-90,180]]){
+ const config={...settings,orbitHorizontal:h,orbitVertical:v,orbitRoll:r};
+ const tilt=multiply(multiply(axisAngle([0,1,0],h*rad),axisAngle([1,0,0],-v*rad)),axisAngle([0,0,1],r*rad));
+ const poses=cubeRotations.map(m=>multiply(tilt,quaternion(m)));
+ for(const [i,pose] of poses.entries())for(const axis of [[1,0,0],[0,1,0],[0,0,1]])for(const angle of [-10,0,10]){
+  const q=multiply(axisAngle(axis,angle*rad),pose),snap=snapTarget(q,config);
+  close(distance(snap.q,pose),0);assert.deepEqual(snap.face,frontFace(cubeRotations[i]));
+  close(distance(snapTarget(q.map(v=>-v),config).q,pose),0);
+ }
+ for(const q of [identity,tilted,multiply(tilted,tilt)]){
+  const snap=snapTarget(q,config);
+  close(snap.error,Math.min(...poses.map(p=>distance(q,p))));
+ }
 }
 assert.equal(dragAxis(100,2,settings),'Y');assert.equal(dragAxis(2,100,settings),'X');assert.equal(dragAxis(100,100,settings),'Z');
 const step=dragRotation(100,0,'Y',settings);

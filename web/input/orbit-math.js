@@ -17,14 +17,14 @@ export function slerp(a,b,t){let d=a.reduce((s,v,i)=>s+v*b[i],0);if(d<0){b=b.map
 const axes=[[1,0,0],[0,1,0],[0,0,1]],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 export const cubeRotations=[];
 for(let a=0;a<3;a++)for(let b=0;b<3;b++)if(a!==b)for(const sa of [-1,1])for(const sb of [-1,1]){const x=axes[a].map(v=>v*sa),y=axes[b].map(v=>v*sb);cubeRotations.push([...x,...y,...cross(x,y)]);}
-// Select the closest outward normal first; then choose the nearest upright
-// quarter-turn of that face. Target tilt is camera-relative, with optional roll.
+// Camera-facing normal for labels and diagnostics. Snapping instead compares
+// complete resting poses, including the configured camera-relative tilt and roll.
 export function frontFace(m){let axis=0;for(let k=1;k<3;k++)if(Math.abs(m[k*3+2])>Math.abs(m[axis*3+2]))axis=k;return {axis,sign:m[axis*3+2]>=0?1:-1};}
 export function snapTarget(q,settings){
- const face=frontFace(matrix(q)),rad=Math.PI/180;
+ const rad=Math.PI/180;
  const tilt=multiply(multiply(axisAngle([0,1,0],settings.orbitHorizontal*rad),axisAngle([1,0,0],-settings.orbitVertical*rad)),axisAngle([0,0,1],settings.orbitRoll*rad));
- let best=null,error=Infinity;
- for(const m of cubeRotations)if(m[face.axis*3+2]*face.sign>.99){const target=multiply(tilt,quaternion(m)),d=distance(q,target);if(d<error){best=target;error=d;}}
+ let best=null,face=null,error=Infinity;
+ for(const m of cubeRotations){const target=multiply(tilt,quaternion(m)),d=distance(q,target);if(d<error){best=target;face=frontFace(m);error=d;}}
  return {q:best,face,error};
 }
 export function dragAxis(dx,dy,s){
