@@ -1,51 +1,28 @@
 import assert from 'node:assert/strict';
-import {displaySettings,setDisplaySetting,initializeDisplayControls} from '../web/ui/display-settings.js';
-import {compositeParts} from '../web/render/piece-mesh.js';
-const board=Array(27).fill(0);for(const i of [0,1,3,4])board[i]=1;
-const ids=Array(27).fill(1),palette=['','#ff0000'],generate=()=>{throw Error('Angular must be native-free');};
-const whole=compositeParts(board,ids,palette,generate,'angular',false,0,false);
-const cells=compositeParts(board,ids,palette,generate,'angular',false,0,true);
-assert.equal(whole.length,1);assert.equal(cells.length,4);assert(whole[0].length>0);assert(cells.every(m=>m.length>0));
-setDisplaySetting('gameActiveSize',145);assert.equal(displaySettings.gameActiveSize,145);setDisplaySetting('gameActiveSize',999);assert.equal(displaySettings.gameActiveSize,145);
-setDisplaySetting('uiTheme','violet');assert.equal(displaySettings.uiTheme,'violet');setDisplaySetting('stackPieces','cubies');assert.equal(displaySettings.stackPieces,'cubies');
-console.log('PASS: separate whole/cubie geometry, validated size settings, theme and assembly preferences.');
-
-const properties=new Map(),host={style:{setProperty:(k,v)=>properties.set(k,v)},setAttribute(){}};
-const stop=initializeDisplayControls({host,getElementById:()=>null});
-setDisplaySetting('uiTheme','amber');assert.equal(properties.get('--accent'),'#efca82');assert.equal(properties.get('--bg'),'#201b14');stop();
-console.log('PASS: shared theme applies to the scoped explorer host.');
-
-const {detectPieces,allowedDetectedPiece}=await import('../web/explorer/family-exploration.js');
-const {explorationMeshes}=await import('../web/explorer/exploration-mesh.js');
-const oMask=27,fragmentMask=11;
-const makeCells=mask=>Array.from({length:27},(_,i)=>mask&(1<<i)?{piece:0,color:'y'}:null);
-const allowed={counts:[{type:'O',min:0,max:6}]},excluded={counts:[{type:'O',min:0,max:0}]};
-assert.equal(detectPieces(makeCells(oMask),allowed)[0].letter,'O');
-assert.equal(detectPieces(makeCells(oMask),excluded)[0].letter,null);
-assert.equal(allowedDetectedPiece(oMask,'O',{counts:[{type:'Facebound',max:0}]}),false);
-assert.equal(allowedDetectedPiece((1<<0)|(1<<1)|(1<<4)|(1<<13),'F',{spatial:'none'}),false);
-assert.equal(explorationMeshes(makeCells(oMask),generate,'angular',false,true,true,false,allowed).length,1);
-assert.equal(explorationMeshes(makeCells(oMask),generate,'angular',false,true,true,false,excluded).length,4);
-assert.equal(explorationMeshes(makeCells(fragmentMask),generate,'angular').length,3);
-assert.equal(explorationMeshes(makeCells(oMask),generate,'angular',true,true,true,false,allowed,true).length,4);
-const fragmentBoard=board.map((v,i)=>fragmentMask&(1<<i)?v:0);
-assert.equal(compositeParts(fragmentBoard,ids,palette,generate,'angular',false,0,'whole').length,3);
-assert.equal(compositeParts(board,ids,palette,generate,'angular',false,0,'solids').length,4);
-for(const key of ['familyPieces','practiceStartPieces','practiceTargetPieces','activePieces','stackPieces'])for(const mode of ['cubies','whole','solids']){setDisplaySetting(key,mode);assert.equal(displaySettings[key],mode);}
-console.log('PASS: five assembly preferences, complete tetracubes only, filter-aware exclusions, fragments and solids.');
-
-const {assemblyOptions,assemblyKind}=await import('../web/render/assembly.js');
-assert.equal(assemblyOptions.length,5);
-const extraCells=Array(27).fill(null);extraCells[13]={piece:-1,color:'w'};
-const extrasBaseline=explorationMeshes(extraCells,generate,'angular');
-for(const [mode]of assemblyOptions){
-  const full=explorationMeshes(makeCells(oMask),generate,'angular',true,true,true,false,{},false,mode);
-  const fragment=explorationMeshes(makeCells(fragmentMask),generate,'angular',true,true,true,false,{},false,mode);
-  assert.equal(full.length,assemblyKind(mode,true)==='whole'?1:4);
-  assert.equal(full.filter(m=>m.identityCell!==undefined).length,assemblyKind(mode,true)==='solids'?4:0);
-  assert.equal(fragment.filter(m=>m.identityCell!==undefined).length,assemblyKind(mode,false)==='solids'?3:0);
-  assert.deepEqual(explorationMeshes(extraCells,generate,'angular',true,true,true,false,{},false,mode),extrasBaseline);
-  assert.equal(compositeParts(board,ids,palette,generate,'angular',false,0,mode).length,assemblyKind(mode,true)==='whole'?1:4);
-  for(const key of ['familyPieces','practiceStartPieces','practiceTargetPieces','activePieces','stackPieces']){setDisplaySetting(key,mode);assert.equal(displaySettings[key],mode);}
-}
-console.log('PASS: all five assembly combinations distinguish complete groups, fragments, and cube-shaped extras.');
+import {displaySchema as schema} from '../web/ui/display-schema.js';
+import {createSettingsStore} from '../web/ui/settings-store.js';
+const data=new Map(),storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};
+const load=saved=>{data.set(schema.storageKey,JSON.stringify(saved));return createSettingsStore(schema,storage);};
+let store=load({gameCombinedSize:124,gameActiveSize:100,targetSize:145,practiceTargetSize:130,startSize:75,gamePieces:'retained',familyPieces:'solids',uiTheme:'amber'});
+assert.equal(store.values.gameActiveSize,124);assert.equal(store.values.practiceTargetSize,130);assert.equal(store.values.practiceStartSize,75);assert.equal(store.values.stackPieces,'retained');assert.equal(store.values.familyPieces,'solids');assert.equal(store.values.uiTheme,'amber');
+const notices=[],off=store.subscribe(key=>notices.push(key));
+for(const [id,value]of [['familySize',49],['familySize',161],['familySize','90'],['familySize',Infinity],['familyPieces','retained'],['uiTheme','red'],['missing',1]])assert(!store.set(id,value));
+assert.equal(notices.length,0);
+assert(store.set('familySize',87.5));assert.equal(store.values.familySize,87.5,'Preserve fractional API values');
+assert(store.set('stackPieces','retained'));assert.deepEqual(notices,['familySize','stackPieces']);
+const saved=JSON.parse(data.get(schema.storageKey));assert.equal(saved.version,1);assert(!Object.hasOwn(saved.values,'gamePieces'));assert.equal(createSettingsStore(schema,storage).values.familySize,87.5);off();
+store=load({gameCombinedSize:140,gameActiveSize:90,gamePieces:'solids',stackPieces:'cubies'});assert.equal(store.values.gameActiveSize,90);assert.equal(store.values.stackPieces,'cubies');
+for(const empty of ['',null,0])assert.equal(load({gamePieces:'solids',stackPieces:empty}).values.stackPieces,'solids');
+store=load({version:1,values:{gameCombinedSize:140,gameActiveSize:100,gamePieces:'solids'}});assert.equal(store.values.gameActiveSize,100);assert.equal(store.values.stackPieces,schema.fields.stackPieces.value,'Aliases apply only to legacy format');
+store=load({familySize:400,uiTheme:'missing',stackPieces:'invalid'});assert.equal(store.values.familySize,100);assert.equal(store.values.uiTheme,'teal');assert.equal(store.values.stackPieces,'whole');
+store=load({version:99,values:{uiTheme:'amber'}});const future=data.get(schema.storageKey);store.set('uiTheme','violet');assert.equal(data.get(schema.storageKey),future);
+data.delete(schema.storageKey);globalThis.localStorage=storage;
+const {displaySettings,initializeDisplayControls}=await import('../web/ui/display-settings.js');
+const nodes=new Map(),styles=new Map();const root={getElementById(id){if(!nodes.has(id))nodes.set(id,{listeners:{},addEventListener(event,fn){this.listeners[event]=fn;}});return nodes.get(id);},documentElement:{style:{setProperty:(k,v)=>styles.set(k,v)},setAttribute:(k,v)=>styles.set(k,v)}};
+const el=id=>root.getElementById(id),changes=[],dispose=initializeDisplayControls(root,key=>changes.push(key));
+el('familyPieces').value='solids';el('familyPieces').listeners.change();assert.equal(displaySettings.familyPieces,'solids');assert.equal(changes.at(-1),'familyPieces');
+el('familySize').value='125';el('familySize').listeners.input();assert.equal(el('familySizeValue').textContent,'125%');assert.equal(displaySettings.familySize,125);
+el('uiTheme').value='violet';el('uiTheme').listeners.change();assert.equal(styles.get('data-ui-theme'),'violet');assert.equal(styles.get('--accent'),'#d1b0ff');
+const hydrated=createSettingsStore(schema,storage);assert.equal(hydrated.values.familyPieces,'solids');assert.equal(hydrated.values.familySize,125);
+const count=changes.length;dispose();el('uiTheme').value='teal';el('uiTheme').listeners.change();assert.equal(changes.length,count);
+console.log('PASS: display aliases/precedence, versioned reload, validation, fractional sizes, key notifications, generated control binding and themes.');

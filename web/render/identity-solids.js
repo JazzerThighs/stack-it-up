@@ -1,3 +1,4 @@
+import {cubieScale} from './cubie-size.js';
 import {visualSettings} from './visual-settings.js';
 import {IDENTITY,transformPoint} from './transforms.js';
 // Six durable identities: five Platonic solids and a sphere. Flat face normals
@@ -45,6 +46,7 @@ function hull(vertices) {
 }
 const meshes=[tetra,cube,octa,dodeca,ico].map(hull);
 export function identitySolid(out,p,h,color,id,rotation=IDENTITY) {
+  h*=cubieScale();
   const start=out.length;
   // Extra released fragment groups must not wrap back to an existing solid.
   // Beyond the six standard identities, use distinct polygonal bipyramids.
@@ -83,4 +85,4 @@ export function identityGray(id) {const value=[.34,.46,.58,.70,.82,.94][((id%6)+
 export function solidColor(id,color,gray=visualSettings.solidGray) {
   return visualSettings.solidUniform?rgb(visualSettings.solidColor):gray?identityGray(id):color;
 }
-export function solidStyleKey(){return [visualSettings.solidGray,visualSettings.solidUniform,visualSettings.solidColor,visualSettings.solidFixed].join(':');}
+export function solidStyleKey(){return [visualSettings.cubieScale,visualSettings.solidGray,visualSettings.solidUniform,visualSettings.solidColor,visualSettings.solidFixed].join(':');}

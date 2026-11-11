@@ -1,4 +1,5 @@
 // Exact planar CSG of beveled rectangular runs. No marching grid or smooth normals.
+import {cubieScale} from './cubie-size.js';
 import {xyz} from './geometry.js';
 import {visualSettings} from './visual-settings.js';
 const EPS=1e-7, CELL_INSET=.045;
@@ -27,6 +28,7 @@ function subtract(poly,planes){
   return out;
 }
 export function angularPiece(mask,color=[1,1,1]) {
+  const scale=cubieScale();
   const cells=Array.from({length:27},(_,i)=>i).filter(i=>mask&(1<<i));
   const runs=[];
   for(const a of cells)for(const b of cells){
@@ -37,15 +39,15 @@ export function angularPiece(mask,color=[1,1,1]) {
     if(valid)runs.push({lo,hi});
   }
   const maximal=runs.filter(r=>!runs.some(s=>s!==r&&r.lo.every((v,k)=>s.lo[k]<=v&&s.hi[k]>=r.hi[k])));
-  let volumes=maximal.map(({lo,hi})=>({center:lo.map((v,k)=>(v+hi[k])/2),half:lo.map((v,k)=>(hi[k]-v+1)/2-CELL_INSET)}));
+  let volumes=maximal.map(({lo,hi})=>({center:lo.map((v,k)=>(v+hi[k])/2),half:lo.map((v,k)=>(hi[k]-v)/2+(.5-CELL_INSET)*scale)}));
   if(visualSettings.jellyCornerO && cells.length===4) {
     const lo=[0,1,2].map(k=>Math.min(...cells.map(i=>xyz(i)[k]))),hi=[0,1,2].map(k=>Math.max(...cells.map(i=>xyz(i)[k])));
     const span=lo.map((v,k)=>hi[k]-v),axis=span.indexOf(0);
     if(axis>=0 && span.filter(v=>v===1).length===2) {
-      const a=(axis+1)%3,b=(axis+2)%3,mid=lo.map((v,k)=>(v+hi[k])/2),hole=visualSettings.jellyOpening/100,outer=1-CELL_INSET;
+      const a=(axis+1)%3,b=(axis+2)%3,mid=lo.map((v,k)=>(v+hi[k])/2),hole=.5-(.5-visualSettings.jellyOpening/100)*scale,outer=.5+(.5-CELL_INSET)*scale;
       volumes=[];
       for(const direction of [a,b])for(const side of [-1,1]) {
-        const center=mid.slice(),half=Array(3).fill(.5-CELL_INSET);
+        const center=mid.slice(),half=Array(3).fill((.5-CELL_INSET)*scale);
         center[direction]+=side*(outer+hole)/2;
         half[direction]=(outer-hole)/2;half[direction===a?b:a]=outer;
         volumes.push({center,half});
@@ -53,7 +55,7 @@ export function angularPiece(mask,color=[1,1,1]) {
     }
   }
   const solids=volumes.map(({center,half})=>{
-    const bevel=Math.min(visualSettings.jellyBevel/100,Math.min(...half)*.9),planes=[];
+    const bevel=Math.min(visualSettings.jellyBevel/100*scale,Math.min(...half)*.9),planes=[];
     for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
       const raw=[x,y,z],count=raw.filter(Boolean).length;if(!count)continue;
       const length=Math.hypot(...raw),n=raw.map(v=>v/length);

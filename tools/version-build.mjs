@@ -29,8 +29,10 @@ export async function versionBuild(output) {
   for(const entry of ['index.html','explorer/index.html']) {
     const file=path.join(output,entry),base=path.posix.dirname(entry);
     let html=await readFile(file,'utf8');
-    html=html.replace(/\b(src|href)="(\.\/[^"?#]+\.(?:js|css))"/g,(_,attribute,url)=>{
-      const target=path.posix.join(prefix,base,url);
+    html=html.replace(/\b(src|href)="(\.{1,2}\/[^"?#]+\.(?:js|css))"/g,(_,attribute,url)=>{
+      const source=path.posix.normalize(path.posix.join(base,url));
+      if(source.startsWith('../'))throw Error('Entry asset escapes build output: '+url);
+      const target=path.posix.join(prefix,source);
       const relative=path.posix.relative(base,target);
       return `${attribute}="${relative.startsWith('.')?'':'./'}${relative}"`;
     });

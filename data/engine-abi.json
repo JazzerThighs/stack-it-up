@@ -1,0 +1,268 @@
+{
+  "version": 4,
+  "snapshot": {
+    "words": 226,
+    "fields": [
+      {
+        "name": "BOARD",
+        "offset": 0,
+        "length": 27
+      },
+      {
+        "name": "IDS",
+        "offset": 27,
+        "length": 27
+      },
+      {
+        "name": "ACTIVE",
+        "offset": 54,
+        "length": 1
+      },
+      {
+        "name": "PIECE",
+        "offset": 55,
+        "length": 1
+      },
+      {
+        "name": "QUEUE",
+        "offset": 56,
+        "length": 6
+      },
+      {
+        "name": "PIECES",
+        "offset": 62,
+        "length": 1
+      },
+      {
+        "name": "CLEARS",
+        "offset": 63,
+        "length": 1
+      },
+      {
+        "name": "SCORE",
+        "offset": 64,
+        "length": 1
+      },
+      {
+        "name": "GRAVITY",
+        "offset": 65,
+        "length": 1
+      },
+      {
+        "name": "OVER",
+        "offset": 66,
+        "length": 1
+      },
+      {
+        "name": "WINNING_MOVES",
+        "offset": 67,
+        "length": 1
+      },
+      {
+        "name": "UNDO_COUNT",
+        "offset": 68,
+        "length": 1
+      },
+      {
+        "name": "LAST_FACE",
+        "offset": 69,
+        "length": 1
+      },
+      {
+        "name": "LAST_PIECE",
+        "offset": 70,
+        "length": 1
+      },
+      {
+        "name": "CLEARED_FACES",
+        "offset": 71,
+        "length": 1
+      },
+      {
+        "name": "REVISION",
+        "offset": 72,
+        "length": 1
+      },
+      {
+        "name": "OCCUPIED_COUNT",
+        "offset": 73,
+        "length": 1
+      },
+      {
+        "name": "ABI_VERSION",
+        "offset": 74,
+        "length": 1
+      },
+      {
+        "name": "AUTO_PLACEMENTS",
+        "offset": 75,
+        "length": 1
+      },
+      {
+        "name": "AUTO_TIERS",
+        "offset": 76,
+        "length": 1
+      },
+      {
+        "name": "CLEAR_COUNT",
+        "offset": 77,
+        "length": 1
+      },
+      {
+        "name": "PENDING_FACES",
+        "offset": 78,
+        "length": 1
+      },
+      {
+        "name": "LAST_MASK",
+        "offset": 79,
+        "length": 1
+      },
+      {
+        "name": "FACE_CELLS",
+        "offset": 80,
+        "length": 54
+      },
+      {
+        "name": "SHAPES",
+        "offset": 134,
+        "length": 6
+      },
+      {
+        "name": "INVENTORY",
+        "offset": 140,
+        "length": 12
+      },
+      {
+        "name": "PENDING_MASKS",
+        "offset": 152,
+        "length": 6
+      },
+      {
+        "name": "GRAVITY_MODE",
+        "offset": 158,
+        "length": 1
+      },
+      {
+        "name": "FLOATING",
+        "offset": 159,
+        "length": 1
+      },
+      {
+        "name": "FRAGMENT_TURNS",
+        "offset": 160,
+        "length": 1
+      },
+      {
+        "name": "FRAGMENTS_ENABLED",
+        "offset": 161,
+        "length": 1
+      },
+      {
+        "name": "FLOATING_COUNT",
+        "offset": 162,
+        "length": 1
+      },
+      {
+        "name": "FLOATING_OVERLAPS",
+        "offset": 163,
+        "length": 1
+      },
+      {
+        "name": "HELD",
+        "offset": 164,
+        "length": 1
+      },
+      {
+        "name": "HOLD_USED",
+        "offset": 165,
+        "length": 1
+      },
+      {
+        "name": "BANDAGED",
+        "offset": 166,
+        "length": 1
+      },
+      {
+        "name": "RANDOM_CUBIES",
+        "offset": 167,
+        "length": 1
+      },
+      {
+        "name": "REBUILD_MODE",
+        "offset": 168,
+        "length": 1
+      },
+      {
+        "name": "REBUILD_MASK",
+        "offset": 169,
+        "length": 1
+      },
+      {
+        "name": "REBUILD_PENDING",
+        "offset": 170,
+        "length": 1
+      },
+      {
+        "name": "ALLOWED_MOVES",
+        "offset": 171,
+        "length": 1
+      },
+      {
+        "name": "REBUILD_COLORS",
+        "offset": 172,
+        "length": 27
+      },
+      {
+        "name": "BAND_IDS",
+        "offset": 199,
+        "length": 27
+      }
+    ]
+  },
+  "event": {
+    "words": 86,
+    "fields": [
+      {
+        "name": "KIND",
+        "offset": 0,
+        "length": 1
+      },
+      {
+        "name": "MASK",
+        "offset": 1,
+        "length": 1
+      },
+      {
+        "name": "FACE",
+        "offset": 2,
+        "length": 1
+      },
+      {
+        "name": "BOARD",
+        "offset": 3,
+        "length": 27
+      },
+      {
+        "name": "IDS",
+        "offset": 30,
+        "length": 27
+      },
+      {
+        "name": "ORIGINS",
+        "offset": 57,
+        "length": 27
+      },
+      {
+        "name": "FLOAT_MASK",
+        "offset": 84,
+        "length": 1
+      },
+      {
+        "name": "FRAGMENT_TURNS",
+        "offset": 85,
+        "length": 1
+      }
+    ]
+  }
+}

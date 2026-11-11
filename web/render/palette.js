@@ -1,8 +1,10 @@
+import {startupDefaults} from '../ui/startup-defaults.js';
 // Piece identity remains separate from display color, including white choices.
 import {pieces} from '../engine/pieces.js';
 // Stable IDs are shared with the native engine.
 export const pieceNames = ['', ...pieces.map(p=>p.letter)];
-export const defaultColors = ['#000000', ...pieces.map(p=>p.color)];
+export const defaultColors = ['#000000', ...pieces.map(p=>startupDefaults.palette[p.letter]??p.color)];
+if(defaultColors.some(color=>!/^#[0-9a-f]{6}$/i.test(color)))throw Error('Startup palette colors must be six-digit hex colors.');
 export const colors = defaultColors.slice();
 const listeners = new Set();
 try {

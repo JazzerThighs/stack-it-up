@@ -101,3 +101,28 @@ fn floating_groups_pending_choices_and_topout_survive_transport() {
     assert!(h.import_state(&g.export_state()));
     assert!(h.state.over);
 }
+
+#[test]
+fn every_supported_state_version_keeps_its_reader_and_rejects_bad_structure() {
+    let original = Game::new(42).export_state();
+    assert_eq!(original[1], 2);
+    for version in 1..=8 {
+        let mut words=original.clone();words[1]=version;
+        if version==1 {words.truncate(words.len()-2);}
+        if version>=3 {words.extend([0,1,0,0,u32::MAX,0]);}
+        if version>=4 {words.extend([2,9]);}
+        if version>=5 {words.push(63);}
+        if version>=7 {words.push(0);}
+        let mut game=Game::new(100);
+        assert!(game.import_state(&words),"version {version}");
+        let accepted=game.export_state();
+        for length in 0..words.len() {
+            assert!(!game.import_state(&words[..length]),"version {version}, length {length}");
+            assert_eq!(game.export_state(),accepted);
+        }
+        words.push(0);assert!(!game.import_state(&words));
+        assert_eq!(game.export_state(),accepted);
+        let mut next=Game::new(101);assert!(next.import_state(&accepted));
+        assert_eq!(next.export_state(),accepted);
+    }
+}

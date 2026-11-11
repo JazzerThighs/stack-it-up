@@ -1,3 +1,4 @@
+import {bracketCell,bracketPiece} from './text-mesh.js';
 import {assemblyKind} from './assembly.js';
 import {identitySolid,solidColor} from './identity-solids.js';
 import {angularPiece} from './angular-mesh.js';
@@ -34,6 +35,8 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly',spa
     const out=[],c=rgb(hex);
     if(appearance==='angular') {
       for(const v of angularPiece(mask,c))out.push(v);
+    } else if(appearance==='text') {
+      for(const v of bracketPiece(mask,c))out.push(v);
     } else if(appearance==='gameboy') {
       const letter=bomb?'bomb':identifyMask(mask)||'loose';
       for(const v of gameboyPiece(mask,c,letter))out.push(v);
@@ -60,6 +63,7 @@ export function compositeMesh(board,ids,palette,generate,appearance='jelly') {
 // Loose jelly cells use the same native surface and shaping-keyed cache as
 // connected fragments. Keep identity solids and current-piece spheres distinct.
 export function jellyCell(out,cell,color,generate,halfSize=0.465,appearance='jelly') {
+  if(appearance==='text'){bracketCell(out,xyz(cell),halfSize,color);return;}
   if(appearance==='gameboy'){gameboyCell(out,xyz(cell),halfSize,color,'loose');return;}
   const board=Array(27).fill(0),ids=Array(27).fill(1);board[cell]=1;
   const mesh=compositeParts(board,ids,['','#ffffff'],generate,appearance)[0];

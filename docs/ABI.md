@@ -1,3 +1,4 @@
+<!-- Snapshot/event offsets are generated from data/engine-abi.json. Run node tools/generate-abi.mjs after schema edits. -->
 # Wasm ABI v4
 
 C ABI exports with linear-memory buffers; no wasm-bindgen or JS rules engine.

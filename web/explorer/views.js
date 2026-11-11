@@ -1,3 +1,6 @@
+import {createViewController} from './view-controller.js';
+import {createPlaybackController} from './playback-controller.js';
+import {createWorkerTask} from '../workers/task.js';
 import {assemblyUsesSolids} from '../render/assembly.js';
 import {displaySettings,initializeDisplayControls,viewPreferences,setDisplaySetting} from '../ui/display-settings.js';
 import {jellyStyleKey} from '../render/visual-settings.js';
@@ -45,21 +48,17 @@ export function createExplorerViews({
     playback = 0,
     sourcePacking,
     targetPacking;
-  let practiceRun=0,practiceBusy=false,practiceWorker=null,cancelJob=null,pairCompatible=false;
+  let pairCompatible=false;
+  const practicePath=createWorkerTask({
+    createWorker:()=>typeof Worker==='undefined'?null:new Worker(new URL('./practice-worker.js',import.meta.url),{type:'module'}),
+    runFallback:({source,target})=>import('./practice-path.js').then(m=>m.planPracticePath(source,target)),
+    errorMessage:'Could not construct the practice path',
+  });
+  const practicePlayback=createPlaybackController({cancelSearch:()=>practicePath.cancel()});
   function cancelPractice(){
-    practiceRun++;practiceWorker?.terminate();practiceWorker=null;cancelJob?.();cancelJob=null;practiceBusy=false;
+    practicePlayback.cancel();
     const cube=cubes.get('practiceLeft');if(cube){cube.generation++;cube.busy=false;cube.orbitOnly=false;cube.playbackMs=null;cube.setState(cube.cells);}
     $('practiceDemonstrate').textContent='Demonstrate path';
-  }
-  function findPracticePath(source,target){
-    if(typeof Worker==='undefined')return import('./practice-path.js').then(m=>m.planPracticePath(source,target));
-    return new Promise((resolve,reject)=>{
-      practiceWorker=new Worker(new URL('./practice-worker.js',import.meta.url),{type:'module'});
-      cancelJob=()=>reject(Error('Playback cancelled'));
-      practiceWorker.onmessage=({data})=>{practiceWorker?.terminate();practiceWorker=null;cancelJob=null;data.error?reject(Error(data.error)):resolve(data.moves);};
-      practiceWorker.onerror=()=>{practiceWorker?.terminate();practiceWorker=null;cancelJob=null;reject(Error('Could not construct the practice path'));};
-      practiceWorker.postMessage({source,target});
-    });
   }
   const get = (id, options = {}) => {
     if (!cubes.has(id)) {
@@ -167,8 +166,8 @@ export function createExplorerViews({
     const cube = cubes.get("practiceLeft");
     if (!cube || !targetCells) return;
     const match = matchesTarget(cube.cells, targetCells);
-    $('practiceDemonstrate').disabled=!pairCompatible&&!practiceBusy;
-    $('practiceScramble').disabled=practiceBusy||!match;
+    $('practiceDemonstrate').disabled=!pairCompatible&&!practicePlayback.busy;
+    $('practiceScramble').disabled=practicePlayback.busy||!match;
     $('practiceScramble').title=match?'Scramble the Start cube; keep the Target unchanged.':'Match the target before generating a fresh scramble.';
     $("practiceProgress").textContent = match
       ? "Target matched!"
@@ -211,28 +210,46 @@ export function createExplorerViews({
   $("practiceSwap").onclick = async () => {
     if (sourcePacking && targetPacking) {loadPair(targetPacking, sourcePacking);await syncSelection();}
   };
+  function finishPractice(cube) {
+    cube.orbitOnly=false;cube.playbackMs=null;
+    $('practiceDemonstrate').textContent='Demonstrate path';updatePractice();
+  }
+  function playPracticeMove(cube,move) {
+    cube.orbitOnly=false;
+    const task=cube.play(move);
+    cube.orbitOnly=true;
+    return task;
+  }
   $('practiceScramble').onclick=async()=>{
     const cube=cubes.get('practiceLeft');if(!cube||cube.busy||!matchesTarget(cube.cells,targetCells))return;
-    cancelPractice();cube.setCells(targetCells);const token=practiceRun;practiceBusy=true;cube.playbackMs=55;
-    try{let last=-1;for(let i=0;i<20;i++){let move;do{move=Math.floor(Math.random()*30);}while(move%15===last);last=move%15;if(token!==practiceRun)break;cube.orbitOnly=false;const task=cube.play(move);cube.orbitOnly=true;await task;}}
-    finally{if(token===practiceRun){practiceBusy=false;cube.orbitOnly=false;cube.playbackMs=null;updatePractice();}}
+    cancelPractice();cube.setCells(targetCells);cube.playbackMs=55;
+    return practicePlayback.run({
+      plan:()=>{let last=-1;return Array.from({length:20},()=>{let move;do{move=Math.floor(Math.random()*30);}while(move%15===last);last=move%15;return move;});},
+      play:move=>playPracticeMove(cube,move),
+      onError:error=>{$('practiceStatus').textContent=error.message;},
+      onFinish:()=>finishPractice(cube),
+    });
   };
   $('practiceDemonstrate').onclick=async()=>{
-    if(practiceBusy){cancelPractice();updatePractice();return;}
+    if(practicePlayback.busy){cancelPractice();updatePractice();return;}
     const cube=cubes.get('practiceLeft');if(!cube||cube.busy||!pairCompatible)return;
-    await selectPracticeView('start');const token=++practiceRun;practiceBusy=true;cube.orbitOnly=true;
-    $('practiceDemonstrate').textContent='Stop demonstration';$('practiceScramble').disabled=true;
-    $('practiceStatus').textContent='Constructing and verifying a legal path...';
-    try{
-      const moves=await findPracticePath(cube.cells.map(c=>c.piece),targetCells.map(c=>c.piece));if(token!==practiceRun)return;
-      $('practiceStatus').textContent=`Verified path: ${moves.length} quarter-turns. Physical piece identities are preserved.`;cube.playbackMs=45;
-      for(let i=0;i<moves.length;i++){
-        if(token!==practiceRun||!$('practiceMode').checked)break;
-        cube.orbitOnly=false;const task=cube.play(moves[i]);cube.orbitOnly=true;await task;
-        $('practiceProgress').textContent=`Demonstrating ${i+1} / ${moves.length}`;
-      }
-    }catch(error){if(token===practiceRun)$('practiceStatus').textContent=error.message;}
-    finally{if(token===practiceRun){practiceBusy=false;cube.orbitOnly=false;cube.playbackMs=null;$('practiceDemonstrate').textContent='Demonstrate path';updatePractice();}}
+    return practicePlayback.run({
+      prepare:()=>{
+        cube.orbitOnly=true;
+        $('practiceDemonstrate').textContent='Stop demonstration';$('practiceScramble').disabled=true;
+        $('practiceStatus').textContent='Constructing and verifying a legal path...';
+        return selectPracticeView('start');
+      },
+      plan:()=>practicePath.run({source:cube.cells.map(c=>c.piece),target:targetCells.map(c=>c.piece)}),
+      onPlan:moves=>{
+        $('practiceStatus').textContent=`Verified path: ${moves.length} quarter-turns. Physical piece identities are preserved.`;
+        cube.playbackMs=45;
+      },
+      play:move=>playPracticeMove(cube,move),
+      onStep:(step,total)=>{$('practiceProgress').textContent=`Demonstrating ${step} / ${total}`;},
+      onError:error=>{$('practiceStatus').textContent=error.message;},
+      onFinish:()=>finishPractice(cube),
+    });
   };
   const familyExplorer=createFamilyExplorer({$,get,getSelected:()=>selected,data});
   async function syncSelection() {return data.selectionChanged?.($('navigationTarget').value==='target'?targetPacking:sourcePacking);}
@@ -254,24 +271,28 @@ export function createExplorerViews({
       else loadPair(p,targetPacking||p);
     }
   }
-  async function updateMode() {
-    const family=$("familyExploreMode").checked, practice=$("practiceMode").checked;
-    if(!practice&&practiceBusy)cancelPractice();
-    if(!family)familyExplorer.leave?.();
-    $("familyExplorePanel").hidden=!family;
-    $("practicePanel").hidden=!practice;
-    $("cubeLayout").hidden=family || practice;
-    $('packingNavigation').hidden=false;
-    $('practiceNavigation').hidden=!practice;
-    $('navigationTargetLabel').hidden=!practice;
-    $("viewTabs").style.display=family || practice ? "none" : "";
-    if(family) await familyExplorer.enter();
-    if(practice && !sourcePacking) {
-      $("practiceA").value=selected?.lineNumber || "";
-      loadPair(selected,selected);
-    }
-    if(practice)await selectPracticeView($('navigationTarget').value==='target'?'target':'start');
-    for(const cube of cubes.values()) cube.invalidate();
+  const viewController=createViewController({
+    cancelPractice:()=>{if(practicePlayback.busy)cancelPractice();},
+    leaveFamily:()=>familyExplorer.leave?.(),
+    show:mode=>{
+      const family=mode==='family',practice=mode==='practice';
+      $("familyExplorePanel").hidden=!family;
+      $("practicePanel").hidden=!practice;
+      $("cubeLayout").hidden=family || practice;
+      $('packingNavigation').hidden=false;
+      $('practiceNavigation').hidden=!practice;
+      $('navigationTargetLabel').hidden=!practice;
+      $("viewTabs").style.display=family || practice ? "none" : "";
+    },
+    enterFamily:()=>familyExplorer.enter(),
+    enterPractice:async()=>{
+      if(!sourcePacking){$("practiceA").value=selected?.lineNumber || "";loadPair(selected,selected);}
+      await selectPracticeView($('navigationTarget').value==='target'?'target':'start');
+    },
+    refresh:()=>{for(const cube of cubes.values())cube.invalidate();},
+  });
+  function updateMode(){
+    return viewController.select($('familyExploreMode').checked?'family':$('practiceMode').checked?'practice':'catalog');
   }
   $("familyExploreMode").onchange=()=>{
     if($("familyExploreMode").checked) $("practiceMode").checked=false;

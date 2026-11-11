@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {distribution,observeBuffers,bufferPlateau} from '../tools/performance-metrics.mjs';
+const checkpoints=[{cycle:10,liveBuffers:12,bufferBytes:1024},{cycle:15,liveBuffers:12,bufferBytes:1024}];
+assert.deepEqual(bufferPlateau(checkpoints),{stable:true,growth:{buffers:0,bytes:0}});
+assert.equal(bufferPlateau(checkpoints.slice(0,1)).stable,null,'A missing final checkpoint cannot pass');
+assert.equal(bufferPlateau([{...checkpoints[0]}, {...checkpoints[1],bufferBytes:2048}]).stable,false,'Stable counts alone do not establish a plateau');
+assert.equal(bufferPlateau([{...checkpoints[0]}, {...checkpoints[1],liveBuffers:13}]).stable,false,'Additional buffers fail the plateau');
+assert.deepEqual(distribution([]),{count:0,p50:null,p95:null,max:null});
+assert.deepEqual(distribution([5,1,4,2,3]),{count:5,p50:3,p95:5,max:5});
+assert.equal(distribution(Array.from({length:100},(_,i)=>i+1)).p95,95);
+const gl={createBuffer:()=>({}),bindBuffer(){},bufferData(){},bufferSubData(){},deleteBuffer(){}};
+const original={...gl},meter=observeBuffers(gl),a=gl.createBuffer(),b=gl.createBuffer();
+gl.bindBuffer(1,a);gl.bufferData(1,new Float32Array(12),0);
+gl.bindBuffer(1,b);gl.bufferData(1,100,0);
+gl.bufferSubData(1,0,new Uint16Array(10),2,3);
+assert.deepEqual(meter.snapshot(),{liveBuffers:2,bufferBytes:148,peakBuffers:2,peakBufferBytes:148,uploads:3,uploadBytes:54});
+// Replacement frees the old allocation; view offsets and element counts matter.
+gl.bufferData(1,new Float32Array(10),0,2,4);
+assert.equal(meter.snapshot().bufferBytes,64);
+gl.bufferData(1,new Float32Array(10),0,2,0);
+assert.equal(meter.snapshot().bufferBytes,80);
+gl.deleteBuffer(a);gl.deleteBuffer(a);gl.deleteBuffer(null);gl.deleteBuffer(b);
+assert.equal(meter.snapshot().liveBuffers,0);assert.equal(meter.snapshot().bufferBytes,0);
+meter.restore();assert.deepEqual(gl,original);
+console.log('PASS: latency percentiles and GL buffer/upload accounting, replacement, partial views and disposal.');

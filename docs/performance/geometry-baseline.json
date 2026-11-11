@@ -1,0 +1,350 @@
+{
+  "explorerReuse": {
+    "sameReference": true,
+    "stable": {
+      "medianMs": 0.15630000000055588,
+      "maxMs": 0.27919999999903666
+    },
+    "previousCopyPath": {
+      "medianMs": 351.04110000000037,
+      "maxMs": 370.9274999999998
+    }
+  },
+  "wasmSha256": "2b3ae1c1ebe8ad7d21946b1d3923fb3230f65a0720820f23d5998f97c23921f8",
+  "date": "2026-11-10T12:06:20.644Z",
+  "runtime": "v25.3.0",
+  "platform": "win32",
+  "arch": "x64",
+  "cpu": "AMD Ryzen 7 3700X 8-Core Processor             ",
+  "sampleCount": 5,
+  "wasmBytes": 249940,
+  "scope": "CPU stages only. Five warmed-runtime cache misses per case; not browser/GPU/frame latency or representative family playback.",
+  "results": [
+    {
+      "name": "Jelly L, 100%",
+      "cells": [
+        0,
+        3,
+        6,
+        7
+      ],
+      "scale": 100,
+      "profile": 2,
+      "samples": [
+        {
+          "nativeMs": 18.729299999999995,
+          "compositeMs": 49.1875,
+          "fragmentMs": 438.5239,
+          "joinMs": 0.5763000000000602,
+          "warmCompositeMs": 0.005714000000000397,
+          "triangles": 14948,
+          "meshBytes": 2152512
+        },
+        {
+          "nativeMs": 18.21219999999994,
+          "compositeMs": 49.08369999999991,
+          "fragmentMs": 363.5874000000001,
+          "joinMs": 0.7834000000000287,
+          "warmCompositeMs": 0.004898000000000593,
+          "triangles": 14948,
+          "meshBytes": 2152512
+        },
+        {
+          "nativeMs": 18.3275000000001,
+          "compositeMs": 44.16439999999989,
+          "fragmentMs": 338.10739999999987,
+          "joinMs": 0.5095000000001164,
+          "warmCompositeMs": 0.004871000000000549,
+          "triangles": 14948,
+          "meshBytes": 2152512
+        },
+        {
+          "nativeMs": 17.494500000000016,
+          "compositeMs": 42.384000000000015,
+          "fragmentMs": 342.1925000000001,
+          "joinMs": 0.6304999999997563,
+          "warmCompositeMs": 0.004648999999999432,
+          "triangles": 14948,
+          "meshBytes": 2152512
+        },
+        {
+          "nativeMs": 17.120400000000245,
+          "compositeMs": 40.405199999999695,
+          "fragmentMs": 331.77329999999984,
+          "joinMs": 0.4837000000002263,
+          "warmCompositeMs": 0.004605000000001382,
+          "triangles": 14948,
+          "meshBytes": 2152512
+        }
+      ],
+      "timing": {
+        "nativeMs": {
+          "medianMs": 18.21219999999994,
+          "maxMs": 18.729299999999995
+        },
+        "compositeMs": {
+          "medianMs": 44.16439999999989,
+          "maxMs": 49.1875
+        },
+        "fragmentMs": {
+          "medianMs": 342.1925000000001,
+          "maxMs": 438.5239
+        },
+        "joinMs": {
+          "medianMs": 0.5763000000000602,
+          "maxMs": 0.7834000000000287
+        },
+        "warmCompositeMs": {
+          "medianMs": 0.004871000000000549,
+          "maxMs": 0.005714000000000397
+        }
+      },
+      "triangles": 14948,
+      "meshBytes": 2152512
+    },
+    {
+      "name": "Jelly L, 40%",
+      "cells": [
+        0,
+        3,
+        6,
+        7
+      ],
+      "scale": 40,
+      "profile": 2,
+      "samples": [
+        {
+          "nativeMs": 38.57269999999971,
+          "compositeMs": 87.2791000000002,
+          "fragmentMs": 594.1624000000002,
+          "joinMs": 0.6640000000002146,
+          "warmCompositeMs": 0.0046720000000004805,
+          "triangles": 30608,
+          "meshBytes": 4407552
+        },
+        {
+          "nativeMs": 38.486199999999826,
+          "compositeMs": 92.58359999999993,
+          "fragmentMs": 592.5566000000003,
+          "joinMs": 0.8640000000004875,
+          "warmCompositeMs": 0.005655999999999039,
+          "triangles": 30608,
+          "meshBytes": 4407552
+        },
+        {
+          "nativeMs": 36.854700000000776,
+          "compositeMs": 90.41889999999967,
+          "fragmentMs": 603.5252,
+          "joinMs": 1.2069000000001324,
+          "warmCompositeMs": 0.0045700000000033466,
+          "triangles": 30608,
+          "meshBytes": 4407552
+        },
+        {
+          "nativeMs": 37.31259999999929,
+          "compositeMs": 94.09439999999995,
+          "fragmentMs": 587.1810999999998,
+          "joinMs": 1.271099999999933,
+          "warmCompositeMs": 0.004384000000000015,
+          "triangles": 30608,
+          "meshBytes": 4407552
+        },
+        {
+          "nativeMs": 36.88120000000072,
+          "compositeMs": 84.0619999999999,
+          "fragmentMs": 608.3125,
+          "joinMs": 1.065400000000409,
+          "warmCompositeMs": 0.004484999999995125,
+          "triangles": 30608,
+          "meshBytes": 4407552
+        }
+      ],
+      "timing": {
+        "nativeMs": {
+          "medianMs": 37.31259999999929,
+          "maxMs": 38.57269999999971
+        },
+        "compositeMs": {
+          "medianMs": 90.41889999999967,
+          "maxMs": 94.09439999999995
+        },
+        "fragmentMs": {
+          "medianMs": 594.1624000000002,
+          "maxMs": 608.3125
+        },
+        "joinMs": {
+          "medianMs": 1.065400000000409,
+          "maxMs": 1.271099999999933
+        },
+        "warmCompositeMs": {
+          "medianMs": 0.0045700000000033466,
+          "maxMs": 0.005655999999999039
+        }
+      },
+      "triangles": 30608,
+      "meshBytes": 4407552
+    },
+    {
+      "name": "Jelly L, profile 6",
+      "cells": [
+        0,
+        3,
+        6,
+        7
+      ],
+      "scale": 100,
+      "profile": 6,
+      "samples": [
+        {
+          "nativeMs": 57.64689999999973,
+          "compositeMs": 86.57899999999972,
+          "fragmentMs": 382.3108999999995,
+          "joinMs": 0.6696000000001732,
+          "warmCompositeMs": 0.0048080000000027216,
+          "triangles": 16616,
+          "meshBytes": 2392704
+        },
+        {
+          "nativeMs": 57.36340000000018,
+          "compositeMs": 85.79190000000017,
+          "fragmentMs": 367.1863000000003,
+          "joinMs": 0.6203999999997905,
+          "warmCompositeMs": 0.0045650000000023285,
+          "triangles": 16616,
+          "meshBytes": 2392704
+        },
+        {
+          "nativeMs": 57.23099999999977,
+          "compositeMs": 86.7447000000002,
+          "fragmentMs": 373.53280000000086,
+          "joinMs": 0.3937000000005355,
+          "warmCompositeMs": 0.004567999999999302,
+          "triangles": 16616,
+          "meshBytes": 2392704
+        },
+        {
+          "nativeMs": 59.277399999999034,
+          "compositeMs": 94.4314000000013,
+          "fragmentMs": 392.1396000000004,
+          "joinMs": 0.6678000000010798,
+          "warmCompositeMs": 0.0045210000000042785,
+          "triangles": 16616,
+          "meshBytes": 2392704
+        },
+        {
+          "nativeMs": 57.79230000000098,
+          "compositeMs": 86.20429999999942,
+          "fragmentMs": 365.3156000000017,
+          "joinMs": 0.5303000000003522,
+          "warmCompositeMs": 0.00467400000001362,
+          "triangles": 16616,
+          "meshBytes": 2392704
+        }
+      ],
+      "timing": {
+        "nativeMs": {
+          "medianMs": 57.64689999999973,
+          "maxMs": 59.277399999999034
+        },
+        "compositeMs": {
+          "medianMs": 86.57899999999972,
+          "maxMs": 94.4314000000013
+        },
+        "fragmentMs": {
+          "medianMs": 373.53280000000086,
+          "maxMs": 392.1396000000004
+        },
+        "joinMs": {
+          "medianMs": 0.6203999999997905,
+          "maxMs": 0.6696000000001732
+        },
+        "warmCompositeMs": {
+          "medianMs": 0.004567999999999302,
+          "maxMs": 0.0048080000000027216
+        }
+      },
+      "triangles": 16616,
+      "meshBytes": 2392704
+    },
+    {
+      "name": "Jelly single cubie",
+      "cells": [
+        0
+      ],
+      "scale": 100,
+      "profile": 2,
+      "samples": [
+        {
+          "nativeMs": 3.013199999999415,
+          "compositeMs": 12.01469999999972,
+          "fragmentMs": 0.3140000000003056,
+          "joinMs": 0.2734999999993306,
+          "warmCompositeMs": 0.004092000000000553,
+          "triangles": 4524,
+          "meshBytes": 651456
+        },
+        {
+          "nativeMs": 3.0557999999982712,
+          "compositeMs": 12.096999999999753,
+          "fragmentMs": 0.30349999999998545,
+          "joinMs": 0.24459999999999127,
+          "warmCompositeMs": 0.004842999999982567,
+          "triangles": 4524,
+          "meshBytes": 651456
+        },
+        {
+          "nativeMs": 3.01759999999922,
+          "compositeMs": 11.81630000000041,
+          "fragmentMs": 0.3011999999998807,
+          "joinMs": 0.19989999999961583,
+          "warmCompositeMs": 0.004019000000007509,
+          "triangles": 4524,
+          "meshBytes": 651456
+        },
+        {
+          "nativeMs": 2.9241000000001804,
+          "compositeMs": 12.800300000000789,
+          "fragmentMs": 0.3047999999998865,
+          "joinMs": 0.06450000000040745,
+          "warmCompositeMs": 0.004022000000004482,
+          "triangles": 4524,
+          "meshBytes": 651456
+        },
+        {
+          "nativeMs": 3.08679999999913,
+          "compositeMs": 13.050400000000081,
+          "fragmentMs": 0.29290000000037253,
+          "joinMs": 0.06650000000081491,
+          "warmCompositeMs": 0.004062999999987369,
+          "triangles": 4524,
+          "meshBytes": 651456
+        }
+      ],
+      "timing": {
+        "nativeMs": {
+          "medianMs": 3.01759999999922,
+          "maxMs": 3.08679999999913
+        },
+        "compositeMs": {
+          "medianMs": 12.096999999999753,
+          "maxMs": 13.050400000000081
+        },
+        "fragmentMs": {
+          "medianMs": 0.30349999999998545,
+          "maxMs": 0.3140000000003056
+        },
+        "joinMs": {
+          "medianMs": 0.19989999999961583,
+          "maxMs": 0.2734999999993306
+        },
+        "warmCompositeMs": {
+          "medianMs": 0.004062999999987369,
+          "maxMs": 0.004842999999982567
+        }
+      },
+      "triangles": 4524,
+      "meshBytes": 651456
+    }
+  ],
+  "archiveNote": "Historical measurements retained for supported rendering modes only. Obsolete mode samples and metrics removed; remaining timings were not remeasured."
+}

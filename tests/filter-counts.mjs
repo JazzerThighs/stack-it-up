@@ -24,7 +24,7 @@ for(const preset of ['planar','spatial','surface','nonface','face','core','six',
  assert(result.count>0,`${preset} has matches`);
  const r=result.record;
  if(preset==='official')assert.equal(r.familyId,562);
- if(preset==='six')assert.equal(r.bag.toUpperCase().split('').sort().join(''),'JLOSTZ');
+ if(preset==='six'){assert.equal(identityCount(r.identities,'O'),1);assert.equal(identityCount(r.identities,'T'),1);assert.equal(identityCount(r.identities,'JL'),2);assert.equal(identityCount(r.identities,'SZ'),2);}
  if(preset==='sloth')assert.equal(r.bag.toUpperCase(),'OOOOOO');
  if(preset==='soma')assert(extraShapeFlags(r.extras)&2);
  const actual={ExtraCore:0,ExtraCenters:0,ExtraEdges:0,ExtraCorners:0};
@@ -33,19 +33,25 @@ for(const preset of ['planar','spatial','surface','nonface','face','core','six',
 }
 console.log('PASS: exact/free identities, all 2925 extra shapes, full-database count partitions, presets and coordinate counts.');
 
-const combined=presetCounts('surface',presetCounts('planar').ranges);assert.equal(combined.ranges.B.max,0);assert.equal(combined.ranges.CorePieces.max,0);
-
-for(const preset of ['spatial','sloth'])for(const type of ['J','L','S','Z','JL','SZ'])assert.deepEqual(presetCounts(preset).ranges[type],{min:0,max:0});
-const face=presetCounts('face').ranges;assert.deepEqual(face.SurfaceNonface,{min:0,max:0});assert.deepEqual(face.CorePieces,{min:0,max:0});
-const core=presetCounts('core').ranges;assert.deepEqual(core.ExtraCore,{min:0,max:0});
-const custom=presetCounts('soma').ranges;const official=presetCounts('official',custom);assert.deepEqual(official.ranges,custom);assert.equal(official.family,562);
-const six=presetCounts('six').ranges;assert.deepEqual(six.JL,{min:2,max:2});assert.deepEqual(six.SZ,{min:2,max:2});
-const allPieces=presetCounts('pieces',presetCounts('face').ranges);assert.deepEqual(allPieces.ranges.Facebound,{min:6,max:6});assert.deepEqual(allPieces.ranges.D,{min:0,max:6});
-console.log('PASS: explicit exclusions, consistent aggregate limits, family-only selection and scoped resets.');
-
+// Presets compose with current ranges/family; equivalent exclusions need not be explicit.
+const combined=presetCounts('surface',presetCounts('planar').ranges);
+assert.equal(combined.ranges.B.max,0);assert.deepEqual(combined.ranges.ExtraCore,{min:1,max:1});
+const custom=presetCounts('soma').ranges;
+assert.deepEqual(presetCounts('official',custom).ranges,custom);
+assert.equal(presetCounts('official',custom).family,562);
+const six=presetCounts('six').ranges;
+const accepts=(bag,ranges)=>Object.entries(ranges).filter(([id])=>['J','L','O','T','S','Z','JL','SZ','B','D','F'].includes(id)).every(([id,r])=>{const n=identityCount(bag,id);return n>=r.min&&n<=r.max;});
+for(const bag of ['JJOSTZ','JLOSTZ','LLOTZZ','jjOTss'])assert(accepts(bag,six),bag);
+for(const bag of ['JLOOTT','JJOSTB'])assert(!accepts(bag,six),bag);
 const faceSix=presetCounts('faceSix',{},562);
-assert.equal(faceSix.family,0);
-for(const id of ['J','L','O','T','S','Z'])assert.deepEqual(faceSix.ranges[id],{min:1,max:1});
+assert.equal(faceSix.family,562,'presets preserve family unless explicitly changing it');
 assert.deepEqual(faceSix.ranges.Facebound,{min:6,max:6});
-assert.deepEqual(faceSix.ranges.CorePieces,{min:0,max:0});
-assert.deepEqual(faceSix.ranges.ExtraCore,{min:1,max:1});
+assert(accepts('JLOSTZ',faceSix.ranges));
+for(const bag of ['JJOSTZ','LLOTZZ','jjOTss'])assert(!accepts(bag,faceSix.ranges),bag);
+const counts=Object.entries(faceSix.ranges).map(([type,r])=>({type,...r}));
+const faceResult=await store.query({filters:{counts},position:0});
+assert(faceResult.count>0);
+assert.equal(faceResult.record.bag.toUpperCase().split('').sort().join(''),'JLOSTZ');
+const allPieces=presetCounts('pieces',presetCounts('face').ranges);
+assert.deepEqual(allPieces.ranges.Facebound,{min:6,max:6});assert.deepEqual(allPieces.ranges.D,{min:0,max:6});
+console.log('PASS: aggregate six versus exact faceSix, composable ranges and preserved family selection.');

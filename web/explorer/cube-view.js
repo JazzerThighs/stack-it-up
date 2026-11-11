@@ -1,3 +1,7 @@
+import {WorkerGeometry,partitionKey} from './worker-geometry.js';
+import {cubieScale} from '../render/cubie-size.js';
+import {bracketCell} from '../render/text-mesh.js';
+import {CubeSession} from './cube-session.js';
 import {capturePieceFragments,retainedPieceFragments} from './retained-pieces.js';
 import {orbitSettings,bindOrbitToggle} from '../input/orbit-settings.js';
 import {jellyStyleKey} from '../render/visual-settings.js';
@@ -44,7 +48,7 @@ export class PackingCube extends Renderer {
         return view?.cells;
       },
       get busy() {
-        return view?.busy;
+        return view?.busy || view?.geometry?.pending || !!view?.geometry?.error;
       },
       setBusy: (v) => (view.busy = v),
       play: (m, t) => view.play(m, t),
@@ -65,9 +69,7 @@ export class PackingCube extends Renderer {
     this.orbitOnly = readOnly;
     this.skipGameLocks = true;
     this.onChange = onChange;
-    this.cells = [];
-    this.history = [];
-    this.turnCache = new WeakMap();
+    this.session = new CubeSession();
     this.busy = false;
     this.generation = 0;
     this.opacity = 1;
@@ -147,27 +149,31 @@ export class PackingCube extends Renderer {
   hoverCellGeometry(i) {
     const out=[];
     if(['jelly','angular'].includes(this.modelShape) && this.meshGenerator)jellyCell(out,i,[1,1,1],this.meshGenerator,.465,this.modelShape);
-    else (this.modelShape==='gameboy'?gameboyCell:balloon)(out,xyz(i),.465,[1,1,1],this.cells[i]?.piece<0?'bomb':'loose');
+    else (this.modelShape==='text'?bracketCell:this.modelShape==='gameboy'?gameboyCell:scaledBalloon)(out,xyz(i),.465,[1,1,1],this.cells[i]?.piece<0?'bomb':'loose');
     return out;
   }
   setCells(cells) {
     this.generation++;
     this.busy = false;
-    this.cells = cells.map((cell,i)=>cell?Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(cell),assemblyOrigin:{value:i,enumerable:false,writable:true,configurable:true}}):cell);
-    this.initial = this.cells.slice();
+    this.session.load(cells);
     this.retainedSource=null;
     this.explorationSignature=null;
-    this.history = [];
-    this.turnCache = new WeakMap();
-    this.checkpointCells = this.cells;
     this.setState(this.cells);
     this.changed();
   }
   setState(cells, animation = null) {
+    if(this.destroyed)return;
+    if(this.geometry&&!(this.familyExploration||this.connected)){this.geometry.dispose();this.geometry=null;}
     this.currentAnimation = animation;
     const out = [];
     if ((this.familyExploration||this.connected) && this.meshGenerator) {
       const signature=JSON.stringify([this.familyExploration,cells,cells.map(c=>c?.solidRotation),cells.map(c=>c?.assemblyOrigin),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,this.individualPieces,this.assembly,this.detectionFilters,solidStyleKey(),jellyStyleKey(),PALETTE]);
+      if(typeof Worker!=='undefined') {
+        if(!this.geometry)this.geometry=new WorkerGeometry(this,()=>new Worker(new URL('../workers/geometry-worker.js',import.meta.url),{type:'module'}));
+        const workerKey=signature+':'+(this.assembly==='retained'?JSON.stringify(this.initial):'');
+        this.geometry.sync(cells,animation,workerKey);
+        this.invalidate();this.onFrame?.(cells,animation);return;
+      }
       if(signature!==this.explorationSignature) {
         this.explorationSignature=signature;
         let retained=null;
@@ -203,7 +209,7 @@ export class PackingCube extends Renderer {
       if (!cell) return;
       const start = out.length;
       if(['jelly','angular'].includes(this.modelShape) && this.meshGenerator)jellyCell(out,i,rgb(PALETTE[cell.color] || PALETTE.d),this.meshGenerator,.465,this.modelShape);
-      else (this.modelShape==='gameboy'?gameboyCell:balloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d),cell.piece<0?'bomb':'loose');
+      else (this.modelShape==='text'?bracketCell:this.modelShape==='gameboy'?gameboyCell:scaledBalloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d),cell.piece<0?'bomb':'loose');
       if (animation?.kind === "turn") rotateCell(out, start, i, animation.move, animation.t);
     });
     this.upload(this.solid, new Float32Array(out));
@@ -211,6 +217,7 @@ export class PackingCube extends Renderer {
     this.onFrame?.(cells, animation);
   }
   prepareMotion(move) {
+    if(this.geometry)return this.geometry.prepare(move);
     const [,axis,layer,side]=CubeStack.moves[move%15];
     const mode=layer==='wide'?(side===0?3:4):layer,key=axis*5+mode;
     if(this.motionPartitions.has(key))return;
@@ -223,31 +230,19 @@ export class PackingCube extends Renderer {
     this.motionPartitions.add(key);
   }
   // A generated destination is the undo/reset floor, without recutting retained shapes.
-  checkpoint() {
-    this.history=[];
-    this.turnCache=new WeakMap();
-    this.checkpointCells=this.cells;
-    this.changed();
-  }
-  // Recolor/rebase cached states together so settings do not discard turn branches.
-  mapCells(transform) {
-    const mapped=new WeakMap(),pending=[],cache=new WeakMap();
-    const map=cells=>{
-      if(!mapped.has(cells)){mapped.set(cells,transform(cells));pending.push(cells);}
-      return mapped.get(cells);
-    };
-    this.cells=map(this.cells);this.initial=map(this.initial);this.checkpointCells=map(this.checkpointCells);
-    for(const h of this.history)h.cells=map(h.cells);
-    for(let i=0;i<pending.length;i++){
-      const from=pending[i],transitions=this.turnCache.get(from);
-      if(transitions)cache.set(map(from),new Map([...transitions].map(([move,next])=>[move,map(next)])));
-    }
-    this.turnCache=cache;
-  }
+  get cells(){return this.session?.cells;}
+  get history(){return this.session.history;}
+  get initial(){return this.session.initial;}
+  get checkpointCells(){return this.session.checkpointCells;}
+  get turnCache(){return this.session.turnCache;}
+  checkpoint(){this.session.checkpoint();this.changed();}
+  rebaseInitial(){this.session.rebaseInitial();}
+  mapCells(transform){this.session.mapCells(transform);}
   changed() {
     if (this.undoButton) this.undoButton.disabled = !this.history.length;
     this.status.textContent = `${this.history.length} turns`;
     this.onChange(this);
+    this.geometry?.refreshStatus();
   }
   async animate(ms, fn) {
     const generation = this.generation;
@@ -274,36 +269,31 @@ export class PackingCube extends Renderer {
   async play(move, start = 0) {
     if (this.busy || this.orbitOnly || !this.cells.length) return;
     this.busy = true;
-    const generation = this.generation,
-      from = this.cells;
-    await this.animate((this.playbackMs||180) * (1 - start), (t) =>
-      this.setState(from, { kind: "turn", move, t: start + (1 - start) * t }),
-    );
-    if (generation !== this.generation) return;
-    this.history.push({ cells: from, move });
-    let transitions=this.turnCache.get(from);
-    if(!transitions){transitions=new Map();this.turnCache.set(from,transitions);}
-    if(!transitions.has(move)){
-      const next = turn(from.map((cell,i)=>cell && movedCell(i,move)?Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(cell),solidRotation:{value:composeRotation(turnTransform(move,1),cell.solidRotation),configurable:true}}):cell), move);
-      transitions.set(move,next);
-      let inverse=this.turnCache.get(next);
-      if(!inverse){inverse=new Map();this.turnCache.set(next,inverse);}
-      inverse.set((move+15)%30,from);
-    }
-    this.cells=transitions.get(move);
-    this.busy = false;
-    this.setState(this.cells);
-    this.changed();
+    const generation = this.generation, from = this.cells;
+    try {
+      if(this.geometry){
+        if(!await this.geometry.ready()||generation!==this.generation)return;
+        if(!await this.prepareMotion(move)||generation!==this.generation)return;
+      }
+      await this.animate((this.playbackMs||180)*(1-start),t=>this.setState(from,{kind:'turn',move,t:start+(1-start)*t}));
+      if(generation!==this.generation)return;
+      this.session.commit(move);
+      this.setState(this.cells);
+      if(this.geometry)await this.geometry.ready();
+      if(generation!==this.generation)return;
+      this.busy=false;
+      this.changed();
+    } finally {if(generation===this.generation)this.busy=false;}
   }
   undo() {
-    if (this.orbitOnly || this.busy || !this.history.length) return;
-    this.cells = this.history.pop().cells;
+    if (this.orbitOnly || this.busy || this.geometry?.pending || !this.history.length) return;
+    this.session.undo();
     this.setState(this.cells);
     this.changed();
   }
   reset() {
-    if (!this.orbitOnly && !this.busy && this.checkpointCells) {
-      this.cells=this.checkpointCells;this.history=[];this.setState(this.cells);this.changed();
+    if (!this.orbitOnly && !this.busy && !this.geometry?.pending && this.checkpointCells) {
+      this.session.reset();this.setState(this.cells);this.changed();
     }
   }
   isVisible() {
@@ -344,7 +334,7 @@ export class PackingCube extends Renderer {
     );
     gl.disable(gl.CULL_FACE);
     let packets=[{id:'packing',target:this.solid,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1}];
-    if((this.familyExploration||this.connected) && this.currentAnimation?.kind==='turn' && this.currentAnimation.t>0) {
+    if((this.familyExploration||this.connected) && this.currentAnimation?.kind==='turn' && this.currentAnimation.t>0 && (!this.geometry || (!this.geometry.pending && !this.geometry.error && this.geometry.readyKey===this.geometry.base.key && this.motionPartitions?.has(partitionKey(this.currentAnimation.move))))) {
       const {move,t}=this.currentAnimation,[,axis,layer,side]=CubeStack.moves[move%15];
       const rotation=turnTransform(move,t);
       packets=[0,1,2].map(i=>({id:'packing',target:this.explorationLayers[(axis*5+(layer==='wide'?(side===0?3:4):layer))*3+i],type:gl.TRIANGLES,
@@ -352,14 +342,14 @@ export class PackingCube extends Renderer {
     }
     if(this.familyExploration||this.connected)for(let cell=0;cell<27;cell++) {
       const target=this.fixedSolidBuffers?.[cell];if(!target?.count)continue;
-      const animation=this.currentAnimation;
+      const animation=this.geometry&&(this.geometry.pending||this.geometry.error||this.geometry.readyKey!==this.geometry.base.key)?null:this.currentAnimation;
       packets.push({id:'packing',target,type:gl.TRIANGLES,opacity:this.opacity,unlit:false,breathe:1,lightingClass:'Solids',fixedShape:!!visualSettings.solidFixed,
         rotation:animation?.kind==='turn' && movedCell(cell,animation.move)?turnTransform(animation.move,animation.t):undefined});
     }
     if(controlSettings.showArrows && !this.orbitOnly)this.layoutArrows?.(rect.width,rect.height,this.unit,p=>this.project(p));
     const feedback=new Uint32Array(300);
     for(let i=0;i<27;i++)if(this.cells[i])feedback[S.ACTIVE]|=1<<i;
-    if(!this.busy && !this.orbitOnly && !this.currentAnimation && !this.orbitDragging && (this.hover || controlSettings.showArrows))sceneDecorations.call(this,(id,target,type,opacity,unlit)=>packets.push({id,target,type,opacity,unlit,breathe:1}),this.unit,{
+    if(!this.busy && !this.geometry?.pending && !this.geometry?.error && !this.orbitOnly && !this.currentAnimation && !this.orbitDragging && (this.hover || controlSettings.showArrows))sceneDecorations.call(this,(id,target,type,opacity,unlit)=>packets.push({id,target,type,opacity,unlit,breathe:1}),this.unit,{
       hideLabels:true,state:feedback,busy:this.busy || this.orbitOnly,attachedNodes:this.orbitOnly?[]:this.attachedNodes,
       getControl:id=>({checked:id==='placementGlow'?false:!!controlSettings[id]}),
     });
@@ -370,6 +360,8 @@ export class PackingCube extends Renderer {
     );
   }
   destroy() {
+    this.destroyed=true;
+    this.geometry?.dispose();
     this.orbitController?.dispose();
     this.stopOrbitToggle?.();
     this.stopControls?.();
@@ -388,3 +380,5 @@ export class PackingCube extends Renderer {
     this.host.replaceChildren();
   }
 }
+
+function scaledBalloon(out,p,h,color){balloon(out,p,h*cubieScale(),color);}

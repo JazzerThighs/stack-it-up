@@ -13,6 +13,7 @@ const FS = `#version 300 es
 precision highp float;
 in vec3 viewPosition;in vec3 n;in vec3 rgb;uniform bool gameboyLighting;uniform int ditherSeed;flat in vec3 coverageAnchor;uniform bool screenDoor;uniform bool unlit;uniform float opacity;uniform int appearance;uniform float pixelRatio;
 uniform vec3 lightDirection;
+uniform float transparencyGrain, transparencyResponse;
 uniform float lightIntensity, lightAmbient, ditherLevels, ditherSize, ditherContrast, ditherMidpoint;
 out vec4 outColor;
 float bayer(vec2 point) {
@@ -24,9 +25,9 @@ ${transparencyGLSL}
 ${gameboyLightingGLSL}
 void main(){
 if(screenDoor && opacity<1.) {
-  vec2 pixel=floor(gl_FragCoord.xy/(appearance==1?1.:max(pixelRatio,1.)));
+  vec2 pixel=floor(gl_FragCoord.xy/(transparencyGrain*(appearance==1?1.:max(pixelRatio,1.))));
   float threshold=transparencyThreshold(pixel,coverageAnchor);
-  if(opacity<=threshold)discard;
+  if(pow(opacity,transparencyResponse)<=threshold)discard;
 }
 vec3 norm=normalize(n);
 float direct=gameboyLighting?gameboyLight(viewPosition,norm,lightDirection):max(0.,dot(norm,lightDirection));
@@ -42,10 +43,9 @@ if(appearance==1) {
   shaded=rgb*step(bayer(gl_FragCoord.xy),coverage);
 }
 if(appearance==2) shaded=rgb*(lightAmbient+(1.-lightAmbient)*(.25+.75*light));
-if(appearance==3) shaded=rgb*illumination;
-if(appearance==4) shaded=rgb*(illumination<.4?.3:illumination<.7?.65:1.);
-if(appearance==6) shaded=rgb*illumination;
-if(appearance==5) shaded=clamp(rgb*(lightAmbient+.20+1.70*light),0.,1.);
+if(appearance==3) shaded=rgb*(illumination<.4?.3:illumination<.7?.65:1.);
+if(appearance==5) shaded=rgb*illumination;
+if(appearance==4) shaded=clamp(rgb*(lightAmbient+.20+1.70*light),0.,1.);
 outColor=vec4(unlit?rgb:shaded,screenDoor?1.:opacity);}`;
 
 export { VS, FS };

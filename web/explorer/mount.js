@@ -1,3 +1,4 @@
+import {settingsScope,attachExplorerSettings} from '../ui/shared-settings.js';
 // A scoped DOM subtree, not an iframe: both apps keep their live state.
 export async function mountExplorer(host, onProgress) {
   if (host.explorerReady) return host.explorerReady;
@@ -13,10 +14,14 @@ export async function mountExplorer(host, onProgress) {
     css.rel = 'stylesheet'; css.href = new URL('./style.css', import.meta.url).href;
     const layout = document.createElement("link");
     layout.rel = "stylesheet"; layout.href = new URL("./workspace.css", import.meta.url).href;
-    root.replaceChildren(css, layout, app);
+    const settings = document.createElement('link');
+    settings.rel = 'stylesheet'; settings.href = new URL('../ui/settings-components.css', import.meta.url).href;
+    root.replaceChildren(css, layout, settings, app);
     host.textContent = '';
     const { initializeExplorer } = await import('./script.js');
-    await initializeExplorer(root,{onProgress,dataset:new URLSearchParams(globalThis.location?.search || "").get("packings")==="classic"?"classic":"spatial"});
+    const scope=settingsScope(root);
+    await initializeExplorer(scope,{onProgress,dataset:new URLSearchParams(globalThis.location?.search || "").get("packings")==="classic"?"classic":undefined});
+    attachExplorerSettings(root,scope);
   })().catch(error => {
     host.explorerReady = null;
     if (host.shadowRoot) host.shadowRoot.textContent = error.message + ". Switch back to the game and retry.";

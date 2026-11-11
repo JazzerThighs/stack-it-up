@@ -1,3 +1,6 @@
+import {applyStartupDefaults} from '../ui/startup-defaults.js';
+import {createPackingSelection} from './packing-selection.js';
+import {createLatestRequest} from '../workers/latest-request.js';
 import {refreshRangeCards} from './filter-range-ui.js';
 import { countSpecs, countLimits, presetCounts } from './filter-counts.js';
 import { packingPresentation } from './presentation.js';
@@ -16,6 +19,7 @@ export async function initializeSpatialExplorer(
   root = document,
   dependencies = {},
 ) {
+  applyStartupDefaults(root, 'explorer');
   const $ = (id) => root.getElementById(id);
   $('status').textContent = 'Loading local tetracube index…';
   const client = await (dependencies.client ||
@@ -23,18 +27,14 @@ export async function initializeSpatialExplorer(
   const engine = await (dependencies.engine || createEngine());
   $('positionalColors').closest('label').title =
     'Assign a distinct color to each physical piece ID.';
-  $('datasetSelect').value =
-    dependencies.dataset === 'classic' ? 'classic' : 'spatial';
+  if(dependencies.dataset) $('datasetSelect').value = dependencies.dataset;
   const info = client.info,
     families = new Map(info.families.map((f) => [f.id, f])),
     membership = new Map();
-  let current,
-    position = 0,
-    total = 0,
-    counts = [],
-    generation = 0,
-    active = 'solved',
+  const selection = createPackingSelection();
+  let active = 'solved',
     scramble = [];
+  const queries=createLatestRequest();
   const flags = [
     'surfaceOnly',
     'nonSurfaceOnly',
@@ -48,14 +48,6 @@ export async function initializeSpatialExplorer(
     'nonFaceboundSurface',
   ];
   const types = countSpecs.map(([id]) => id);
-  for (const id of [
-    'oneOfEach',
-    'allSurfaceIdentities',
-    'officialOnly',
-    'surfaceOnly',
-    'nonSurfaceOnly',
-  ])
-    $(id).checked = false;
   $('spatialFilters').hidden = false;
   try{const saved=localStorage.getItem('stack-it-up.family-inspect');if(saved!==null)$('familyInspectFilters').checked=saved!=='false';}catch{}
   $('familyInspectFilters').onchange=()=>{try{localStorage.setItem('stack-it-up.family-inspect',String($('familyInspectFilters').checked));}catch{}};
@@ -113,8 +105,8 @@ export async function initializeSpatialExplorer(
     },
     familyOptions: () =>
       info.families
-        .filter((f) => counts[f.id] > 0)
-        .map((f) => ({ ...f, matching: counts[f.id] })),
+        .filter((f) => selection.counts[f.id] > 0)
+        .map((f) => ({ ...f, matching: selection.counts[f.id] })),
     familyStart: async (id) => {
       const result = await client.query({
         filters: { ...filters(), family: id },
@@ -158,6 +150,7 @@ export async function initializeSpatialExplorer(
     return [shown.packing, shown.palette];
   }
   function paint() {
+    const {current, position, total} = selection;
     if (!current) return;
     const [display, palette] = displayPacking(current);
     $('sourceLine').value = current.lineNumber;
@@ -221,13 +214,13 @@ export async function initializeSpatialExplorer(
   }
   async function query(action = {}, refresh = false, apply = true) {
     const invalidRanges=refreshRangeCards(root);
-    const token = ++generation;
+    const token = queries.begin();
     if(invalidRanges){$('status').textContent='Correct the marked count ranges to filter packings.';return;}
     $('status').textContent = 'Filtering local index…';
     try {
       if(lockedFamily!==null)$('familySelect').value=String(lockedFamily);
       const f = filters();
-      if(lockedFamily!==null && action.line){const requested=await client.record(action.line);if(requested?.familyId!==lockedFamily)throw Error(`Shapes are locked to family ${lockedFamily}. Unlock the family lock to change families.`);}
+      if(lockedFamily!==null && action.line){const requested=await client.record(action.line);if(!token.isCurrent())return;if(requested?.familyId!==lockedFamily)throw Error(`Shapes are locked to family ${lockedFamily}. Unlock the family lock to change families.`);}
       provider.refreshDetection?.();
       $('filterFamilyStatus').textContent = f.family
         ? `Family ${f.family}`
@@ -247,23 +240,18 @@ export async function initializeSpatialExplorer(
           'Use whole-number counts with 0 ≤ min ≤ max, within each row’s limit.',
         );
       }
-      let result = await client.query({
-        filters: f,
-        position,
-        // Refilter around the selected record, not the first matching result.
-        ...(refresh && current ? { line: current.lineNumber } : {}),
-        ...(action.offset && current ? { line: current.lineNumber } : {}),
-        ...action,
-      });
-      if (token !== generation) return;
+      let result = await client.query(selection.request(f, action, refresh));
+      if (!token.isCurrent()) return;
       if (!apply && action.line && result.record?.lineNumber !== action.line) {
         clearFilters();
         result = await client.query({ filters: filters(), line: action.line });
-        if (token !== generation) return;
+        if (!token.isCurrent()) return;
       }
-      total = result.count;
-      position = result.position;
-      counts = result.familyCounts;
+      const {inspecting, retained, changed, navigate} = selection.accept(result, {
+        action, refresh, apply,
+        inspect: $('familyExploreMode').checked && $('familyInspectFilters').checked,
+      });
+      const {current, position, total, counts} = selection;
       const optionsList = info.families.filter(
         (f) => counts[f.id] || String(f.id) === $('familySelect').value,
       );
@@ -289,11 +277,8 @@ export async function initializeSpatialExplorer(
         `${total.toLocaleString()} matching packings in the local ${info.count.toLocaleString()}-packing collection.`;
       $('familySummary').textContent =
         `${counts.filter((n) => n > 0).length.toLocaleString()} matching families`;
-      const inspecting=refresh&&current&&!action.line&&!action.offset&&!action.random&&$('familyExploreMode').checked&&$('familyInspectFilters').checked;
-      const retained = inspecting || refresh && result.record && current &&
-        result.record.lineNumber === current.lineNumber;
-      if (result.record && !retained) {
-        current = remember(result.record);
+      if (changed) {
+        remember(current);
         scramble = Array.from(
           { length: 20 },
           () =>
@@ -307,9 +292,9 @@ export async function initializeSpatialExplorer(
       if (inspecting) $('packingIndex').textContent=`Inspecting tetracubes-v2 line ${current.lineNumber} - ${total.toLocaleString()} matching packings`;
       else if (retained) $('packingIndex').textContent =
         `${position + 1} of ${total.toLocaleString()} matching - tetracubes-v2 line ${current.lineNumber}`;
-      if (result.record && apply && !retained) await views.navigate(current);
+      if (navigate) await views.navigate(current);
     } catch (e) {
-      if (token === generation) $('status').textContent = e.message;
+      if (token.isCurrent()) $('status').textContent = e.message;
     }
   }
   for (const id of [
@@ -403,6 +388,7 @@ export async function initializeSpatialExplorer(
     }
   };
   $('exploreFamily').onclick = () => {
+    const current = selection.current;
     if (current) {
       $('familySelect').value = String(current.familyId);
       return query({ line: current.lineNumber }, true);
@@ -419,6 +405,7 @@ export async function initializeSpatialExplorer(
       views.refreshColors();
     };
   $('copyCode').onclick = async () => {
+    const current = selection.current;
     try {
       await navigator.clipboard.writeText(
         JSON.stringify({
@@ -460,7 +447,7 @@ export async function initializeSpatialExplorer(
     query,
     views,
     get current() {
-      return current;
+      return selection.current;
     },
   };
 }

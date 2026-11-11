@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {createViewController} from '../web/explorer/view-controller.js';
+const log=[];let resolve;
+const c=createViewController({cancelPractice:()=>log.push('cancel'),leaveFamily:()=>log.push('leave'),show:m=>log.push(m),enterFamily:()=>new Promise(r=>resolve=r),enterPractice:async()=>log.push('enter practice'),refresh:()=>log.push('refresh')});
+const first=c.select('family');assert.equal(c.mode,'family');
+assert.equal(await c.select('practice'),true);resolve();assert.equal(await first,false);
+assert.deepEqual(log,['cancel','family','leave','practice','enter practice','refresh']);
+log.length=0;await c.select('catalog');assert.deepEqual(log,['cancel','leave','catalog','refresh']);
+await assert.rejects(c.select('invalid'),/Unknown/);assert.equal(c.mode,'catalog');
+console.log('PASS: mode lifecycle cancellation, entry, visibility policy and superseded completion.');

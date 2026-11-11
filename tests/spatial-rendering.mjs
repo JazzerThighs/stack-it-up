@@ -15,7 +15,7 @@ for(const piece of pieces.filter(p=>p.spatial))for(const mask of [piece.surfaceP
   const board=Array(27).fill(0),ids=Array(27).fill(0),cells=Array(27).fill(null);
   for(let i=0;i<27;i++)if(mask&(1<<i)){board[i]=piece.id;ids[i]=12;cells[displayIndex(i)]={piece:12,color:'w'};}
   assert.equal(detectPieces(cells)[0].letter,piece.letter);
-  for(const style of ['jelly','matte','cel','voxel','dither','ascii']) {
+  for(const style of ['jelly','matte','cel','dither','ascii']) {
     const [mesh]=compositeParts(board,ids,colors,m=>engine.bandMesh(m),style);
     assert(mesh.length&&mesh.every(Number.isFinite));
     assert.equal(compositeParts(board,ids,colors,m=>engine.bandMesh(m),style)[0],mesh,'static piece mesh is cached');

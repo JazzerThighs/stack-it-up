@@ -1,0 +1,163 @@
+{
+  "checks": {
+    "scienceMode": 0,
+    "clearFullFace": 1,
+    "clearRingFace": 2,
+    "clearFullSlice": 3,
+    "clearRingSlice": 4,
+    "gravityEnabled": 5,
+    "freedomEnabled": 9,
+    "freeSize1": 10,
+    "freeSize2": 11,
+    "freeSize3": 12,
+    "freeSize4": 13,
+    "fragmentsConnected": 14,
+    "rebuildQueueShapes": 21,
+    "rebuildOriginalShape": 22,
+    "fallOneCell": 20,
+    "planeGravity": 24
+  },
+  "radios": {
+    "gravityDirection": [
+      6,
+      4
+    ],
+    "gravityOccurrence": [
+      8,
+      2
+    ],
+    "freedomEvent": [
+      16,
+      3
+    ],
+    "freedomMethod": [
+      18,
+      4
+    ]
+  },
+  "shapeRulesBit": 23,
+  "state": {
+    "magic": 1398098225,
+    "minVersion": 1,
+    "maxVersion": 8,
+    "layout": [
+      {
+        "name": "header",
+        "fields": [
+          "magic",
+          "version",
+          "rng",
+          "active",
+          "pieces",
+          "clears",
+          "score",
+          "gravity",
+          "gravityMode",
+          "sliceClearMode",
+          "fragments",
+          "fragmentTurns",
+          "bandaged",
+          "earlyLock",
+          "randomCubies",
+          "rebuildMode",
+          "held",
+          "holdUsed",
+          "over",
+          "pending",
+          "autoPlacements",
+          "autoTiers"
+        ]
+      },
+      {
+        "name": "board",
+        "words": 27
+      },
+      {
+        "name": "ids",
+        "words": 27
+      },
+      {
+        "name": "queue",
+        "min": 2,
+        "max": 32,
+        "stride": 1
+      },
+      {
+        "name": "floating",
+        "min": 0,
+        "max": 27,
+        "stride": 3
+      },
+      {
+        "name": "rebuildIds",
+        "min": 0,
+        "max": 6,
+        "stride": 1
+      },
+      {
+        "name": "bands",
+        "min": 0,
+        "max": 13,
+        "stride": 1
+      },
+      {
+        "name": "lastClears",
+        "min": 0,
+        "max": 9,
+        "stride": 1
+      },
+      {
+        "name": "gravityRules",
+        "since": 2,
+        "words": 2
+      },
+      {
+        "name": "releaseRules",
+        "since": 3,
+        "words": 5
+      },
+      {
+        "name": "freeGroups",
+        "since": 3,
+        "min": 0,
+        "max": 27,
+        "stride": 1
+      },
+      {
+        "name": "rulesAndPlane",
+        "since": 4,
+        "words": 2
+      },
+      {
+        "name": "piecePool",
+        "since": 5,
+        "words": 1
+      },
+      {
+        "name": "freeOrigins",
+        "since": 7,
+        "min": 0,
+        "max": 27,
+        "stride": 2
+      },
+      {
+        "name": "freeShapes",
+        "since": 8,
+        "countFrom": "freeGroups",
+        "stride": 1
+      }
+    ]
+  },
+  "share": {
+    "format": "StackItUp-state",
+    "version": 1,
+    "dimensions": [
+      3,
+      3,
+      3
+    ]
+  },
+  "legacyChecks": {
+    "legacyFacebound": 15
+  }
+}

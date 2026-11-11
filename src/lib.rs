@@ -1,8 +1,7 @@
-//! Stack It Up: native rules, geometry and a dependency-free browser Wasm ABI.
+//! Browser ABI facade. Puzzle computation lives in stack-it-up-core.
 mod abi;
-pub mod engine;
-pub mod pieces;
-pub mod mesh;
+mod abi_layout;
+pub use stack_it_up_core::{engine, pieces, mesh};
 #[cfg(test)]
 mod tests {
     use super::engine::*;

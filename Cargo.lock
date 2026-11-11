@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "cube-stack"
 version = "0.1.0"
+dependencies = [
+ "stack-it-up-core",
+]
+
+[[package]]
+name = "stack-it-up-core"
+version = "0.1.0"
