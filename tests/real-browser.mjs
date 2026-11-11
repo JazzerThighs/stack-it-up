@@ -14,19 +14,39 @@ const mime={'.js':'text/javascript','.html':'text/html','.wasm':'application/was
 const server=createServer(async(req,res)=>{try{const p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);const file=path.resolve(root,'.'+(p==='/'?'/index.html':p));if(!file.startsWith(root))throw Error('path');res.setHeader('Content-Type',mime[path.extname(file)]||'application/octet-stream');res.end(await readFile(file));}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base='http://127.0.0.1:'+server.address().port;
-const browser=spawn(executable,['--headless=new','--no-first-run','--no-default-browser-check','--remote-debugging-port=0','--user-data-dir='+profile,'--enable-unsafe-swiftshader','--use-angle=swiftshader','--in-process-gpu','about:blank'],{windowsHide:true,stdio:['ignore','ignore','pipe']});
+const browser=spawn(executable,['--headless=new','--no-first-run','--no-default-browser-check','--remote-debugging-pipe','--user-data-dir='+profile,'--enable-unsafe-swiftshader','--use-angle=swiftshader','--in-process-gpu','about:blank'],{windowsHide:true,stdio:['ignore','ignore','pipe','pipe','pipe']});
 let browserLog="";browser.stderr.on("data",d=>browserLog+=d);
-let socket;const pending=new Map(),errors=[];let id=0;
+const pending=new Map(),errors=[];let id=0,sessionId,connectionError;
+const failConnection=error=>{connectionError=error;for(const p of pending.values())p.reject(error);pending.clear();};
+browser.on('error',error=>failConnection(Error('Browser launch failed: '+error.message)));
+browser.on('exit',(code,signal)=>failConnection(Error('Browser exited ('+code+', '+signal+'): '+browserLog)));
+for(const pipe of [browser.stdio[3],browser.stdio[4]])pipe.on('error',error=>failConnection(Error('CDP pipe error: '+error.message+' '+browserLog)));
+// Chrome's debugging pipe carries UTF-8 JSON messages terminated by NUL.
+let incoming='';browser.stdio[4].setEncoding('utf8');
+browser.stdio[4].on('data',chunk=>{
+ incoming+=chunk;let boundary;
+ while((boundary=incoming.indexOf('\0'))>=0){
+  const raw=incoming.slice(0,boundary);incoming=incoming.slice(boundary+1);
+  if(!raw)continue;
+  let m;try{m=JSON.parse(raw);}catch(error){failConnection(Error('Invalid CDP reply: '+error.message));return;}
+  if(m.id){const p=pending.get(m.id);pending.delete(m.id);m.error?p?.reject(Error(m.error.message)):p?.resolve(m.result);}
+  else if(m.method==='Runtime.exceptionThrown'&&m.sessionId===sessionId)errors.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);
+ }
+});
+browser.stdio[4].on('end',()=>failConnection(Error('Browser debugging pipe closed: '+browserLog)));
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 async function waitFor(fn,label){const end=Date.now()+90000;while(Date.now()<end){if(browser.exitCode!==null)throw Error('Browser exited: '+browserLog);if(await fn()){console.log('PASS: '+label);return;}await delay(100);}throw Error('Timed out: '+label);}
-function call(method,params={}){return new Promise((resolve,reject)=>{const n=++id;const timer=setTimeout(()=>{pending.delete(n);reject(Error('CDP timeout: '+method+' '+browserLog));},30000);pending.set(n,{resolve:v=>{clearTimeout(timer);resolve(v);},reject:e=>{clearTimeout(timer);reject(e);}});socket.send(JSON.stringify({id:n,method,params}));});}
+function call(method,params={},session=sessionId){return new Promise((resolve,reject)=>{
+ if(connectionError){reject(connectionError);return;}
+ const n=++id;const timer=setTimeout(()=>{pending.delete(n);reject(Error('CDP timeout: '+method+' '+browserLog));},30000);
+ pending.set(n,{resolve:v=>{clearTimeout(timer);resolve(v);},reject:e=>{clearTimeout(timer);reject(e);}});
+ browser.stdio[3].write(JSON.stringify({id:n,method,params,...(session?{sessionId:session}:{})})+'\0',error=>{if(error)failConnection(Error('CDP write failed: '+error.message));});
+});}
 async function evaluate(expression){const r=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;}
 try{
- let port;await waitFor(async()=>{try{port=(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];return true;}catch{return false;}},'browser start');
- const page=await fetch('http://127.0.0.1:'+port+'/json/new?'+encodeURIComponent('about:blank'),{method:'PUT'}).then(r=>r.json());
- socket=new WebSocket(page.webSocketDebuggerUrl);await new Promise((r,j)=>{socket.onopen=r;socket.onerror=j;});
- socket.onclose=()=>{for(const p of pending.values())p.reject(Error('Browser connection closed'));pending.clear();};
- socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);m.error?p?.reject(Error(m.error.message)):p?.resolve(m.result);}else if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);};
+ await call('Browser.getVersion');console.log('PASS: browser start and debugging pipe');
+ const {targetId}=await call('Target.createTarget',{url:'about:blank'});
+ ({sessionId}=await call('Target.attachToTarget',{targetId,flatten:true}));
  await call('Runtime.enable');
  await call('Page.navigate',{url:base+'/#game'});
  await waitFor(()=>evaluate("document.querySelector('#control')?.width>0 && document.querySelector('#engineStatus')?.textContent==='Ready'"),'game startup');
@@ -52,4 +72,4 @@ try{
  assert(await evaluate("!document.querySelector('#gamePage').hidden && document.querySelector('#control')===window.__canvas"));
  assert.deepEqual(errors,[]);
  console.log('PASS: real '+await evaluate('navigator.userAgent')+'; game/settings/explorer loading, tab reuse and WebGL context loss/recovery.');
-}finally{socket?.close();server.closeAllConnections();browser.kill();await new Promise(r=>browser.exitCode!==null||browser.signalCode!==null?r():browser.once('exit',r));await new Promise(r=>server.close(r));if(path.dirname(path.resolve(profile))!==path.resolve(tmpdir())||!path.basename(profile).startsWith('stack-browser-'))throw Error('Unsafe test profile path');await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
+}finally{browser.stdio[3].end();server.closeAllConnections();browser.kill();await new Promise(r=>!browser.pid||browser.exitCode!==null||browser.signalCode!==null?r():browser.once('exit',r));await new Promise(r=>server.close(r));if(path.dirname(path.resolve(profile))!==path.resolve(tmpdir())||!path.basename(profile).startsWith('stack-browser-'))throw Error('Unsafe test profile path');await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
