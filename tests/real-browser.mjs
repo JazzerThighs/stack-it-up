@@ -14,7 +14,15 @@ const mime={'.js':'text/javascript','.html':'text/html','.wasm':'application/was
 const server=createServer(async(req,res)=>{try{const p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);const file=path.resolve(root,'.'+(p==='/'?'/index.html':p));if(!file.startsWith(root))throw Error('path');res.setHeader('Content-Type',mime[path.extname(file)]||'application/octet-stream');res.end(await readFile(file));}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base='http://127.0.0.1:'+server.address().port;
-const browser=spawn(executable,['--headless=new','--no-first-run','--no-default-browser-check','--remote-debugging-pipe','--user-data-dir='+profile,'--enable-unsafe-swiftshader','--use-angle=swiftshader','--in-process-gpu','about:blank'],{windowsHide:true,stdio:['ignore','ignore','pipe','pipe','pipe']});
+// Keep software WebGL in Chrome's normal GPU subprocess. In-process GPU
+// initialization can terminate the browser when ANGLE/EGL fails on a CI runner.
+const browserArgs=[
+ '--headless=new','--no-first-run','--no-default-browser-check',
+ '--remote-debugging-pipe','--user-data-dir='+profile,
+ '--use-gl=angle','--use-angle=swiftshader-webgl','--enable-unsafe-swiftshader',
+ 'about:blank',
+];
+const browser=spawn(executable,browserArgs,{windowsHide:true,stdio:['ignore','ignore','pipe','pipe','pipe']});
 let browserLog="";browser.stderr.on("data",d=>browserLog+=d);
 const pending=new Map(),errors=[];let id=0,sessionId,connectionError;
 const failConnection=error=>{connectionError=error;for(const p of pending.values())p.reject(error);pending.clear();};
