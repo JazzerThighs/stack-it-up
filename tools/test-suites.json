@@ -1,5 +1,6 @@
 {
   "all": [
+    "node tests/model-export.mjs",
     "node tests/performance-metrics.mjs",
     "node tests/slice-mesh.mjs",
     "node tests/explorer-worker-smoke.mjs",
@@ -107,6 +108,7 @@
     "node tests/local-game.mjs"
   ],
   "explorer": [
+    "node tests/model-export.mjs",
     "node tests/explorer-worker-smoke.mjs",
     "node tests/geometry-worker.mjs",
     "node tests/explorer-mesh-cache.mjs",
@@ -161,6 +163,7 @@
     "node tests/wide-drag.mjs"
   ],
   "geometry": [
+    "node tests/model-export.mjs",
     "node tests/slice-mesh.mjs",
     "node tests/geometry-worker.mjs",
     "node tests/explorer-worker-smoke.mjs"

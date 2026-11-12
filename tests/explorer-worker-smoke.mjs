@@ -1,3 +1,4 @@
+import {captureFamilyModel} from '../web/explorer/model-export.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {Worker as NodeWorker} from 'node:worker_threads';
@@ -28,10 +29,14 @@ try {
  cube.assembly='retained';cube.rebaseInitial();cube.setState(cube.cells);
  assert(await cube.geometry.ready(),String(cube.geometry.error));
  const locked=cube.solid.data.slice();
+ const exported=await captureFamilyModel(cube,{sizeMm:60});
+ assert.equal(new DataView(exported.buffer).getUint32(0,true),0x46546c67);
  await cube.play(9);assert(!cube.geometry.error);
+ const turnedExport=await captureFamilyModel(cube,{sizeMm:60});assert.notDeepEqual(turnedExport,exported);
  assert.deepEqual(workers.at(-1).lastRequest.cells.map(c=>c?.assemblyOrigin),cube.cells.map(c=>c?.assemblyOrigin));
  assert.deepEqual(workers.at(-1).lastRequest.cells.map(c=>c?.solidRotation),cube.cells.map(c=>c?.solidRotation));
  cube.undo();assert(await cube.geometry.ready());assert.deepEqual(cube.solid.data,locked);
+ assert.deepEqual(await captureFamilyModel(cube,{sizeMm:60}),exported);
  cube.assembly='whole';cube.setState(cube.cells);assert(await cube.geometry.ready());
  const first=cube.solid.data;
  // The UI keeps the old uploaded mesh while the replacement is pending.

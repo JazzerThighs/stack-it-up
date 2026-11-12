@@ -93,7 +93,7 @@ if(process.env.FAMILY_LOCK_ONLY){
   $('canonicalColors').onchange();
   await $('familyLockColors').onclick();assert.equal(cube.assembly,'whole');assert(cube.fixedPieceColors);
   const lockedColors=new Map(cube.cells.filter(c=>c.piece>=0).map(c=>[c.piece,c.color]));
-  assert($('familyLockShapes').disabled);assert($('familySelect').disabled);
+  assert(!$('familyLockShapes').disabled);assert($('familySelect').disabled);
   await initial.query({line:target.record.lineNumber});assert.equal(cube.assembly,'whole');
   for(const cell of cube.cells)if(cell.piece>=0)assert.equal(cell.color,lockedColors.get(cell.piece));
   const {explorationMeshes}=await import(new URL('explorer/exploration-mesh.js',assetRoot));
@@ -107,7 +107,25 @@ if(process.env.FAMILY_LOCK_ONLY){
   cube.undo();assert.deepEqual(cube.solid.data,expected);
   await initial.query({line:50152});assert.deepEqual(cube.cells.map(c=>c.piece),starter);
   await $('familyLockColors').onclick();assert.equal(cube.assembly,'cubies');assert(!$('familySelect').disabled);
-  console.log('PASS: original colors persist across family navigation, manual turns, undo and color-mode changes while detected shapes rebuild; unlock restores preferences.');process.exit(0);
+  console.log('PASS: original colors persist across family navigation, manual turns, undo and color-mode changes while detected shapes rebuild; unlock restores preferences.');
+  await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
+  for(const first of ['Shapes','Colors']){
+    const second=first==='Shapes'?'Colors':'Shapes';
+    await $('familyLock'+first).onclick();assert(!$('familyLock'+second).disabled);
+    await $('familyLock'+second).onclick();
+    assert.equal($('familyLockShapes').textContent,'Unlock shapes');assert.equal($('familyLockColors').textContent,'Unlock colors');
+    assert.equal(cube.assembly,'retained');assert($('familySelect').disabled);
+    const colors=new Map(cube.cells.filter(c=>c.piece>=0).map(c=>[c.piece,c.color]));
+    const shape=cube.retainedSource;await cube.play(0);assert.equal(cube.retainedSource,shape);cube.undo();
+    await initial.query({line:target.record.lineNumber});assert.equal(cube.assembly,'retained');
+    for(const cell of cube.cells)if(cell.piece>=0)assert.equal(cell.color,colors.get(cell.piece));
+    await $('familyLock'+first).onclick();assert($('familySelect').disabled);
+    assert.equal(cube.assembly,first==='Shapes'?'whole':'retained');
+    assert.equal($('familyLock'+second).textContent,'Unlock '+second.toLowerCase());
+    await $('familyLock'+second).onclick();assert(!$('familySelect').disabled);assert.equal(cube.assembly,'cubies');
+    await initial.query({line:50152});await settle(()=>$('familyExploreProgress').textContent.includes('Packing found'));
+  }
+  console.log('PASS: both lock orders preserve shapes and colors across turns/navigation; each unlock preserves the other and only the last releases the family.');process.exit(0);
 }
 if(process.env.RETAINED_ONLY){
   $('practiceMode').checked=true;await $('practiceMode').onchange();

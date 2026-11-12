@@ -43,6 +43,7 @@ jobs:
           node tests/frontend-smoke.mjs
           node tests/packing-data.mjs
           node tests/packing-performance.mjs
+          node tests/model-export.mjs
           node tests/explorer-model.mjs
           node tests/official-presentation.mjs
           node tests/explorer-smoke.mjs

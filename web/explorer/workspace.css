@@ -433,3 +433,11 @@ input, textarea, [contenteditable="true"], [contenteditable="true"] * {
 .family-lock-controls button { min-height:36px; padding:6px 9px; font-size:13px; }
 .family-lock-controls button[aria-pressed="true"] { background:var(--accent,var(--mint)); color:var(--bg); }
 #familyExplorePanel h2 { right:220px; max-width:none; padding-right:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Model export stays with the family cube, outside the shared settings menu. */
+.family-model-export { margin-top: 12px; padding: 10px; border: 1px solid var(--line, #46525b); border-radius: 8px; }
+.family-model-export summary { cursor: pointer; font-weight: 600; }
+.family-model-export p { max-width: 65ch; font-size: .9em; line-height: 1.45; }
+.family-model-export label { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.family-model-export input { width: 100px; max-width: 100%; }
+.family-model-export button { margin-top: 10px; min-height: 44px; }

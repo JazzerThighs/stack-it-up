@@ -1,3 +1,4 @@
+import {captureFamilyModel,downloadModel} from './model-export.js';
 import {createFamilySession} from './family-session.js';
 import {createWorkerTask} from '../workers/task.js';
 import {detectPieces} from './family-exploration.js';
@@ -40,11 +41,11 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   const button=$('familyLockShapes'),colorButton=$('familyLockColors');
   function syncButton(){
     for(const [control,mode,label] of [[button,'shapes','shapes'],[colorButton,'colors','colors']]){
-      const active=locked?.mode===mode;
-      control.disabled=!!locked&&!active || !locked&&(busy||!matched);
+      const active=!!locked?.[mode];
+      control.disabled=!active&&(busy||!!view?.busy||!!view?.geometry?.pending||(!matched&&(!locked||mode==='shapes')));
       control.textContent=active?`Unlock ${label}`:`Lock ${label}`;
       control.setAttribute('aria-pressed',String(active));
-      control.title=active?`Starter line ${locked.record.lineNumber}; navigation stays in family ${family}.`:mode==='colors'?'Keep starting piece colors; rebuild shapes as valid tetracubes are found.':'Keep starting cut shapes; update colors for each destination packing.';
+      control.title=active?`Starter line ${locked.record.lineNumber}; navigation stays in family ${family}.`:mode==='colors'?'Keep current piece colors. Can be combined with Lock shapes.':'Keep current cut shapes. Can be combined with Lock colors.';
     }
   }
   function cancel(){run++;pathJob.cancel();busy=false;if(view){view.generation++;view.busy=false;view.orbitOnly=false;view.playbackMs=null;}syncButton();}
@@ -77,7 +78,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   }
   async function load(p) {
     if(!p)return;
-    if(locked&&p.familyId!==family)throw Error(`Unlock ${locked.mode} to leave family ${family}.`);
+    if(locked&&p.familyId!==family)throw Error(`Unlock ${[locked.shapes?'shapes':null,locked.colors?'colors':null].filter(Boolean).join(' and ')} to leave family ${family}.`);
     cancel();++lookupGeneration;source=p;family=p.familyId;remember([p]);
     $('familyExploreTitle').textContent=`Family ${family} · Line ${p.lineNumber}`;
     view=get('familyExploreCube',{onChange:changed});view.familyExploration=true;
@@ -86,10 +87,10 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     const token=run;
     busy=true;view.orbitOnly=true;syncButton();
     try{
-      const pair=practicePair(locked.packing,shown.packing,{targetColors:locked.mode==='shapes'});
+      const pair=practicePair(locked.packing,shown.packing,{targetColors:!locked.colors});
       if(!pair.compatible)throw Error('No compatible physical-piece mapping for this packing.');
       view.fixedPieceColors=true;
-      // Always replay from the captured starter; preserve either its colors or its geometry.
+      // Always replay from the captured starter; preserve the enabled shape and color locks.
       view.setCells(recolor(locked.cells,pair.right));
       $('familyExploreProgress').textContent='Finding and verifying a family path…';
       const moves=await path(pair.left.map(c=>c.piece),pair.right.map(c=>c.piece));
@@ -106,16 +107,28 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   }
   function refreshColors() {
     if(!view||!source)return;
-    if(locked?.mode==='colors'){view.fixedPieceColors=true;view.setState(view.cells,view.currentAnimation);return;}
+    if(locked?.colors){view.fixedPieceColors=true;view.setState(view.cells,view.currentAnimation);return;}
     const shown=data.presentation(source),reference=locked?practicePair(locked.packing,shown.packing,{targetColors:true}).right:shown.cells;
     view.fixedPieceColors=locked?true:shown.fixed;
     view.mapCells(cells=>recolor(cells,reference));
     view.setState(view.cells,view.currentAnimation);
   }
   function unlock(){cancel();locked=null;if(view){view.lockedAssembly=null;view.assembly=displaySettings.familyPieces;view.individualPieces=view.assembly==='cubies';view.explorationSolids=assemblyUsesSolids(view.assembly);view.setState(view.cells);}data.lockFamily?.(null);refreshColors();if(view)changed(view);}
+  function applyLockAssembly(){
+    view.lockedAssembly=locked.shapes?'retained':'whole';view.assembly=view.lockedAssembly;
+    view.individualPieces=false;view.explorationSolids=false;view.fixedPieceColors=true;
+  }
   async function lock(mode){
-    if(locked){unlock();return;}
-    if(busy)return;
+    if(locked?.[mode]){
+      if(!locked[mode==='shapes'?'colors':'shapes']){unlock();return;}
+      cancel();locked[mode]=false;applyLockAssembly();refreshColors();syncButton();return;
+    }
+    if(busy||view?.busy||view?.geometry?.pending)return;
+    if(locked&&mode==='colors'){
+      // Preserve shape provenance and history when adding the color lock.
+      locked.colors=true;locked.cells=recolor(locked.cells,view.cells);
+      locked.packing=packingFromCells(locked.cells);syncButton();return;
+    }
     if(!matched||!view||view.busy)return;
     // Capture what is actually visible, including canonical recoloring after manual turns.
     const detected=new Map(detectPieces(view.cells,view.detectionFilters).map(p=>[p.id,p.letter]));
@@ -124,14 +137,24 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     const origins=new Map(cells.map((c,i)=>[c.assemblyOrigin,i]));
     const rebase=state=>state.map(c=>Object.defineProperties({}, {...Object.getOwnPropertyDescriptors(c),assemblyOrigin:{value:origins.get(c.assemblyOrigin),enumerable:false,writable:true,configurable:true}}));
     view.mapCells(state=>rebase(recolor(state,cells)));
-    locked={mode,record:matched,cells:view.cells,packing:packingFromCells(view.cells)};
+    locked={shapes:mode==='shapes',colors:mode==='colors'||!!locked?.colors,record:matched,cells:view.cells,packing:packingFromCells(view.cells)};
     source=matched;
     $('familyExploreTitle').textContent=`Family ${family} · Line ${source.lineNumber}`;
-    view.lockedAssembly=mode==='shapes'?'retained':'whole';view.assembly=view.lockedAssembly;view.individualPieces=false;view.explorationSolids=false;view.fixedPieceColors=true;view.rebaseInitial();view.retainedSource=null;view.setState(view.cells);
+    applyLockAssembly();view.rebaseInitial();view.retainedSource=null;view.setState(view.cells);
     const token=run;
     await data.selectionChanged?.(source);
     if(!locked||token!==run)return;
     await data.lockFamily?.(family);syncButton();
+  };
+  const exportButton=$('familyExportModel');
+  if(exportButton)exportButton.onclick=async()=>{
+    const status=$('familyExportStatus');exportButton.disabled=true;status.textContent='Preparing model…';
+    try{
+      if(busy||!source)throw Error('Wait for a family cube to finish loading or playing.');
+      const filename='family-'+family+'-line-'+source.lineNumber+'.glb';
+      const bytes=await captureFamilyModel(view,{sizeMm:Number($('familyExportSize').value),familyId:family,lineNumber:source.lineNumber});
+      downloadModel(bytes,filename);status.textContent='Downloaded '+filename;
+    }catch(error){status.textContent=error.message;}finally{exportButton.disabled=false;}
   };
   button.onclick=()=>lock('shapes');
   colorButton.onclick=()=>lock('colors');

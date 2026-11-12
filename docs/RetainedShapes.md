@@ -8,7 +8,7 @@ While locked, Choose Packing, Random, arrows, and line navigation remain within 
 
 The family assembly preference is temporarily overridden while locked; unlocking restores it. Recognition and metadata still follow the filters. The lock is session-only.
 
-## Opposite mode: Lock colors
+## Independent Lock colors
 
 **Lock colors** captures the visible colors of the current matched packing. Shapes
 are rebuilt from the current detected tetracubes after each turn, using the current
@@ -16,7 +16,7 @@ filters. Incomplete or excluded groups appear as individual cubies. Starting col
 assignments stay attached to physical piece IDs even if their tetracube letters change.
 
 Like Lock shapes, this pins the family and replays each new destination from the
-captured starter. The modes are exclusive; unlock one to select the other. Color-mode
+captured starter. Both locks can be enabled together. Unlocking one preserves the other; only releasing the last lock unpins the family and restores the assembly preference. Adding Lock colors preserves the existing shape starter and captures the visible piece colors. Adding Lock shapes captures the current matched packing as the new shape starter while preserving any color lock. Color-mode
 changes are deferred while colors are locked, and apply when unlocked. Custom palette
 edits still change the palette itself. Leaving Family Explorer releases the lock.
 

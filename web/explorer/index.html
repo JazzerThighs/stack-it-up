@@ -1217,6 +1217,14 @@
         <h2 id="familyExploreTitle">Family exploration</h2>
         <div id="familyExploreCube" class="cube"></div>
         <div class="family-lock-controls"><button id="familyLockShapes" type="button" class="family-lock-shapes" aria-pressed="false" disabled>Lock shapes</button><button id="familyLockColors" type="button" aria-pressed="false" disabled>Lock colors</button></div>
+        <details class="family-model-export">
+          <summary>Export 3D model</summary>
+          <p>GLB preserves the current geometry and piece colors. Prepare or convert it for printing in your 3D editor. Camera angle, lighting effects and transparency are not baked into the model.</p>
+          <label>Nominal cube width (mm) <input id="familyExportSize" type="number" min="0.1" max="10000" step="any" value="60"></label>
+          <p>Width covers the three-cell grid; gaps and rounded surfaces may make the model slightly smaller.</p>
+          <button id="familyExportModel" type="button">Download GLB</button>
+          <p id="familyExportStatus" role="status" aria-live="polite"></p>
+        </details>
         <details class="family-explore-info">
           <summary id="familyExploreProgress" role="status">
             Choose a family

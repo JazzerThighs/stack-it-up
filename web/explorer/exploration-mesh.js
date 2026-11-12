@@ -13,7 +13,7 @@ import {compositeParts,jellyCell} from '../render/piece-mesh.js';
 import {balloon,box,xyz,rgb,rotateCell} from '../render/geometry.js';
 import {clipMesh} from '../render/slice-mesh.js';
 
-export function explorationMeshes(cells,generate,appearance,solidIdentities=false,gray=true,fixedColors=false,individual=false,filters={},allSolids=false,assembly=null) {
+export function explorationMeshes(cells,generate,appearance,solidIdentities=false,gray=true,fixedColors=false,individual=false,filters={},allSolids=false,assembly=null,exportParts=null) {
   const detected=new Map(detectPieces(cells,filters).filter(p=>p.letter).map(p=>[p.id,p.letter]));
   const kind=cell=>assembly?assemblyKind(assembly,detected.has(cell.piece),cell.piece<0):cell.piece<0?'cubies':allSolids?'solids':detected.has(cell.piece)?individual?'cubies':'whole':solidIdentities?'solids':'cubies';
   const groups=new Map();
@@ -24,13 +24,14 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
     groups.get(id).push(i);
   });
   return [...groups.values()].map(indices=>{
+    const finish=mesh=>{exportParts?.push({data:mesh,piece:cells[indices[0]].piece,cells:indices.slice()});return mesh;};
     if(indices.length===4) {
       const board=Array(27).fill(0),ids=Array(27).fill(1);
       indices.forEach(i=>board[i]=fixedColors?cells[i].color:detectedColor(detected.get(cells[i].piece),cells[i].color));
       const parts=compositeParts(board,ids,PALETTE,generate,appearance,false,0,individual);
       // Keep immutable cached geometry identity: fragment caches are keyed by it.
       // A one-piece join used to copy every vertex and force the same cuts again.
-      return parts.length===1?parts[0]:joinMeshes(parts);
+      return finish(parts.length===1?parts[0]:joinMeshes(parts));
     }
     const out=[];
     for(const i of indices) {
@@ -42,7 +43,7 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
     }
     const mesh=tagCoverage(new Float32Array(out),xyz(indices[0]));
     if(kind(cells[indices[0]])==='solids')Object.defineProperty(mesh,"identityCell",{value:indices[0]});
-    return mesh;
+    return finish(mesh);
   });
 }
 export function sliceForTurn(meshes,move) {
