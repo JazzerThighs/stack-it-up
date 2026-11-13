@@ -86,14 +86,17 @@ export function indexedCounts(flags, spatial, core, span, gaps, extras) {
     CorePieces: bitCount(core),
   };
 }
+// Dropdown entries appear in this order. Edit IDs/labels here; no HTML changes.
+export const filterPresetPlaceholder = 'Custom counts';
 export const filterPresets = [
+  ['pieces', 'Reset All Shape Inclusion Filters'],
   ['planar', 'Planar tetrominos only'],
   ['spatial', 'Spatial tetrominos only'],
   ['surface', 'Surfacebound only'],
   ['nonface', 'Non-facebound surface only'],
   ['face', 'Facebound only'],
   ['core', 'Non-surfacebound only'],
-  ['placements', 'All placement types'],
+  ['placements', 'Reset All placement types'],
   ['six', 'All-6 planar tetrominos (JLOTSZ)'],
   ['faceSix', 'Facebound + All-6 Bag'],
   ['official', 'Tetris × Rubik’s Cube compatible (Family 562)'],
@@ -127,8 +130,9 @@ export function presetCounts(name, current = {}, currentFamily = 0) {
    * Extras shape rows count whole connected components, not overlapping subshapes.
    * Facebound + SurfaceNonface + CorePieces always totals six.
    *
-   * To add a selectable preset, also add its ID/label to filterPresets above and
-   * to #filterPreset in web/explorer/index.html. 'all' is the separate Reset button.
+   * To add a selectable preset, also add its ID/label to filterPresets above;
+   * the menu is populated from that list at startup. No HTML edits are needed.
+   * 'all' is the separate Reset button.
    * This function returns { ranges, family }; it does not run the database query.
    */
   const ranges = Object.fromEntries(
@@ -142,7 +146,7 @@ export function presetCounts(name, current = {}, currentFamily = 0) {
 
   switch (name) {
     case 'all':
-      // Reset every count and remove the family restriction.
+      // Reset every filter count and family restriction.
       ranges.O = { min: 0, max: 6 };
       ranges.T = { min: 0, max: 6 };
       ranges.S = { min: 0, max: 6 };
@@ -251,11 +255,18 @@ export function presetCounts(name, current = {}, currentFamily = 0) {
       break;
 
     case 'placements':
-      // Remove only placement-type and extra-core restrictions.
+      // Remove only placement-type and extra-piece restrictions.
+      ranges.ExtraSingle = { min: 0, max: 3 };
+      ranges.ExtraDomino = { min: 0, max: 1 };
+      ranges.ExtraV = { min: 0, max: 1 };
+      ranges.ExtraBar = { min: 0, max: 1 };
+      ranges.ExtraCore = { min: 0, max: 1 };
+      ranges.ExtraCenters = { min: 0, max: 3 };
+      ranges.ExtraEdges = { min: 0, max: 3 };
+      ranges.ExtraCorners = { min: 0, max: 3 };
       ranges.Facebound = { min: 0, max: 6 };
       ranges.SurfaceNonface = { min: 0, max: 6 };
       ranges.CorePieces = { min: 0, max: 1 };
-      ranges.ExtraCore = { min: 0, max: 1 };
       break;
 
     case 'six':

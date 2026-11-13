@@ -59,6 +59,7 @@ export class WorkerGeometry {
   }
   async ready(){while(this.pending&&!this.disposed)await this.task;return !this.error&&!this.disposed;}
   refreshStatus(){
+    this.view.onAvailabilityChange?.(this.view);
     this.view.canvas.setAttribute('aria-busy',String(this.pending));this.retry.hidden=!this.error;
     if(this.error)this.view.status.textContent='Graphics preparation failed. Retry graphics.';
     else if(this.pending)this.view.status.textContent='Preparing geometry…';

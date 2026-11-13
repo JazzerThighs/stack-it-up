@@ -62,6 +62,11 @@ for(const id of ['D','J','S','ExtraV','ExtraCore','Facebound']){assert(!doc.getE
 doc.getElementById('familyExploreMode').checked=true;
 doc.getElementById('familyPieces').value='solids';
 doc.getElementById('solidUniform').checked=true;
+go('Export 3D model');
+for(const id of ['familyExportModel','familyExportSize','familyExportStatus','familyExportLayout','familyExportGap']){
+ const page=doc.getElementById(id).closest('.explorer-settings-page');
+ assert(page&&!page.hidden,`${id} is accessible in the export settings page`);
+}
 go('Balls & Platonic Solids');
 assert(!doc.getElementById('solidColor').disabled);assert(doc.getElementById('solidGray').disabled);
 assert(doc.getElementById('showSolved').disabled);

@@ -1,7 +1,7 @@
 import {applyStartupDefaults} from '../ui/startup-defaults.js';
 import {createPackingSelection} from './packing-selection.js';
 import {createLatestRequest} from '../workers/latest-request.js';
-import {refreshRangeCards} from './filter-range-ui.js';
+import {refreshRangeCards,initializeFilterPresets} from './filter-range-ui.js';
 import { countSpecs, countLimits, presetCounts } from './filter-counts.js';
 import { packingPresentation } from './presentation.js';
 import { createPackingClient } from './data-client.js';
@@ -19,6 +19,7 @@ export async function initializeSpatialExplorer(
   root = document,
   dependencies = {},
 ) {
+  initializeFilterPresets(root);
   applyStartupDefaults(root, 'explorer');
   const $ = (id) => root.getElementById(id);
   $('status').textContent = 'Loading local tetracube index…';

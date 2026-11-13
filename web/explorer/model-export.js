@@ -1,13 +1,16 @@
+import {arrangePrintLayout} from './print-layout.js';
 import {visualSettings} from '../render/visual-settings.js';
 import {PALETTE} from './model.js';
 
 // glTF 2.0 uses metres and linear vertex colors. Renderer colors are sRGB.
 const linear=c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4;
-export function encodeModelGLB(parts,{sizeMm=60,...metadata}={}) {
+export function encodeModelGLB(parts,{sizeMm=60,layout='assembled',gapMm=5,...metadata}={}) {
   if(!Number.isFinite(sizeMm)||sizeMm<=0||sizeMm>10000)throw Error('Cube size must be greater than 0 and at most 10000 mm.');
-  const doc={asset:{version:'2.0',generator:'Stack It Up'},scene:0,scenes:[{name:'Family explorer cube',nodes:[]}],nodes:[],meshes:[],
+  if(!['assembled','print'].includes(layout))throw Error('Unknown export layout.');
+  if(layout==='print')parts=arrangePrintLayout(parts,{sizeMm,gapMm});
+  const doc={asset:{version:'2.0',generator:'Stack It Up'},scene:0,scenes:[{name:layout==='print'?'Pieces on floor':'Family explorer cube',nodes:[]}],nodes:[],meshes:[],
     materials:[{name:'Piece colors',pbrMetallicRoughness:{baseColorFactor:[1,1,1,1],metallicFactor:0,roughnessFactor:.8}}],
-    accessors:[],bufferViews:[],buffers:[{byteLength:0}],extras:{...metadata,nominalCubeSizeMm:sizeMm,units:'metres'}};
+    accessors:[],bufferViews:[],buffers:[{byteLength:0}],extras:{...metadata,layout,...(layout==='print'?{pieceSpacingMm:gapMm,floorAxis:'Y'}:{}),nominalCubeSizeMm:sizeMm,units:'metres'}};
   const chunks=[],groups=new Map();let byteLength=0;
   for(const part of parts){
     const mesh=part.data;if(!mesh?.length)continue;

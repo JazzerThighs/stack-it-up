@@ -42,7 +42,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   function syncButton(){
     for(const [control,mode,label] of [[button,'shapes','shapes'],[colorButton,'colors','colors']]){
       const active=!!locked?.[mode];
-      control.disabled=!active&&(busy||!!view?.busy||!!view?.geometry?.pending||(!matched&&(!locked||mode==='shapes')));
+      control.disabled=!active&&(busy||!!view?.busy||!!view?.geometry?.pending||!!view?.geometry?.error||(!matched&&(!locked||mode==='shapes')));
       control.textContent=active?`Unlock ${label}`:`Lock ${label}`;
       control.setAttribute('aria-pressed',String(active));
       control.title=active?`Starter line ${locked.record.lineNumber}; navigation stays in family ${family}.`:mode==='colors'?'Keep current piece colors. Can be combined with Lock shapes.':'Keep current cut shapes. Can be combined with Lock colors.';
@@ -81,7 +81,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     if(locked&&p.familyId!==family)throw Error(`Unlock ${[locked.shapes?'shapes':null,locked.colors?'colors':null].filter(Boolean).join(' and ')} to leave family ${family}.`);
     cancel();++lookupGeneration;source=p;family=p.familyId;remember([p]);
     $('familyExploreTitle').textContent=`Family ${family} · Line ${p.lineNumber}`;
-    view=get('familyExploreCube',{onChange:changed});view.familyExploration=true;
+    view=get('familyExploreCube',{onChange:changed,onAvailabilityChange:syncButton});view.familyExploration=true;
     const shown=data.presentation(p);
     if(!locked){view.fixedPieceColors=shown.fixed;view.setCells(shown.cells);return;}
     const token=run;
@@ -123,7 +123,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
       if(!locked[mode==='shapes'?'colors':'shapes']){unlock();return;}
       cancel();locked[mode]=false;applyLockAssembly();refreshColors();syncButton();return;
     }
-    if(busy||view?.busy||view?.geometry?.pending)return;
+    if(busy||view?.busy||view?.geometry?.pending||view?.geometry?.error)return;
     if(locked&&mode==='colors'){
       // Preserve shape provenance and history when adding the color lock.
       locked.colors=true;locked.cells=recolor(locked.cells,view.cells);
@@ -151,8 +151,9 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     const status=$('familyExportStatus');exportButton.disabled=true;status.textContent='Preparing model…';
     try{
       if(busy||!source)throw Error('Wait for a family cube to finish loading or playing.');
-      const filename='family-'+family+'-line-'+source.lineNumber+'.glb';
-      const bytes=await captureFamilyModel(view,{sizeMm:Number($('familyExportSize').value),familyId:family,lineNumber:source.lineNumber});
+      const layout=$('familyExportLayout').value;
+      const filename='family-'+family+'-line-'+source.lineNumber+(layout==='print'?'-print-layout':'')+'.glb';
+      const bytes=await captureFamilyModel(view,{sizeMm:Number($('familyExportSize').value),layout,gapMm:Number($('familyExportGap').value),familyId:family,lineNumber:source.lineNumber});
       downloadModel(bytes,filename);status.textContent='Downloaded '+filename;
     }catch(error){status.textContent=error.message;}finally{exportButton.disabled=false;}
   };

@@ -524,7 +524,8 @@ console.log('PASS: explorer rings/labels, suppressed orbit feedback, shared wide
 
 // Check UI wiring against the editable preset definitions, rather than freezing
 // old preset policy into the layout test.
-const {presetCounts,countSpecs}=await import(new URL('explorer/filter-counts.js',assetRoot));
+const {presetCounts,countSpecs,filterPresets,filterPresetPlaceholder}=await import(new URL('explorer/filter-counts.js',assetRoot));
+assert.deepEqual($('filterPreset').children.map(n=>[n.value,n.textContent]),[['',filterPresetPlaceholder],...filterPresets]);
 for(const name of ['planar','surface','official','soma','all']) {
   const current=Object.fromEntries(countSpecs.map(([id])=>[id,{min:Number($('countMin'+id).value),max:Number($('countMax'+id).value)}]));
   const expected=presetCounts(name,current,+$('familySelect').value||0);

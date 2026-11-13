@@ -60,6 +60,22 @@ try {
  assert(rotations.length>0);for(const rotation of rotations)assert.deepEqual(rotation,[1,0,0,0,1,0,0,0,1],'Failed replacement keeps the previous scene stationary');
  cube.currentAnimation=null;cube.gl.uniformMatrix3fv=uniform;
  cube.geometry.createWorker=oldFactory;cube.geometry.retry.onclick();assert(await cube.geometry.ready());assert(!cube.geometry.error);
+ // A fast catalog match must not leave locks disabled after a slower geometry job.
+ const {createSpatialFamilyExplorer}=await import('../web/explorer/spatial-family-controller.js');
+ const {packingCells}=await import('../web/explorer/model.js');
+ const record={familyId:1,lineNumber:1,masks:[0x000000f,0x00180c0,0x00c0c00,0x0406010,0x1201200,0x4020120],extras:0x2900000,identities:['J','O','T','L','S','Z']};
+ const family=createSpatialFamilyExplorer({$:get,get:(_id,options)=>{Object.assign(cube,options);return cube;},getSelected:()=>record,
+   data:{lookup:async()=>[record],presentation:()=>({fixed:true,cells:packingCells(record,Array(27).fill('b'))})}});
+ cube.modelShape='jelly';await family.load(record);
+ for(let i=0;i<10;i++)await Promise.resolve();
+ assert.match(get('familyExploreProgress').textContent,/Packing found/);
+ assert(cube.geometry.pending);assert(get('familyLockShapes').disabled);assert(get('familyLockColors').disabled);
+ assert(await cube.geometry.ready());
+ assert(!get('familyLockShapes').disabled,'Shape lock recovers when startup geometry completes');
+ assert(!get('familyLockColors').disabled,'Color lock recovers when startup geometry completes');
+ cube.modelShape='angular';cube.setState(cube.cells);
+ assert(get('familyLockShapes').disabled);assert(get('familyLockColors').disabled);
+ assert(await cube.geometry.ready());assert(!get('familyLockShapes').disabled);assert(!get('familyLockColors').disabled);
  // Dispose during preparation: late output must not upload into destroyed GL objects.
  cube.modelShape='jelly';cube.setState(cube.cells);const task=cube.geometry.task;cube.destroy();assert.equal(await task,false);assert(workers.every(w=>w.terminated));
  console.log('PASS: explorer uses real geometry worker without UI-thread generation, keeps previous mesh, coalesces settings, prepares motion buffers, supports turn/undo/recovery and disposes pending work (mock WebGL).');

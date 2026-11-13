@@ -1,4 +1,12 @@
-import {countSpecs} from './filter-counts.js';
+import {countSpecs,filterPresets,filterPresetPlaceholder} from './filter-counts.js';
+export function initializeFilterPresets(root) {
+  const select=root.getElementById('filterPreset'),selected=select.value;
+  const doc=select.ownerDocument||document;
+  select.replaceChildren(...[['',filterPresetPlaceholder],...filterPresets].map(([id,label])=>{
+    const option=doc.createElement('option');option.value=id;option.textContent=label;return option;
+  }));
+  select.value=filterPresets.some(([id])=>id===selected)?selected:'';
+}
 export function describeRange(min,max,limit) {
   if(min==='' || max==='')return {kind:'invalid',text:'Enter both limits'};
   min=Number(min);max=Number(max);

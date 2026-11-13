@@ -29,7 +29,7 @@ import { PALETTE, NOTATION, turn } from "./model.js";
 export class PackingCube extends Renderer {
   constructor(
     host,
-    { readOnly = false, onChange = () => {}, controls = true } = {},
+    { readOnly = false, onChange = () => {}, onAvailabilityChange = () => {}, controls = true } = {},
   ) {
     const canvas = document.createElement("canvas"),
       labels = document.createElement("canvas");
@@ -50,7 +50,7 @@ export class PackingCube extends Renderer {
       get busy() {
         return view?.busy || view?.geometry?.pending || !!view?.geometry?.error;
       },
-      setBusy: (v) => (view.busy = v),
+      setBusy: (v) => {view.busy = v;view.onAvailabilityChange(view);},
       play: (m, t) => view.play(m, t),
       animate: (ms, fn) => view.animate(ms, fn),
       invalidate: () => view?.invalidate(),
@@ -69,6 +69,7 @@ export class PackingCube extends Renderer {
     this.orbitOnly = readOnly;
     this.skipGameLocks = true;
     this.onChange = onChange;
+    this.onAvailabilityChange = onAvailabilityChange;
     this.session = new CubeSession();
     this.busy = false;
     this.generation = 0;
@@ -269,6 +270,7 @@ export class PackingCube extends Renderer {
   async play(move, start = 0) {
     if (this.busy || this.orbitOnly || !this.cells.length) return;
     this.busy = true;
+    this.onAvailabilityChange(this);
     const generation = this.generation, from = this.cells;
     try {
       if(this.geometry){
@@ -283,7 +285,7 @@ export class PackingCube extends Renderer {
       if(generation!==this.generation)return;
       this.busy=false;
       this.changed();
-    } finally {if(generation===this.generation)this.busy=false;}
+    } finally {if(generation===this.generation){this.busy=false;this.onAvailabilityChange(this);}}
   }
   undo() {
     if (this.orbitOnly || this.busy || this.geometry?.pending || !this.history.length) return;

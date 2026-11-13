@@ -22,6 +22,7 @@ export function initializeExplorerSettings(root) {
   const unpack=(page,node)=>{if(!node)return;for(const child of [...node.children])if(!child.matches('legend,summary'))add(page,child);};
   const help=(page,text)=>{const p=document.createElement('p');p.className='settings-help';p.textContent=text;add(page,p);};
   const home=page('Settings');
+  unpack(page('Export 3D model',home),find('.family-model-export'));
   const mode=page('Explorer mode',home);unpack(mode,find('.explorer-modes'));
   help(mode,'Turn both modes off to browse target and scrambled cubes.');
   // Retain old controls for saved integrations, but expose only editable counts.
