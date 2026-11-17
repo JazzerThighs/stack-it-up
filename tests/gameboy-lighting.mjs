@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {gameboyLight} from '../web/render/gameboy-lighting.js';
 const n=[0,0,1],light=[0,0,1];

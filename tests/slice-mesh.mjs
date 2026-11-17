@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {box} from '../web/render/geometry.js';
 import {clipMesh} from '../web/render/slice-mesh.js';

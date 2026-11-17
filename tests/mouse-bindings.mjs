@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {orbitSettings as s,pointerOrbitAction,setOrbitSetting} from '../web/input/orbit-settings.js';
 import {installCubeDrag} from '../web/input/drag.js';

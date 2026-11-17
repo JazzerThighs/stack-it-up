@@ -7,6 +7,7 @@
     "node tests/geometry-worker.mjs",
     "node tests/explorer-mesh-cache.mjs",
     "node tests/startup-defaults.mjs",
+    "node tests/defaults-customization.mjs",
     "node tests/settings-authoring.mjs",
     "node tests/input-preferences.mjs",
     "node tests/display-settings.mjs",
@@ -142,6 +143,7 @@
   ],
   "settings": [
     "node tests/startup-defaults.mjs",
+    "node tests/defaults-customization.mjs",
     "node tests/settings-authoring.mjs",
     "node tests/orbit-settings.mjs",
     "node tests/control-settings.mjs",

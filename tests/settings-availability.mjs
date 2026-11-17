@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import {setDisplaySetting} from '../web/ui/display-settings.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

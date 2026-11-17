@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {startupDefaults} from '../web/ui/startup-defaults.js';
 import {displaySchema as schema} from '../web/ui/display-schema.js';
 import {createSettingsStore} from '../web/ui/settings-store.js';
+const defaults=createSettingsStore(schema).values;
 const data=new Map(),storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};
 const load=saved=>{data.set(schema.storageKey,JSON.stringify(saved));return createSettingsStore(schema,storage);};
 let store=load({gameCombinedSize:124,gameActiveSize:100,targetSize:145,practiceTargetSize:130,startSize:75,gamePieces:'retained',familyPieces:'solids',uiTheme:'amber'});
@@ -15,7 +16,7 @@ const saved=JSON.parse(data.get(schema.storageKey));assert.equal(saved.version,1
 store=load({gameCombinedSize:140,gameActiveSize:90,gamePieces:'solids',stackPieces:'cubies'});assert.equal(store.values.gameActiveSize,90);assert.equal(store.values.stackPieces,'cubies');
 for(const empty of ['',null,0])assert.equal(load({gamePieces:'solids',stackPieces:empty}).values.stackPieces,'solids');
 store=load({version:1,values:{gameCombinedSize:140,gameActiveSize:100,gamePieces:'solids'}});assert.equal(store.values.gameActiveSize,100);assert.equal(store.values.stackPieces,startupDefaults.display.stackPieces,'Aliases apply only to legacy format');
-store=load({familySize:400,uiTheme:'missing',stackPieces:'invalid'});assert.equal(store.values.familySize,100);assert.equal(store.values.uiTheme,'teal');assert.equal(store.values.stackPieces,startupDefaults.display.stackPieces);
+store=load({familySize:400,uiTheme:'missing',stackPieces:'invalid'});assert.equal(store.values.familySize,defaults.familySize);assert.equal(store.values.uiTheme,defaults.uiTheme);assert.equal(store.values.stackPieces,startupDefaults.display.stackPieces);
 store=load({version:99,values:{uiTheme:'amber'}});const future=data.get(schema.storageKey);store.set('uiTheme','violet');assert.equal(data.get(schema.storageKey),future);
 data.delete(schema.storageKey);globalThis.localStorage=storage;
 const {displaySettings,initializeDisplayControls}=await import('../web/ui/display-settings.js');

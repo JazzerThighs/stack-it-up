@@ -1,8 +1,10 @@
+import {configureBuiltDefaults} from './fixtures/behavior-defaults.mjs';
 import fs from "node:fs";
 import assert from "node:assert/strict";
 import {createBrowserFixture} from "./fixtures/browser.mjs";
 const buildInfo=JSON.parse(fs.readFileSync(new URL('../dist/build-info.json',import.meta.url),'utf8'));
 const assetRoot=new URL(`../dist/${buildInfo.assets}/`,import.meta.url);
+await configureBuiltDefaults(assetRoot);
 const html = fs.readFileSync(
   new URL("explorer/index.html", assetRoot),
   "utf8",

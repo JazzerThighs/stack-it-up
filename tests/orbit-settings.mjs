@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {orbitSpecs,orbitSettings,orbitAvailability,bindOrbitSettings,setOrbitMode,setOrbitSetting,subscribeOrbit,bindOrbitToggle} from '../web/input/orbit-settings.js';
 function root(){

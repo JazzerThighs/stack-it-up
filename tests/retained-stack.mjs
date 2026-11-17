@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {seedStackShapes,applyStackShapeEvent,moveFreedShapes} from '../web/engine/stack-shapes.js';
 import {retainedStack} from '../web/render/retained-stack.js';

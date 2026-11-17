@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import {orbitSettings} from '../web/input/orbit-settings.js';
 orbitSettings.orbitSettling=false;
 import assert from 'node:assert/strict';

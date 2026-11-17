@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import { installCubeDrag } from '../web/input/drag.js';
 import { pickBand } from '../web/input/band-pick.js';

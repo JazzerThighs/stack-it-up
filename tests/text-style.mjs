@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {textMesh,bracketCell,bracketPiece} from '../web/render/text-mesh.js';
 import {compositeParts,jellyCell} from '../web/render/piece-mesh.js';

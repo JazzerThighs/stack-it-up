@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {controlSettings} from '../web/input/control-settings.js';
 import {hoveredIdentity,hoverIdentityPackets} from '../web/render/hover-identities.js';

@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {cubeRotations,quaternion,matrix,multiply,axisAngle,identity,distance,snapTarget,dragAxis,dragRotation,frontFace,applyDragRotation,captureSectors,viewAxisFrame} from '../web/input/orbit-math.js';
 import {orbitSettings as settings} from '../web/input/orbit-settings.js';

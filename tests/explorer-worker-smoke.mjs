@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import {captureFamilyModel} from '../web/explorer/model-export.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

@@ -33,6 +33,22 @@ to check the configuration. Schemas still own control labels, validation and gen
 HTML; a newly added schema field falls back to its schema default until you add an
 override to this function.
 
+## Tests do not prescribe your preferences
+
+Startup, fallback and reset tests compare against the curated defaults, including
+palette colors. They validate supported keys, types and values, not a particular
+choice of color, effect, camera, size or game rule. `tests/defaults-customization.mjs`
+runs those contracts with alternate preferences in isolated processes and is part
+of the settings CI suite. It does not edit your defaults file.
+
+Gameplay, input and rendering scenarios import `tests/fixtures/behavior-defaults.mjs`
+before loading application modules. Its JSON profile supplies explicit, repeatable
+test inputs; it is not the product default policy. Built-app smoke tests apply it to
+their own module instances. The real-browser test serves that profile from its local
+test server without modifying `dist` or the published application. When adding a
+scenario, explicitly configure any required settings rather than assuming the user's
+startup choices. Keep startup-policy tests separate from this scenario fixture.
+
 ## One settings dialog
 
 Both game and explorer Settings buttons open the same modal. Its Game & shared and

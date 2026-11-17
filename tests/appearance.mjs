@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import {startupDefaults} from '../web/ui/startup-defaults.js';
+import {createSettingsStore} from '../web/ui/settings-store.js';
+import {appearanceSchema} from '../web/ui/appearance-schema.js';
+const defaults=createSettingsStore(appearanceSchema).values;
 import {appearances,appearanceIndex} from '../web/render/appearance.js';
 import {FS} from '../web/render/shaders.js';
 assert.deepEqual(appearances.map(([id])=>id),['jelly','dither','matte','cel','ascii','gameboy']);
@@ -10,6 +14,7 @@ const storage=new Map();
 Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)}});
 const palette=await import('../web/render/palette.js');
 const {colors,setPieceColor,resetPalette,defaultColors}=palette;
+assert.deepEqual(defaultColors,['#000000',...['O','T','L','J','S','Z','B','D','F'].map(k=>startupDefaults.palette[k].toLowerCase())]);
 assert(!setPieceColor(0,'#ffffff'));assert(!setPieceColor(1,'red'));
 assert(setPieceColor(4,'#AaBBcc'));assert.equal(colors[4],'#aabbcc');
 const reloaded=await import('../web/render/palette.js?reload');
@@ -37,7 +42,7 @@ console.log('PASS: palette persistence/validation/reset and ASCII retained frame
 
 const visual=await import('../web/render/visual-settings.js');
 const {visualSettings,setVisualSetting,resetVisualSettings,faceLight,lightDirection}=visual;
-assert.equal(visualSettings.ditherLevels,5);
+assert.equal(visualSettings.ditherLevels,defaults.ditherLevels);
 assert(!setVisualSetting('missing',1));assert(!setVisualSetting('ditherLevels',NaN));
 setVisualSetting('ditherLevels',3.7);assert.equal(visualSettings.ditherLevels,4);
 setVisualSetting('asciiCoverage',0);assert.equal(visualSettings.asciiCoverage,.02);
@@ -46,15 +51,16 @@ setVisualSetting('lightAzimuth',90);setVisualSetting('lightElevation',0);
 assert(Math.abs(lightDirection()[0]-1)<1e-10);
 faceLight();assert.deepEqual(lightDirection(),[0,0,1]);
 setVisualSetting('asciiSize',1.5);resetVisualSettings('dither');
-assert.equal(visualSettings.ditherLevels,5);assert.equal(visualSettings.asciiSize,1.5);
+assert.equal(visualSettings.ditherLevels,defaults.ditherLevels);assert.equal(visualSettings.asciiSize,1.5);
 const restored=await import('../web/render/visual-settings.js?restore');assert.equal(restored.visualSettings.asciiSize,1.5);
-resetVisualSettings();assert.equal(visualSettings.asciiSize,1);
+resetVisualSettings();assert.equal(visualSettings.asciiSize,defaults.asciiSize);
 console.log('PASS: lighting coordinates, saved filter controls, numeric validation and independent resets.');
 
 const {DitherPass,pixelLayout}=await import('../web/render/dither-pass.js');
 assert.deepEqual(pixelLayout(641,479,2,2),{block:4,width:161,height:120});
 const viewports=[];gl.viewport=(...args)=>viewports.push(args);
 Object.defineProperty(globalThis,'devicePixelRatio',{configurable:true,value:2});
+setVisualSetting('ditherSize',2);
 const dither=new DitherPass(gl);const beforeAllocations=allocations;
 dither.begin(641,479);assert.deepEqual(viewports.at(-1),[0,0,161,120]);
 dither.finish(2);assert.deepEqual(viewports.at(-1),[0,0,641,479]);
@@ -66,5 +72,5 @@ console.log('PASS: whole-scene dither renders at low resolution, restores output
 
 assert(setVisualSetting('solidColor','#abc123'));assert.equal(visualSettings.solidColor,'#abc123');
 assert(!setVisualSetting('solidColor','invalid'));resetVisualSettings('solid');
-assert.equal(visualSettings.solidUniform,1);assert.equal(visualSettings.solidColor,'#c8c8c8');assert.equal(visualSettings.solidFixed,0);
+assert.equal(visualSettings.solidUniform,defaults.solidUniform);assert.equal(visualSettings.solidColor,defaults.solidColor);assert.equal(visualSettings.solidFixed,defaults.solidFixed);
 console.log('PASS: chosen solid color validation and requested display defaults.');

@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {renderPackets} from '../web/render/pipeline.js';

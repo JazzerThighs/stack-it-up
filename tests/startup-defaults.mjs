@@ -23,7 +23,13 @@ applyStartupDefaults({getElementById:id=>controls.get(id)},'game');assert.equal(
 const other=new Map(Object.keys(startupDefaults.explorer).map(id=>[id,{}]));
 applyStartupDefaults({getElementById:id=>other.get(id)},'explorer');
 assert.equal(other.get('modelShape').value,startupDefaults.explorer.modelShape);
-assert.equal(other.get('oneOfEach').checked,false);
+for(const [scope,nodes] of [['game',controls],['explorer',other]]) {
+  // The game model was deliberately changed above to check once-only startup.
+  for(const [id,value] of Object.entries(startupDefaults[scope])) {
+    if(scope==='game'&&id==='modelShape')continue;
+    assert.equal(nodes.get(id)[typeof value==='boolean'?'checked':'value'],typeof value==='boolean'?value:String(value),scope+'.'+id);
+  }
+}
 // Every authored default must have a corresponding field; catch typo/no-op edits.
 for(const domain of ['appearance','display','controls','orbit']){
  const schema=JSON.parse(fs.readFileSync(new URL(`../data/${domain}-settings.json`,import.meta.url)));

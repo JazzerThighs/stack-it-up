@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {angularPiece} from '../web/render/angular-mesh.js';
 import {setVisualSetting,resetVisualSettings} from '../web/render/visual-settings.js';

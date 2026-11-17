@@ -1,3 +1,4 @@
+import {configureBuiltDefaults} from './fixtures/behavior-defaults.mjs';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {createBrowserFixture} from './fixtures/browser.mjs';
@@ -8,6 +9,7 @@ browser.install();
 $('sliceClearMode').value='1';$('rebuildMode').value='2';
 $('pieceAppearance').value='jelly';
 $('explorer').explorerReady=Promise.resolve();
+await configureBuiltDefaults(new URL('../dist/',import.meta.url));
 const {context}=await import('../dist/app.js');
 for(let i=0;i<100&&!context.engine;i++)await new Promise(resolve=>setTimeout(resolve,10));
 assert.equal($('engineStatus').textContent,'Ready');

@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {placedTetracubeColor,tetracubeColors} from '../web/render/tetracube-colors.js';
 import {compositeParts} from '../web/render/piece-mesh.js';

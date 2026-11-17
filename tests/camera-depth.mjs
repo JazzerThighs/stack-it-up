@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import {visualSettings} from '../web/render/visual-settings.js';
 visualSettings.ditherTransparency=0;
 import assert from 'node:assert/strict';

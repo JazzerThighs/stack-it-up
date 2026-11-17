@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {lightingMode} from '../web/render/pipeline.js';
 import {visualSettings,setVisualSetting,resetVisualSettings} from '../web/render/visual-settings.js';

@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {capturePieceFragments,retainedPieceFragments} from '../web/explorer/retained-pieces.js';
 import {turn} from '../web/explorer/model.js';

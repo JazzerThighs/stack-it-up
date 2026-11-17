@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {visualSettings} from '../web/render/visual-settings.js';
 import {bracketCell} from '../web/render/text-mesh.js';

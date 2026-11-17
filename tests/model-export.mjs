@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {encodeModelGLB,captureFamilyModel} from '../web/explorer/model-export.js';
 import {box} from '../web/render/geometry.js';

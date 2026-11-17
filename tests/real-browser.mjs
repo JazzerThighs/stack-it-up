@@ -10,8 +10,11 @@ const root=fileURLToPath(new URL('../dist/',import.meta.url));
 const executable=process.env.BROWSER_PATH||['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','/usr/bin/google-chrome','/usr/bin/chromium'].find(existsSync);
 assert(executable,'Install Chrome/Edge or set BROWSER_PATH; this test must not silently skip.');
 const profile=await mkdtemp(path.join(tmpdir(),'stack-browser-'));
+// Serve explicit scenario preferences only from this test server; dist stays untouched.
+const behaviorDefaults=JSON.parse(await readFile(new URL('./fixtures/behavior-defaults.json',import.meta.url),'utf8'));
+const scenarioScript='\nObject.assign(startupDefaults, '+JSON.stringify(behaviorDefaults)+');\n';
 const mime={'.js':'text/javascript','.html':'text/html','.wasm':'application/wasm','.css':'text/css'};
-const server=createServer(async(req,res)=>{try{const p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);const file=path.resolve(root,'.'+(p==='/'?'/index.html':p));if(!file.startsWith(root))throw Error('path');res.setHeader('Content-Type',mime[path.extname(file)]||'application/octet-stream');res.end(await readFile(file));}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);const file=path.resolve(root,'.'+(p==='/'?'/index.html':p));if(!file.startsWith(root))throw Error('path');res.setHeader('Content-Type',mime[path.extname(file)]||'application/octet-stream');const body=await readFile(file);res.end(p.endsWith('/ui/startup-defaults.js')?body.toString()+scenarioScript:body);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base='http://127.0.0.1:'+server.address().port;
 // Keep software WebGL in Chrome's normal GPU subprocess. In-process GPU

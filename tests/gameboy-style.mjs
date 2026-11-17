@@ -1,3 +1,4 @@
+import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {gameboyCell,gameboyPiece,gameboyPattern} from '../web/render/gameboy-mesh.js';
 import {compositeParts} from '../web/render/piece-mesh.js';
