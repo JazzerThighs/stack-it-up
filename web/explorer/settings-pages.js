@@ -1,5 +1,6 @@
 import {refreshStyleTuning} from '../ui/style-tuning.js';
 import {assemblyUsesSolids} from '../render/assembly.js';
+import {createSettingsBrowser,matchesSettings} from '../ui/settings-browser.js';
 // Explorer settings keep their original controls/listeners; only their layout moves.
 export function initializeExplorerSettings(root) {
   const content=root.querySelector?.('.settings-content');
@@ -59,7 +60,9 @@ export function initializeExplorerSettings(root) {
   const classes=body.querySelector('#lightingClasses');
   unpack(lightClasses,classes);classes.remove();
 
-  let current=home;
+  let current=home,query='';
+  const browser=createSettingsBrowser({nodes:pages.filter(p=>p!==home),label:n=>n.name,parent:n=>n.parent===home?null:n.parent,
+    select:show,search:value=>{query=value;render();},scope:'explorer'});
   function refresh() {
     refreshStyleTuning(root);
     const family=$('familyExploreMode').checked,practice=$('practiceMode').checked;
@@ -78,12 +81,27 @@ export function initializeExplorerSettings(root) {
     }
   }
   function show(node) {
-    current=node;for(const p of pages)p.element.hidden=p!==node;
-    title.textContent=node.name;back.hidden=!node.parent;body.scrollTop=0;refresh();title.focus({preventScroll:true});
+    current=node;query='';browser.input.value='';render();body.scrollTop=0;title.focus({preventScroll:true});
+  }
+  function render() {
+    refresh();let count=0;
+    for(const p of pages) {
+      let matches=0;
+      for(const child of p.element.children) {
+        child.classList.remove('settings-search-hidden','settings-search-result');
+        if(!query||child.hidden)continue;
+        if(child.classList.contains('explorer-page-link')||!matchesSettings(child,browser.path(p),query))child.classList.add('settings-search-hidden');
+        else {matches++;child.classList.add('settings-search-result');child.dataset.settingsPath=browser.path(p);}
+      }
+      p.element.hidden=query?!matches:p!==current;count+=matches;
+    }
+    title.textContent=query?'Search results':browser.path(current);back.hidden=!!query||!current.parent;
+    browser.update(query?null:current,query?count:null);
   }
   back.onclick=()=>show(current.parent||home);
-  content.replaceChildren(heading,back,body);
-  content.addEventListener('change',()=>queueMicrotask(refresh));
+  const layout=document.createElement('div');layout.className='settings-workbench';layout.append(browser.nav,body);
+  content.replaceChildren(heading,browser.toolbar,back,layout);
+  content.addEventListener('change',()=>queueMicrotask(render));
   $('settingsPanel').addEventListener('toggle',()=>{if($('settingsPanel').open)show(home);});
   show(home);
 }

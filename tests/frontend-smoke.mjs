@@ -23,7 +23,14 @@ $('activeSpheres').checked=true;$('activeSpheres').listeners.input();flush();ass
 $('hoverOutline').checked=true;$('hoverOutline').listeners.input();const canvas=$('control');canvas.listeners.pointermove({pointerId:1,pointerType:'mouse',clientX:600,clientY:400});flush();assert(context.renderers[0].hover);
 const previous=context.state[54];await context.play(6);flush();assert(context.engine.snapshot()[68]>0);$('stageUndo').onclick();flush();assert.equal(context.state[54],previous);
 $('customLayers').checked=true;$('customLayers').onchange();flush();assert($('renderLayers').children.length>=17);$('resetLayers').onclick();flush();assert(!$('customLayers').checked);
-assert.equal($('stageNet').children.length,6);
+assert.equal($('stageNet').children.length,9);
+assert.deepEqual($('stageNet').children.slice(6).map(n=>n.children[0].textContent),['M','E','S']);
+const {faceMapCell}=await import('../dist/ui/face-map.js');
+for(let map=6;map<9;map++){
+ const cells=Array.from({length:9},(_,c)=>faceMapCell(context.state,map,c));
+ assert.equal(new Set(cells).size,9);assert.equal(cells[4],13);
+ for(const i of cells)assert.equal([Math.floor(i/9),Math.floor(i/3)%3,i%3][map-6],1);
+}
 assert($('groupRequirements').textContent.includes('Current piece:'));
 console.log('PASS: actual ES modules + real Wasm startup, hold, undo, sphere/hover rendering, custom layers and defaults (mock WebGL).');
 
@@ -34,7 +41,7 @@ console.log('PASS: packing tab lazy load and game state preservation.');
 // New defaults are active on startup. The following legacy-state checks remain useful for old shared puzzles.
 assert.notEqual(context.engine.game_rules(),0xffffffff);assert($('scienceMode').checked);assert($('freedomEnabled').checked);assert(!$('bandagedFragments').checked);assert(!$('earlyLock').checked);
 context.engine.game_init(123);context.engine.game_set_fragments(false);context.engine.game_set_modes(true,false,2);context.engine.game_set_gravity_rules(false,true);context.update();
-assert(!$('queueForecast').checked);assert(!$('sliceGravity').checked);assert($('gravityOneStep').checked);assert.equal(context.engine.game_gravity_rules(),2);assert($('bandagedFragments').checked);assert($('earlyLock').checked);assert(!$('randomCubies').checked);assert.equal($('rebuildMode').value,'2');assert(!$('fragmentPerk').checked);assert(!$('fragmentOptions').open);assert(context.renderers[0].perspective);
+assert(!$('queueForecast').checked);assert(!$('sliceGravity').checked);assert($('gravityOneStep').checked);assert.equal(context.engine.game_gravity_rules(),2);assert($('bandagedFragments').checked);assert($('earlyLock').checked);assert(!$('randomCubies').checked);assert.equal($('rebuildMode').value,'2');assert(!$('fragmentPerk').checked);assert(!$('fragmentOptions').open);assert.equal(context.renderers[0].perspective,$('perspectiveCamera').checked);
 $('fragmentPerk').checked=true;$('fragmentPerk').onchange();assert($('fragmentOptions').open);
 $('bandagedFragments').checked=true;$('bandagedFragments').onchange();
 $('randomCubies').checked=true;$('randomCubies').onchange();

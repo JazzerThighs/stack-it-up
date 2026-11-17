@@ -76,6 +76,18 @@ assert(doc.getElementById('ditherInline').hidden);
 assert(!links.some(b=>/Categories|Previous|Next/.test(b.textContent)));
 console.log('PASS: all explorer controls retained, recursive navigation, single visible page and mode/style dependencies.');
 
+const search=doc.querySelector('.settings-search').querySelector('input');
+search.value='familyExportSize';search.listeners.input[0]();
+assert(!doc.getElementById('familyExportSize').closest('.explorer-settings-page').hidden);
+assert.equal(pages.filter(p=>!p.hidden).length,1);
+search.value='no-such-setting-xyz';search.listeners.input[0]();
+assert.equal(pages.filter(p=>!p.hidden).length,0);
+assert.equal(doc.querySelector('.settings-search').querySelector('span').textContent,'No matching settings');
+const exportCategory=doc.querySelector('.settings-sidebar').children.find(b=>b.textContent==='Export 3D model');
+exportCategory.onclick();assert.equal(search.value,'');assert.equal(exportCategory.getAttribute('aria-current'),'true');
+assert(!doc.getElementById('familyExportSize').closest('.explorer-settings-page').hidden);
+console.log('PASS: explorer search and direct category navigation retain export controls.');
+
 // Embed the same live explorer controls in the application's one settings modal.
 const {initializeSharedSettings,settingsScope,attachExplorerSettings}=await import('../web/ui/shared-settings.js');
 Element.prototype.after=function(node){this.parentElement.insertBefore(node,this.parentElement.children[this.parentElement.children.indexOf(this)+1]);};

@@ -56,6 +56,20 @@ export const displaySchema = {
     }
   ],
   "fields": {
+    "faceMapSize": {
+      "value": 104,
+      "min": 64,
+      "max": 200,
+      "step": 1,
+      "unit": "px",
+      "label": "Face map size",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "game": "faceMapSize",
+        "explorer": null
+      }
+    },
     "familyPieces": {
       "value": "whole",
       "label": "Family Explorer",

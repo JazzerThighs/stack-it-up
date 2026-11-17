@@ -2591,7 +2591,7 @@ main.explorer-active > .topbar { padding:0 14px; }
 
 /* settings-css:game:start */
 /* Paged Game settings: only the current route and fitting controls participate in layout. */
-.settings-paged { box-sizing:border-box; width:min(680px,calc(100vw - 16px)); height:min(780px,calc(100dvh - 16px)); max-height:calc(100dvh - 16px); padding:16px; overflow:hidden; }
+.settings-paged { box-sizing:border-box; width:min(1080px,calc(100vw - 24px)); height:min(820px,calc(100dvh - 24px)); max-height:calc(100dvh - 24px); padding:20px; overflow:hidden; }
 .settings-paged[open] { display:flex; flex-direction:column; gap:10px; }
 .settings-paged > * { flex-shrink:0; }
 .settings-paged .settings-title { position:static; padding:0; border:0; margin:0; }
@@ -2620,7 +2620,7 @@ main.explorer-active > .topbar { padding:0 14px; }
 .settings-paged .session-actions { margin:0; padding:0; display:flex; justify-content:flex-end; gap:8px; }
 .settings-paged li.settings-page-unit { display:flex; align-items:center; gap:8px; list-style:none; }
 .settings-paged li.settings-page-unit > span { flex:1; font-size:15px; }
-.settings-paged .face-grid { width:104px; height:104px; }
+.settings-paged .face-grid { width:var(--face-map-size,104px); height:var(--face-map-size,104px); }
 @media(max-height:450px) {
  .settings-paged { padding:8px; gap:5px; }
  .settings-paged h2 { font-size:17px; }
@@ -2653,7 +2653,16 @@ main.explorer-active > .topbar { padding:0 14px; }
 .shared-explorer-settings{flex:1 1 auto;min-height:0;overflow:hidden}
 #settingsDialog[data-settings-scope="explorer"] > .settings-page-toolbar,
 #settingsDialog[data-settings-scope="explorer"] > .settings-page-body,
+#settingsDialog[data-settings-scope="explorer"] > .settings-workbench,
+#settingsDialog[data-settings-scope="explorer"] > .settings-search,
 #settingsDialog[data-settings-scope="explorer"] > .settings-actions{display:none!important}
+
+.settings-paged > .settings-workbench{flex-shrink:1}
+.settings-paged .settings-page-unit{padding:12px 8px;margin:0;border-bottom:1px solid #839eaa22}
+.settings-paged .settings-page-unit:hover{background:#839eaa08}
+.settings-paged .style-selector-box{border:0;border-radius:0;padding:0;margin:0}
+.settings-paged .settings-page-link{border:0;border-radius:3px;background:#839eaa12}
+.settings-paged .settings-workbench .settings-page-body{min-width:0}
 /* settings-css:game:end */
 
 .status-strip { flex-wrap:wrap; }
@@ -2663,11 +2672,13 @@ main.explorer-active > .topbar { padding:0 14px; }
  .views.show-face-map .stack-viewport > .view-title,
  .views.show-face-map .stack-viewport > .empty-stack { display:none!important; }
  .views.show-face-map #stageFaceMapPanel { display:flex; position:absolute; inset:8px 16px; flex-direction:column; align-items:center; justify-content:safe center; overflow:auto; }
- #stageNet { width:min(100%,420px); margin:0; gap:12px; }
+ #net, #stageNet { width:100%; grid-template-columns:repeat(auto-fit,var(--face-map-size,104px)); justify-content:center; margin:0; gap:12px; }
+ #stageNet { flex-shrink:0; }
+ #stageNet .face-grid { width:var(--face-map-size,104px); height:var(--face-map-size,104px); }
  #stageNet .face-label { font-size:16px; }
  #stageFaceMapPanel h3 { margin:0 0 8px; }
  #stageFaceMapPanel p { font-size:12px; text-align:center; }
- .views.vertical.show-face-map #stageNet { width:min(100%,460px); grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; }
+ .views.vertical.show-face-map #stageNet { gap:8px; }
  .views.vertical.show-face-map #stageFaceMapPanel h3 { font-size:15px; }
 
 /* Touch orbit selection is available on phones and hybrid touch devices. */

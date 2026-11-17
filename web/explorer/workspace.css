@@ -264,6 +264,12 @@ button.primary { background:var(--accent);color:#142724; }
 .settings-content[data-paged] input[type=number] { min-height:44px; max-width:100%; padding:8px; font-size:16px; }
 .settings-content[data-paged] output { margin-left:auto; color:#9ce5cc; }
 .settings-content[data-paged] p { margin:0; line-height:1.5; font-size:14px; color:#b7cbc9; }
+.settings-content[data-paged]{width:min(1080px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)}
+.settings-content[data-paged] .explorer-settings-page{gap:0}
+.settings-content[data-paged] .explorer-settings-page > *{box-sizing:border-box;padding:12px 8px;margin:0;border:0;border-bottom:1px solid #839eaa22;border-radius:0}
+.settings-content[data-paged] .explorer-settings-page > :hover{background:#839eaa08}
+.settings-content[data-paged] .explorer-page-link{min-height:38px;padding:10px 8px;background:#839eaa12;font-size:14px;border-radius:3px}
+.settings-content[data-paged] .style-selector-box{background:transparent}
 @media(max-width:560px) {
  .settings .settings-content[data-paged] { height:calc(100dvh - 74px); }
  .settings-content[data-paged] .filter-flags { grid-template-columns:1fr; }

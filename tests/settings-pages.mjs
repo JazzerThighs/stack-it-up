@@ -84,3 +84,18 @@ openSettingsPage('forecastWitness');
 const sequence=visibleUnits().filter(e=>!e.classes.has('pager-source')).flatMap(e=>e.textContent.split(' '));
 assert.equal(sequence.length,200);assert.equal(sequence.at(-1),'Move199');
 console.log('PASS: complete layers and forecast sequences remain on a single scrollable route.');
+
+const search=main.querySelector('.settings-search').querySelector('input');
+search.value='poolPiece10';search.listeners.input[0]();
+assert(visibleUnits().some(e=>e.querySelector('#poolPiece10')===originalQueue));
+assert.equal(doc.getElementById('poolPiece10'),originalQueue);
+search.value='no-such-setting-xyz';search.listeners.input[0]();
+assert.equal(visibleUnits().length,0);
+assert.equal(main.querySelector('.settings-search').querySelector('span').textContent,'No matching settings');
+const category=main.querySelector('.settings-sidebar').children.find(b=>b.textContent==='Layer order');
+category.onclick();assert.equal(search.value,'');assert.equal(visibleUnits().length,17);
+assert.equal(category.getAttribute('aria-current'),'true');
+main.open=false;setup.open=true;doc.getElementById('setupRules').append(originalRules);
+openSettingsPage('gameplaySettings',true);
+assert(setup.querySelector('.settings-sidebar').children.find(b=>b.textContent==='Layer order').hidden);
+console.log('PASS: settings search, empty state, category selection and setup scope preserve live controls.');

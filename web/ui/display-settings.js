@@ -11,6 +11,7 @@ const themes={teal:['#111b20','#192b31','#a7e1cb','#edf6f2','#a5b9bb','#385158']
 export function initializeDisplayControls(root,onChange=()=>{}){
  const get=id=>{try{return root.getElementById(id);}catch{return null;}};
  const refresh=()=>{
+  for(const id of ['net','stageNet'])get(id)?.style?.setProperty?.('--face-map-size',displaySettings.faceMapSize+'px');
   for(const [id,spec]of Object.entries(displaySpecs)){const el=get(id);if(el){el.value=displaySettings[id];if(get(id+'Value'))get(id+'Value').textContent=displaySettings[id]+(spec.unit||'');}}
   const host=root.host||root.documentElement;
   if(host?.style?.setProperty){const colors=themes[displaySettings.uiTheme];for(const [i,key]of ['--bg','--panel','--accent','--ink','--muted','--border'].entries())host.style.setProperty(key,colors[i]);host.style.setProperty('--mint',colors[2]);host.style.setProperty('--line',colors[5]);host.setAttribute('data-ui-theme',displaySettings.uiTheme);}

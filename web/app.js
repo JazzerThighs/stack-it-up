@@ -106,12 +106,14 @@ const forecastReplay = createReplay({engine:()=>engine, refresh:()=>update(), is
 const queueForecast = createForecast({enabled:$("queueForecast"), status:$("forecastStatus"),
   onWitness:forecastReplay.setWitness, targets:[$("target"), ...queueShapes.map(q=>q.item)]});
 $("queueForecast").onchange = () => { if (engine) queueForecast.update(engine); };
-for(const [host,list] of [["net",faceCells],["stageNet",stageFaceCells]]) for (let f = 0; f < 6; f++) {
+const mapLabels=[...faceLabels,'M','E','S'];
+for(const [host,list] of [["net",faceCells],["stageNet",stageFaceCells]]) for (let f = 0; f < mapLabels.length; f++) {
   const el = document.createElement("div"),
     label = document.createElement("span"),
     grid = document.createElement("div");
   label.className = "face-label";
-  label.textContent = faceLabels[f];
+  label.textContent = mapLabels[f];
+  if(f>=6)label.title=['Middle slice viewed from L','Equatorial slice viewed from D','Standing slice viewed from F'][f-6];
   grid.className = "face-grid";
   const cells = Array.from({ length: 9 }, () => {
     const c = document.createElement("i");

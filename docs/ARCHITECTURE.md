@@ -14,6 +14,8 @@ The root `cube-stack` crate is the compatibility facade. `src/abi.rs` exports co
 
 ## Browser application
 
+Settings use shared editor-style navigation in `web/ui/settings-browser.js`: a search field, persistent category list, active-category indication and result breadcrumbs. Game and explorer page owners supply their existing category trees and retain the actual control nodes, listeners and fieldset dependencies. Search is local to the selected scope; the new-game dialog restricts its categories and search to rules. Responsive navigation and row styles live in the shared settings components and the generated settings stylesheet sources. Schemas remain the source for generated controls; adding a category in a page owner automatically adds its navigation entry.
+
 | Location | Current responsibility |
 | --- | --- |
 | `web/app.js` | Application wiring, HUD, spawn animation and view switching; still needs decomposition |

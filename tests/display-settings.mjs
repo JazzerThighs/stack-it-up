@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {startupDefaults} from '../web/ui/startup-defaults.js';
 import {displaySchema as schema} from '../web/ui/display-schema.js';
 import {createSettingsStore} from '../web/ui/settings-store.js';
 const data=new Map(),storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};
@@ -13,8 +14,8 @@ assert(store.set('stackPieces','retained'));assert.deepEqual(notices,['familySiz
 const saved=JSON.parse(data.get(schema.storageKey));assert.equal(saved.version,1);assert(!Object.hasOwn(saved.values,'gamePieces'));assert.equal(createSettingsStore(schema,storage).values.familySize,87.5);off();
 store=load({gameCombinedSize:140,gameActiveSize:90,gamePieces:'solids',stackPieces:'cubies'});assert.equal(store.values.gameActiveSize,90);assert.equal(store.values.stackPieces,'cubies');
 for(const empty of ['',null,0])assert.equal(load({gamePieces:'solids',stackPieces:empty}).values.stackPieces,'solids');
-store=load({version:1,values:{gameCombinedSize:140,gameActiveSize:100,gamePieces:'solids'}});assert.equal(store.values.gameActiveSize,100);assert.equal(store.values.stackPieces,schema.fields.stackPieces.value,'Aliases apply only to legacy format');
-store=load({familySize:400,uiTheme:'missing',stackPieces:'invalid'});assert.equal(store.values.familySize,100);assert.equal(store.values.uiTheme,'teal');assert.equal(store.values.stackPieces,'whole');
+store=load({version:1,values:{gameCombinedSize:140,gameActiveSize:100,gamePieces:'solids'}});assert.equal(store.values.gameActiveSize,100);assert.equal(store.values.stackPieces,startupDefaults.display.stackPieces,'Aliases apply only to legacy format');
+store=load({familySize:400,uiTheme:'missing',stackPieces:'invalid'});assert.equal(store.values.familySize,100);assert.equal(store.values.uiTheme,'teal');assert.equal(store.values.stackPieces,startupDefaults.display.stackPieces);
 store=load({version:99,values:{uiTheme:'amber'}});const future=data.get(schema.storageKey);store.set('uiTheme','violet');assert.equal(data.get(schema.storageKey),future);
 data.delete(schema.storageKey);globalThis.localStorage=storage;
 const {displaySettings,initializeDisplayControls}=await import('../web/ui/display-settings.js');
@@ -26,3 +27,12 @@ el('uiTheme').value='violet';el('uiTheme').listeners.change();assert.equal(style
 const hydrated=createSettingsStore(schema,storage);assert.equal(hydrated.values.familyPieces,'solids');assert.equal(hydrated.values.familySize,125);
 const count=changes.length;dispose();el('uiTheme').value='teal';el('uiTheme').listeners.change();assert.equal(changes.length,count);
 console.log('PASS: display aliases/precedence, versioned reload, validation, fractional sizes, key notifications, generated control binding and themes.');
+
+const mapStyles=new Map();
+for(const id of ['net','stageNet'])el(id).style={setProperty:(key,value)=>mapStyles.set(id+key,value)};
+const stop=initializeDisplayControls(root);
+el('faceMapSize').value='160';el('faceMapSize').listeners.input();
+assert.equal(el('faceMapSizeValue').textContent,'160px');
+for(const id of ['net','stageNet'])assert.equal(mapStyles.get(id+'--face-map-size'),'160px');
+assert.equal(createSettingsStore(schema,storage).values.faceMapSize,160);stop();
+console.log('PASS: face-map slider sizes both map collections and persists across reloads.');

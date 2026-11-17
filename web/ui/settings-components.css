@@ -13,3 +13,25 @@
 .camera-range input[type="range"]{width:100%;min-width:0}
 .camera-setting-disabled{opacity:.5}
 #orbitDiagnostics{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Editor-style settings chrome shared by both DOM scopes. */
+.settings-search{display:flex;align-items:center;gap:12px;flex-shrink:0;min-width:0}
+.settings-search input{box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:8px 12px;border:1px solid var(--line,var(--border,#425762));border-radius:5px;background:var(--panel,#18262d);color:inherit;font:inherit}
+.settings-search span{font-size:12px;flex-shrink:0}
+.settings-search span:empty{display:none}
+.settings-workbench{display:grid;grid-template-columns:210px minmax(0,1fr);gap:20px;flex:1 1 auto;min-height:0;overflow:hidden}
+.settings-sidebar{overflow:auto;min-height:0;padding-right:10px;border-right:1px solid var(--line,var(--border,#425762));overscroll-behavior:contain}
+.settings-sidebar button{display:block;width:100%;min-height:34px!important;margin:0;padding:7px 10px!important;text-align:left;font-size:13px!important;line-height:1.3;border:0;border-radius:3px;background:transparent;color:inherit}
+.settings-sidebar button[data-nested="true"]{padding-left:24px!important;font-size:12px!important}
+.settings-sidebar button:hover{background:#839eaa22}
+.settings-sidebar button[aria-current="true"]{background:#8ed3bc25;box-shadow:inset 3px 0 #9ce5cc;color:inherit}
+.settings-sidebar button:focus-visible,.settings-search input:focus-visible{outline:2px solid #9ce5cc;outline-offset:-2px}
+.settings-search-hidden{display:none!important}
+.settings-search-result:before{content:attr(data-settings-path);display:block;font-size:12px;font-weight:600;color:var(--mint,#9ce5cc);margin-bottom:8px}
+@media(max-width:680px){
+ .settings-workbench{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:10px}
+ .settings-sidebar{display:flex;overflow-x:auto;max-height:100px;border-right:0;border-bottom:1px solid #425762;padding:0 0 6px;gap:4px}
+ .settings-sidebar button{width:auto;flex-shrink:0;max-width:180px}
+ .settings-sidebar button[data-nested="true"]{padding-left:10px!important}
+ .settings-search{flex-wrap:wrap;gap:4px}
+}

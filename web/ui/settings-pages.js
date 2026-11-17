@@ -1,3 +1,4 @@
+import {createSettingsBrowser,matchesSettings} from './settings-browser.js';
 // Keep the real controls in their fieldsets: disabled inheritance, IDs and handlers
 // survive navigation and the shared rules section moving into the new-game dialog.
 let pages;
@@ -10,7 +11,7 @@ export function initializeSettingsPages() {
   if (!document.querySelectorAll('.settings-section').length) return;
   const roots=[...document.querySelectorAll('.settings-section')];
   const nodes=new Map();let next=0, current=null, setup=false, scheduled=false;
-  const containers=new Set();
+  const containers=new Set();let query='';
   const labelOf=element=>{
     const heading=[...element.children].find(c=>c.matches('legend,summary'));
     return heading?.childNodes[0]?.textContent.trim() || element.dataset.pageTitle ||
@@ -75,11 +76,15 @@ export function initializeSettingsPages() {
       dialog.insertBefore(toolbar,dialog.querySelector('.session-actions'));
       dialog.insertBefore(body,dialog.querySelector('.session-actions'));
     }
-    shells.set(id,{dialog,body,back,title});
+    const browser=createSettingsBrowser({nodes:[...nodes.values()],label:n=>n.title,parent:n=>n.parent,
+      select:n=>navigate(n),search:value=>{query=value;render();},scope:id==='setupDialog'?'game rules':'game & shared'});
+    const layout=document.createElement('div');layout.className='settings-workbench';
+    body.before(layout);layout.append(browser.nav,body);layout.before(browser.toolbar);
+    shells.set(id,{dialog,body,back,title,browser});
     dialog.addEventListener('input',schedule);dialog.addEventListener('change',schedule);
     new ResizeObserver(schedule).observe(body);
   }
-  function navigate(node) {current=node;render(true);}
+  function navigate(node) {current=node;query='';for(const shell of shells.values())shell.browser.input.value='';render(true);}
   function entries(node) {
     if(node?.dynamic)return [...node.element.children].map(element=>{element.classList.add('settings-page-unit');element.dataset.pageUnit='';return {element};});
     return node?.items.filter(item=>visible(item.sub?.element||item.element) && (item.sub || [...item.element.children].some(visible))).flatMap(item=>{
@@ -105,8 +110,26 @@ export function initializeSettingsPages() {
     for(const el of document.querySelectorAll('[data-page-unit]'))el.classList.add('pager-hidden');
     const nav=document.querySelector('.pager-home');nav.hidden=!!current||setup;
     const actions=document.querySelector('#settingsDialog .settings-actions');actions.hidden=!!current;
-    shell.title.textContent=current?.title||'Settings';shell.back.disabled=!current||setup&&current.id==='gameplaySettings';
+    shell.title.textContent=current?shell.browser.path(current):'Settings';shell.back.disabled=!current||setup&&current.id==='gameplaySettings';
     shell.back.hidden=shell.back.disabled;
+    const available=node=>visible(node.element)&&(!setup||node.id==='gameplaySettings'||isRule(node));
+    function isRule(node){for(let p=node.parent;p;p=p.parent)if(p.id==='gameplaySettings')return true;return false;}
+    shell.browser.update(current,null,available);
+    if(query) {
+      nav.hidden=true;actions.hidden=true;shell.back.hidden=true;shell.title.textContent='Search results';
+      let count=0;
+      for(const node of nodes.values()) {
+        if(!available(node))continue;
+        for(const item of entries(node)) {
+          if(item.sub||!matchesSettings(item.element,shell.browser.path(node),query))continue;
+          item.element.dataset.settingsPath=shell.browser.path(node);item.element.classList.add('settings-search-result');
+          item.element.classList.remove('pager-hidden');count++;
+          for(let p=item.element.parentElement;p&&p!==shell.dialog;p=p.parentElement)if(containers.has(p))p.classList.add('pager-route');
+        }
+      }
+      shell.browser.update(null,count,available);return;
+    }
+    for(const el of document.querySelectorAll('.settings-search-result'))el.classList.remove('settings-search-result');
     if(!current) {shell.body.scrollTop=0;return;}
     let items=entries(current);
     for(const item of items)item.element.classList.add("pager-hidden");

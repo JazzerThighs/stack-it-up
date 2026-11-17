@@ -1,0 +1,16 @@
+[package]
+name = "packing-clues"
+version = "0.1.0"
+edition = "2024"
+
+# An independent native tool: Rayon must not enter the browser/Wasm build.
+[workspace]
+
+[dependencies]
+rayon = "1.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+
