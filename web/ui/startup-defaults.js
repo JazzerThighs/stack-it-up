@@ -50,6 +50,14 @@ export function createStartupDefaults() {
     // Game Boy: the image uses white; #306230 is a chosen monochrome LCD green.
     // NES intentionally omitted.
 
+    // Original Tetris (reference I: #FF292A)
+    // "palette": {
+    //   "O": "#1C49F5", "T": "#FF8722",
+    //   "L": "#DE0DEC", "J": "#909090",
+    //   "S": "#57FF34", "Z": "#00FFF2",
+    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
+    // },
+
     // SEGA Tetris (reference I: #ff242c)
     // "palette": {
     //   "O": "#fff020", "T": "#26eeee",
