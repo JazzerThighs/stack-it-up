@@ -57,18 +57,24 @@ async function evaluate(expression){const r=await call('Runtime.evaluate',{expre
 async function checkPaletteNavigation(rootExpression){
  assert(await evaluate(`(()=>{
    const root=${rootExpression};
+   const require=(condition,message)=>{if(!condition)throw Error('Palette navigation: '+message);};
+   require(root,'settings root is missing');
    const category=name=>[...root.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent===name);
    const parent=category('Cube Appearances');
-   if(!parent || !parent.checkVisibility() || category('Active (Game)').checkVisibility())return false;
+   require(parent?.checkVisibility(),'Cube Appearances category is not visible');
+   require(category('Active (Game)') && !category('Active (Game)').checkVisibility(),'view categories must be collapsed before opening Cube Appearances');
    parent.click();
    for(const [id,title] of [['active','Active (Game)'],['stack','Stack (Game)'],['family','Family Explorer'],['start','Start Cube (2 Packing)'],['target','Target Cube (2 Packing)']]){
-     const button=category(title);if(!button.checkVisibility())return false;button.click();
+     const button=category(title);require(button?.checkVisibility(),title+' category is not visible');button.click();
      const select=root.querySelector('#viewAppearance'+id+'-palettePreset');
-     if(!select?.checkVisibility() || ![...select.options].some(o=>o.value==='standard'))return false;
+     require(select?.checkVisibility(),title+' palette selector is not visible');
+     require([...select.options].some(o=>o.value==='standard'),title+' lacks the Standard Tetris option');
    }
    const select=root.querySelector('#viewAppearancetarget-palettePreset');
    select.value='sega-tetris';select.dispatchEvent(new Event('change',{bubbles:true}));
-   return select.value==='sega-tetris' && JSON.parse(localStorage.getItem('stack-it-up.view-appearance')).views.target.palette[2]==='#26eeee';
+   require(select.value==='sega-tetris','selected preset was not retained');
+   require(JSON.parse(localStorage.getItem('stack-it-up.view-appearance')).views.target.palette[2]==='#26eeee','target preset was not saved');
+   return true;
  })()`));
  console.log('PASS: Cube Appearances navigation, visible palette selectors for all five views and saved preset selection');
 }
@@ -81,7 +87,7 @@ try{
  await waitFor(()=>evaluate("document.querySelector('#control')?.width>0 && document.querySelector('#engineStatus')?.textContent==='Ready'"),'game startup');
  await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open"));
- await checkPaletteNavigation("document");
+ await checkPaletteNavigation("document.querySelector('#settingsDialog')");
  await evaluate("document.querySelector('#settingsClose').click()");
  await evaluate("window.__canvas=document.querySelector('#control');window.__lost=0;window.__restored=0;__canvas.addEventListener('webglcontextlost',()=>__lost++);__canvas.addEventListener('webglcontextrestored',()=>__restored++);window.__ext=__canvas.getContext('webgl2').getExtension('WEBGL_lose_context');if(!__ext)throw Error('No context-loss extension');__ext.loseContext()");
  await waitFor(()=>evaluate('window.__lost===1'),'context lost');await evaluate('__ext.restoreContext()');
