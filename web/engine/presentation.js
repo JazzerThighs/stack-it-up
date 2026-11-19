@@ -15,13 +15,13 @@ export function trackPresentation(transport,{trackSolids=true}={}) {
   let shapeEvents=[];
   api.snapshot=()=>{
     const result=transport.snapshot();
-    if(shapes)result.stackShapes=shapes.stack;
+    if(shapes){result.stackShapes=shapes.stack;result.floatingShapes=shapes.floating;}
     Object.defineProperty(result,'solidRotations',{value:orientations.slice(),configurable:true});
     return result;
   };
   api.events=()=>{
     const events=transport.events();
-    events.forEach((event,i)=>{if(shapeEvents[i])event.stackShapes=shapeEvents[i].stack;});
+    events.forEach((event,i)=>{if(shapeEvents[i]){event.stackShapes=shapeEvents[i].stack;event.floatingShapes=shapeEvents[i].floating;}});
     return events;
   };
   if(!trackSolids)return api;

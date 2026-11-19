@@ -99,3 +99,22 @@ main.open=false;setup.open=true;doc.getElementById('setupRules').append(original
 openSettingsPage('gameplaySettings',true);
 assert(setup.querySelector('.settings-sidebar').children.find(b=>b.textContent==='Layer order').hidden);
 console.log('PASS: settings search, empty state, category selection and setup scope preserve live controls.');
+
+setup.open=false;main.open=true;doc.getElementById('gameplayHome').append(originalRules);
+openSettingsPage();
+const appearanceCategory=main.querySelector('.settings-sidebar').children.find(b=>b.textContent==='Cube Appearances');
+const activeCategory=main.querySelector('.settings-sidebar').children.find(b=>b.textContent==='Active (Game)');
+assert(!appearanceCategory.hidden);assert(activeCategory.hidden);
+appearanceCategory.onclick();assert(!activeCategory.hidden);
+for(const view of ['active','stack','family','start','target']){
+ openSettingsPage('viewAppearance'+view);
+ const preset=doc.getElementById('viewAppearance'+view+'-palettePreset');
+ assert(visibleUnits().some(e=>e.querySelector('#'+preset.id)===preset),'Palette selector is on the view page');
+ assert(preset.children.some(option=>option.value==='standard'));
+ for(const category of ['whole','fragments','extras']){
+  const control=doc.getElementById('viewAppearance'+view+'-'+category);
+  assert(visibleUnits().some(e=>e.querySelector('#'+control.id)===control));
+  assert.deepEqual(control.children.map(c=>c.value),['whole','cubies','solids']);
+ }
+}
+console.log('PASS: all five appearance pages expose three independent composition selectors.');

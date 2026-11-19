@@ -81,7 +81,10 @@
     "node tests/gameboy-style.mjs",
     "node tests/gameboy-lighting.mjs",
     "node tests/lighting-classes.mjs",
-    "node tests/forecast.mjs"
+    "node tests/forecast.mjs",
+    "node tests/view-appearance.mjs",
+    "node tests/composition-categories.mjs",
+    "node tests/view-effects.mjs"
   ],
   "core": [
     "node tools/generate-game-contract.mjs --check",
@@ -136,7 +139,9 @@
     "node tests/gameboy-style.mjs",
     "node tests/gameboy-lighting.mjs",
     "node tests/retained-pieces.mjs",
-    "node tests/render-performance.mjs"
+    "node tests/render-performance.mjs",
+    "node tests/composition-categories.mjs",
+    "node tests/view-effects.mjs"
   ],
   "browser": [
     "node tests/real-browser.mjs"
@@ -154,7 +159,8 @@
     "node tests/settings-availability.mjs",
     "node tests/settings-pages.mjs",
     "node tests/explorer-settings-pages.mjs",
-    "node tests/appearance.mjs"
+    "node tests/appearance.mjs",
+    "node tests/view-appearance.mjs"
   ],
   "input": [
     "node tests/input-preferences.mjs",
@@ -168,6 +174,7 @@
     "node tests/model-export.mjs",
     "node tests/slice-mesh.mjs",
     "node tests/geometry-worker.mjs",
-    "node tests/explorer-worker-smoke.mjs"
+    "node tests/explorer-worker-smoke.mjs",
+    "node tests/composition-categories.mjs"
   ]
 }

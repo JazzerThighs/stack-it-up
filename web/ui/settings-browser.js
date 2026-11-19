@@ -17,7 +17,14 @@ export function createSettingsBrowser({nodes, label, parent, select, search, sco
   input.addEventListener('keydown',event=>{if(event.key==='Escape'&&input.value){event.preventDefault();event.stopPropagation();input.value='';search('');}});
   return {toolbar,nav,input,path,update(current,count=null,available=()=>true){
     status.textContent=count===null?'':count?`${count} matching groups`:'No matching settings';
-    for(const [node,button]of buttons){button.hidden=!available(node);button.setAttribute('aria-current',String(node===current));}
+    for(const [node,button]of buttons){
+      let collapsed=false;
+      for(let ancestor=parent(node);ancestor;ancestor=parent(ancestor))if(ancestor.collapsedChildren){
+        let inside=false;for(let selected=current;selected;selected=parent(selected))if(selected===ancestor)inside=true;
+        if(!inside)collapsed=true;
+      }
+      button.hidden=!available(node)||collapsed;button.setAttribute('aria-current',String(node===current));
+    }
   }};
 }
 

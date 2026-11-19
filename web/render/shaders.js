@@ -15,7 +15,8 @@ in vec3 viewPosition;in vec3 n;in vec3 rgb;uniform bool gameboyLighting;uniform 
 uniform vec3 lightDirection;
 uniform float transparencyGrain, transparencyResponse;
 uniform float lightIntensity, lightAmbient, ditherLevels, ditherSize, ditherContrast, ditherMidpoint;
-out vec4 outColor;
+uniform int viewOwner;uniform bool mixedEffects;
+layout(location=0) out vec4 outColor;layout(location=1) out vec4 ownerColor;
 float bayer(vec2 point) {
   ivec2 p=ivec2(mod(floor(point),4.));
   const float matrix[16]=float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.);
@@ -40,12 +41,13 @@ vec3 shaded=gameboyLighting?rgb*illumination:rgb*illumination+shine;
 if(appearance==1) {
   float coverage=clamp((illumination-ditherMidpoint)*ditherContrast+.5,0.,1.);
   coverage=floor(coverage*(ditherLevels-1.)+.5)/(ditherLevels-1.);
-  shaded=rgb*step(bayer(gl_FragCoord.xy),coverage);
+  shaded=rgb*step(bayer(gl_FragCoord.xy/(mixedEffects?max(1.,ditherSize*pixelRatio):1.)),coverage);
 }
 if(appearance==2) shaded=rgb*(lightAmbient+(1.-lightAmbient)*(.25+.75*light));
 if(appearance==3) shaded=rgb*(illumination<.4?.3:illumination<.7?.65:1.);
 if(appearance==5) shaded=rgb*illumination;
 if(appearance==4) shaded=clamp(rgb*(lightAmbient+.20+1.70*light),0.,1.);
-outColor=vec4(unlit?rgb:shaded,screenDoor?1.:opacity);}`;
+outColor=vec4(unlit?rgb:shaded,screenDoor?1.:opacity);
+ownerColor=vec4(viewOwner==1?1.:0.,viewOwner==2?1.:0.,0.,outColor.a);}`;
 
 export { VS, FS };

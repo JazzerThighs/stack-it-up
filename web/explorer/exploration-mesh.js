@@ -1,7 +1,8 @@
 import {cubieScale} from '../render/cubie-size.js';
 import {bracketCell} from '../render/text-mesh.js';
 import {assemblyKind} from '../render/assembly.js';
-import {joinMeshes} from '../render/cell-fragments.js';
+import {joinMeshes,mergeFragments,exposedFragment,neighborCell} from '../render/cell-fragments.js';
+import {retainedPieceFragments} from './retained-pieces.js';
 import {gameboyCell} from '../render/gameboy-mesh.js';
 import {tagCoverage} from '../render/transparency.js';
 import {identitySolid,identityGray,solidColor} from '../render/identity-solids.js';
@@ -13,22 +14,24 @@ import {compositeParts,jellyCell} from '../render/piece-mesh.js';
 import {balloon,box,xyz,rgb,rotateCell} from '../render/geometry.js';
 import {clipMesh} from '../render/slice-mesh.js';
 
-export function explorationMeshes(cells,generate,appearance,solidIdentities=false,gray=true,fixedColors=false,individual=false,filters={},allSolids=false,assembly=null,exportParts=null) {
+export function explorationMeshes(cells,generate,appearance,solidIdentities=false,gray=true,fixedColors=false,individual=false,filters={},allSolids=false,assembly=null,exportParts=null,source=null) {
   const detected=new Map(detectPieces(cells,filters).filter(p=>p.letter).map(p=>[p.id,p.letter]));
   const kind=cell=>assembly?assemblyKind(assembly,detected.has(cell.piece),cell.piece<0):cell.piece<0?'cubies':allSolids?'solids':detected.has(cell.piece)?individual?'cubies':'whole':solidIdentities?'solids':'cubies';
+  const retain=source&&typeof assembly==='object'&&assembly.fragments==='whole';
+  const retainedCells=new Set(retain?cells.flatMap((cell,i)=>cell&&cell.piece>=0&&!detected.has(cell.piece)?[i]:[]):[]);
   const groups=new Map();
   cells.forEach((cell,i)=>{
-    if(!cell)return;
+    if(!cell||retainedCells.has(i))return;
     const id=kind(cell)==='whole'?cell.piece:i+100;
     if(!groups.has(id))groups.set(id,[]);
     groups.get(id).push(i);
   });
-  return [...groups.values()].map(indices=>{
+  const meshes=[...groups.values()].map(indices=>{
     const finish=mesh=>{exportParts?.push({data:mesh,piece:cells[indices[0]].piece,cells:indices.slice()});return mesh;};
     if(indices.length===4) {
       const board=Array(27).fill(0),ids=Array(27).fill(1);
       indices.forEach(i=>board[i]=fixedColors?cells[i].color:detectedColor(detected.get(cells[i].piece),cells[i].color));
-      const parts=compositeParts(board,ids,PALETTE,generate,appearance,false,0,individual);
+      const parts=compositeParts(board,ids,PALETTE,generate,appearance,false,0,assembly?false:individual);
       // Keep immutable cached geometry identity: fragment caches are keyed by it.
       // A one-piece join used to copy every vertex and force the same cuts again.
       return finish(parts.length===1?parts[0]:joinMeshes(parts));
@@ -45,6 +48,19 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
     if(kind(cells[indices[0]])==='solids')Object.defineProperty(mesh,"identityCell",{value:indices[0]});
     return finish(mesh);
   });
+  if(retainedCells.size){
+    const original=retainedPieceFragments(source,cells);
+    const fragments=mergeFragments(meshes.filter(m=>m.identityCell===undefined));
+    for(const i of retainedCells)fragments[i]=original.fragments[i];
+    const joined=(i,axis,side)=>{
+      const next=neighborCell(i,axis,side);
+      return retainedCells.has(i)?retainedCells.has(next)&&original.joined(i,axis,side):
+        !retainedCells.has(next)&&next>=0&&cells[i]?.piece>=0&&cells[i]?.piece===cells[next]?.piece&&kind(cells[i])==='whole';
+    };
+    for(const i of retainedCells){const data=exposedFragment(fragments[i],i,(a,s)=>!joined(i,a,s));meshes.push(data);exportParts?.push({data,piece:cells[i].piece,cells:[i]});}
+    meshes.retained={fragments,joined};
+  }
+  return meshes;
 }
 export function sliceForTurn(meshes,move) {
   const [,axis,layer,side]=CubeStack.moves[move%15];

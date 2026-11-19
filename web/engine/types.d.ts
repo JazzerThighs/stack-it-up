@@ -7,6 +7,7 @@ export interface MeshOptions {
   scale?: number;
 }
 export interface SnapshotMetadata {
+  floatingShapes?: (ShapeCell|null)[];
   stackShapes?: (ShapeCell|null)[];
   canUndo: boolean;
   groupRequirements: Uint32Array;
@@ -15,6 +16,7 @@ export interface SnapshotMetadata {
 }
 export type EngineSnapshot = Uint32Array & SnapshotMetadata;
 export interface EngineEvent {
+  floatingShapes?: (ShapeCell|null)[];
   stackShapes?: (ShapeCell|null)[];
   kind: number;
   mask: number;

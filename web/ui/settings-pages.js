@@ -1,4 +1,5 @@
 import {createSettingsBrowser,matchesSettings} from './settings-browser.js';
+import {appearanceViews,createViewAppearancePage} from './view-appearance.js';
 // Keep the real controls in their fieldsets: disabled inheritance, IDs and handlers
 // survive navigation and the shared rules section moving into the new-game dialog.
 let pages;
@@ -9,6 +10,20 @@ export function openSettingsPage(id=null, setup=false) {
 export function refreshSettingsPages() { pages?.refresh(); }
 export function initializeSettingsPages() {
   if (!document.querySelectorAll('.settings-section').length) return;
+  const dialog=document.getElementById('settingsDialog'),nav=dialog.querySelector('.settings-nav');
+  const appearances=document.createElement('fieldset');appearances.id='cubeAppearances';appearances.className='settings-section';
+  const legend=document.createElement('legend');legend.textContent='Cube Appearances';appearances.append(legend);
+  for(const [id]of appearanceViews){const page=createViewAppearancePage(id);page.classList.remove('settings-section');appearances.append(page);}
+  dialog.append(appearances);
+  const button=document.createElement('button');button.type='button';button.id='navcubeAppearances';button.textContent='Cube Appearances';nav.append(button);
+  // Retain IDs and bindings for legacy saved preferences, but author appearance
+  // exclusively on the five view pages.
+  for(const id of ['modelStyleBox','effectStyleBox','pieceAssemblySettings','cubeSizeSettings']){const el=document.getElementById(id);if(el)el.hidden=true;}
+  for(const [id,tag]of [['solidOptions','fieldset'],['lightAzimuth','details'],['pieceColorO','fieldset'],['activeTransparency','details']]){
+    let el=document.getElementById(id);if(id==='solidOptions')el=el?.parentElement;while(el&&!el.matches(tag))el=el.parentElement;if(el)el.hidden=true;
+  }
+  document.getElementById('appearanceSettings').querySelector('summary').textContent='Interface & motion';
+  document.getElementById('navappearanceSettings').textContent='Interface & motion';
   const roots=[...document.querySelectorAll('.settings-section')];
   const nodes=new Map();let next=0, current=null, setup=false, scheduled=false;
   const containers=new Set();let query='';
@@ -24,7 +39,7 @@ export function initializeSettingsPages() {
     children[0].before(wrapper);wrapper.append(...children);wrapper.dataset.pageUnit='';return wrapper;
   }
   function build(element,parent=null,title=labelOf(element)) {
-    const node={id:element.id||`settings-page-${++next}`,element,parent,title,items:[]};nodes.set(node.id,node);
+    const node={id:element.id||`settings-page-${++next}`,element,parent,title,items:[],collapsedChildren:element.id==='cubeAppearances'};nodes.set(node.id,node);
     containers.add(element);element.classList.add('pager-container');if(element.matches('details'))element.open=true;
     function walk(container) {
       containers.add(container);container.classList.add('pager-container');

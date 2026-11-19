@@ -13,7 +13,7 @@ export function rebuildSlots(state,previous=new Map()) {
   return slots;
 }
 export function activeCubie(out,p,h,color,cell,state,renderer) {
-  if((state[S.ACTIVE]&(1<<13)) && (state[S.ACTIVE]&(1<<cell)) && !(state[S.FLOATING]&(1<<cell))){
+  if(typeof displaySettings.activePieces==='string'&&(state[S.ACTIVE]&(1<<13)) && (state[S.ACTIVE]&(1<<cell)) && !(state[S.FLOATING]&(1<<cell))){
     cubieShape(true,false,true)(out,p,h*cubieScale(),color.map(c=>c*.6+.4));return;
   }
   if((renderer.activeKinds?.[cell]||displaySettings.activePieces)==='solids' && (state[S.FLOATING]&(1<<cell))) {

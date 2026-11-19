@@ -58,3 +58,7 @@ Explorer controls keep their existing listeners and scoped IDs inside the dialog
 opening them does not recreate the explorer, packings, turn history or caches.
 The independently opened explorer page uses its own single settings surface.
 New-game confirmation remains a separate action dialog and reuses the game-rule controls.
+
+## Cube appearance palettes
+
+Settings > Cube Appearances groups Active (Game), Stack (Game), Family Explorer, Start Cube (2 Packing), and Target Cube (2 Packing). Each page has a Color palette selector above the composition controls. Presets are authored in web/render/palette-presets.js; individual color edits show Custom. Selecting a preset affects only that view and is saved with its appearance profile. Standard Tetris is the startup palette; saved preferences still take precedence.

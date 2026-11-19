@@ -1,3 +1,4 @@
+import {getViewAppearance,hasViewAppearance,withViewAppearance,subscribeViewAppearance,appearanceViewFor} from '../ui/view-appearance.js';
 import {retainedStack} from './retained-stack.js';
 import {assemblyKind,assemblyUsesSolids} from './assembly.js';
 import {identifyMask} from '../explorer/family-exploration.js';
@@ -105,6 +106,15 @@ class Renderer {
     installCubeDrag(this, onOrbit, inputContext);
     this.requestDraw = () => (inputContext?.invalidate || (() => this.draw()))();
     registerRenderer(this);
+    this.stopViewAppearance=subscribeViewAppearance((id,field,activated)=>{
+      const own=appearanceViewFor(this.displayId);
+      if(own?own!==id:this.session||!['active','stack'].includes(id))return;
+      if(!activated&&field&&(/^(light|ascii|dither|transparency)/.test(field)||['effect','size','opacity'].includes(field))){this.requestDraw();return;}
+      this.stackEvent=null;this.explorationSignature=null;
+      if(this.sourceMesh)this.setMesh(this.sourceMesh);
+      if(this.cells||this.state)this.setState(this.cells||this.state,this.currentAnimation||this.animation);
+      this.requestDraw();
+    });
     canvas.addEventListener("webglcontextlost", e => {
       e.preventDefault();
       this.contextLost = true;
@@ -134,7 +144,7 @@ class Renderer {
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
       throw Error(gl.getProgramInfoLog(this.program));
     this.uniforms = Object.fromEntries(
-      ["transparencyGrain", "transparencyResponse", "gameboyLighting", "fixedShape", "ditherSeed", "modelRotation", "modelScale", "modelOffset", "screenDoor", "orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
+      ["viewOwner", "mixedEffects", "transparencyGrain", "transparencyResponse", "gameboyLighting", "fixedShape", "ditherSeed", "modelRotation", "modelScale", "modelOffset", "screenDoor", "orientation", "scale", "unlit", "opacity", "breath", "surfacePulse", "cameraDistance", "appearance", "pixelRatio", "lightDirection", "lightIntensity", "lightAmbient", "ditherLevels", "ditherSize", "ditherContrast", "ditherMidpoint"].map((n) => [
         n,
         gl.getUniformLocation(this.program, n),
       ]),
@@ -147,7 +157,7 @@ class Renderer {
       return false;
     }
     const buffers = [...this.buffers];
-    this.asciiPass?.destroy(); this.ditherPass?.destroy();
+    this.asciiPass?.destroy(); this.ditherPass?.destroy(); this.viewEffectsPass?.destroy();this.viewEffectsPass=null;
     this.asciiPass = this.ditherPass = null;
     gl.deleteProgram(this.program);
     this.initializeProgram();
@@ -196,14 +206,18 @@ class Renderer {
     target.count = data.length / 9;
   }
   setMesh(data) {
+    if(!this._appearanceScope)getViewAppearance('stack',this);
+    if(!this._appearanceScope&&hasViewAppearance('stack'))return withViewAppearance('stack',this,()=>{this._appearanceScope=true;try{return this.setMesh(data);}finally{this._appearanceScope=false;}});
     this.stackPackets=null;
     this.stackEvent=null;
     this.sourceMesh = data;
-    if(this.state && displaySettings.stackPieces==='retained'){this.upload(this.stackMesh,retainedStack(this.state,(m,o)=>context.engine.bandMesh(m,o),this.modelShape).mesh());return;}
+    if(this.state && (displaySettings.stackPieces==='retained'||typeof displaySettings.stackPieces==='object')){this.upload(this.stackMesh,retainedStack(this.state,(m,o)=>context.engine.bandMesh(m,o),this.modelShape,displaySettings.stackPieces).mesh());return;}
     const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true,0,displaySettings.stackPieces) : [data];
     this.upload(this.stackMesh,joinMeshes(parts));
   }
   setState(s, animation = null) {
+    if(!this._appearanceScope)getViewAppearance('active',this);
+    if(!this._appearanceScope&&hasViewAppearance('active'))return withViewAppearance('active',this,()=>{this._appearanceScope=true;try{return this.setState(s, animation);}finally{this._appearanceScope=false;}});
     this.gridKey = null;
     this.state = s;
     this.rebuildSolidIdentities=assemblyUsesSolids(displaySettings.activePieces);
@@ -233,17 +247,22 @@ class Renderer {
         groups.set(id,(groups.get(id)||0)|(1<<i));
       }
       for(const [id,mask] of groups) {
-        const kind=id==='current'&&(s[S.ACTIVE]&(1<<13))?'solids':assemblyKind(displaySettings.activePieces,!!identifyMask(mask),id.startsWith('extra:'));
+        const kind=typeof displaySettings.activePieces==='string'&&id==='current'&&(s[S.ACTIVE]&(1<<13))?'solids':assemblyKind(displaySettings.activePieces,!!identifyMask(mask),id.startsWith('extra:'));
         for(let i=0;i<27;i++)if(mask&(1<<i))this.activeKinds[i]=kind;
         if(kind!=='whole')continue;
         assembledMask|=mask;
         const board=Array.from({length:27},(_,i)=>mask&(1<<i)?((s[S.FLOATING]&(1<<i))?(s[S.REBUILD_COLORS+i]||1):activePieceColor(s[S.PIECE],s[S.ACTIVE],i)):0);
         const palette=colors.slice();if(!(mask&s[S.ACTIVE])&&!board.some((c,i)=>c&&s[S.REBUILD_COLORS+i]))palette[1]='#ffffff';
-        const parts=compositeParts(board,Array(27).fill(1),palette,(m,o)=>context.engine.bandMesh(m,o),this.modelShape);
+        let parts;
+        if(typeof displaySettings.activePieces==='object'&&!identifyMask(mask)&&s.floatingShapes&&id!=='current'){
+          const retainedState=new Uint32Array(54);retainedState.set(board);retainedState.fill(1,27);
+          retainedState.stackShapes=s.floatingShapes.map((p,i)=>mask&(1<<i)?p:null);
+          parts=[retainedStack(retainedState,this.cellGenerator,this.modelShape,'retained',palette).mesh()];
+        }else parts=compositeParts(board,Array(27).fill(1),palette,(m,o)=>context.engine.bandMesh(m,o),this.modelShape);
         let mesh;
         if(animation?.kind==='turn') {
           this.activeSliceCache??=new Map();
-          const key=[mask,this.modelShape,board.join(','),palette.join(','),jellyStyleKey(),animation.move].join(':');
+          const key=[mask,this.modelShape,board.join(','),palette.join(','),jellyStyleKey(),animation.move,displaySettings.activePieces?.fragments==='whole'?JSON.stringify(s.floatingShapes):''].join(':');
           if(!this.activeSliceCache.has(key)){if(this.activeSliceCache.size>=64)this.activeSliceCache.delete(this.activeSliceCache.keys().next().value);this.activeSliceCache.set(key,sliceForTurn(parts,animation.move));}
           mesh=animateSlices(this.activeSliceCache.get(key),animation.move,animation.t);
         } else mesh=joinMeshes(parts);
@@ -325,10 +344,11 @@ class Renderer {
     this.upload(this.previewLines, new Float32Array(preview));
   }
   prepareStackEvent(from,to,event) {
+    if(!this._appearanceScope&&hasViewAppearance('stack'))return withViewAppearance('stack',this,()=>{this._appearanceScope=true;try{return this.prepareStackEvent(from,to,event);}finally{this._appearanceScope=false;}});
     if(this.stackEvent===event)return;
     this.stackEvent=event;
     const source=event.kind===2?from:to;
-    const retained=displaySettings.stackPieces==='retained'?retainedStack(source,(m,o)=>context.engine.bandMesh(m,o),this.modelShape):null;
+    const retained=(displaySettings.stackPieces==='retained'||typeof displaySettings.stackPieces==='object')?retainedStack(source,(m,o)=>context.engine.bandMesh(m,o),this.modelShape,displaySettings.stackPieces):null;
     const parts=retained?[]:compositeParts(source.slice(0,27),source.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true,0,displaySettings.stackPieces);
     const fragments=retained?.fragments||mergeFragments(parts);
     this.stackCellBuffers ??= Array.from({length:81},()=>this.buffer());
@@ -364,6 +384,7 @@ class Renderer {
   }
 
   draw() {
+    for(const id of ['active','stack'])if(hasViewAppearance(id)){const config=getViewAppearance(id,this);this[id+'Opacity']=config.opacity/100;if(id==='active')this.centerOpacity=config.opacity/100;}
     if (this.contextLost || this.gl.isContextLost?.()) return;
     const gl = this.gl,
       rect = this.canvas.getBoundingClientRect(),
@@ -387,7 +408,8 @@ class Renderer {
     // Canvas bounds exclude the HUD and toolbar in both viewing modes.
     const margin = document.getElementById("showArrows").checked ? 6.4 : 5.8;
     const verticalPadding = 24;
-    const zoom=displaySettings[this.isStack?'gameStackSize':'gameActiveSize']/100;
+    const viewId=this.isStack?'stack':'active';
+    const zoom=(hasViewAppearance(viewId)?getViewAppearance(viewId,this).size:displaySettings[this.isStack?'gameStackSize':'gameActiveSize'])/100;
     const unit = (this.unit = zoom*Math.max(
       8,
       Math.min((rect.width - 24) / margin, (rect.height - verticalPadding) / margin),

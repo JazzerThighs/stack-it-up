@@ -8,6 +8,12 @@
  */
 export function createStartupDefaults() {
   return {
+    // Independent view overrides. Empty entries inherit the shared defaults below.
+    // Keys: active, stack, family, start, target. Each accepts appearance fields,
+    // palette (10 hex colors, including slot 0), size (50–160), opacity (0–100),
+    // modelShape (angular/jelly/gameboy/text), effect (jelly/dither/matte/cel/ascii).
+    // whole/fragments/extras each accept whole, cubies, or solids.
+    viewAppearance: {active: {}, stack: {}, family: {}, start: {}, target: {}},
     // Reorder these layer IDs; every listed ID must appear exactly once.
     // Used when game.customLayers is true; see ui/settings.js for layer labels.
     "layerOrder": [
@@ -29,122 +35,18 @@ export function createStartupDefaults() {
       "stack",
       "empty"
     ],
-    // Each piece accepts any six-digit RGB hex color: "#RRGGBB" (no alpha).
-    // Keys O, T, L, J, S, Z, B, D and F are the supported piece identities.
-    // "palette": {
-    //   "O": "#ffd35c",
-    //   "T": "#bd8cff",
-    //   "L": "#ffab5c",
-    //   "J": "#649aff",
-    //   "S": "#62d9ad",
-    //   "Z": "#ff718d",
-    //   "B": "#996633",
-    //   "D": "#505050",
-    //   "F": "#c8c8c8"
-    // },
-    // Historical palettes from the supplied comparison image (approximate RGB swatches).
-    // To swap: comment out the active palette above, then uncomment ONE block below.
-    // Rebuild the app; use Reset piece colors if saved colors override these defaults.
-    // Image columns: I, J, L, O, Z, S, T. I is recorded in each heading only:
-    // this app has no I palette entry. B/D/F retain the app's default colors.
-    // Game Boy: the image uses white; #306230 is a chosen monochrome LCD green.
-    // NES intentionally omitted.
-
-    // Original Tetris (reference I: #FF292A)
-    // "palette": {
-    //   "O": "#1C49F5", "T": "#FF8722",
-    //   "L": "#DE0DEC", "J": "#909090",
-    //   "S": "#57FF34", "Z": "#00FFF2",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // SEGA Tetris (reference I: #ff242c)
-    // "palette": {
-    //   "O": "#fff020", "T": "#26eeee",
-    //   "L": "#ff7f2a", "J": "#3333ff",
-    //   "S": "#3cf52a", "Z": "#be24f5",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // Atari (Tengen Arcade) (reference I: #ff242c)
+    // Standard Tetris. Edit these defaults freely; saved colors still take precedence.
     "palette": {
-      "O": "#3333ff", "T": "#3cf52a",
-      "L": "#be24f5", "J": "#fff020",
-      "S": "#ff7f2a", "Z": "#26eeee",
-      "B": "#996633", "D": "#505050", "F": "#c8c8c8"
+      "O": "#ffd35c",
+      "T": "#bd8cff",
+      "L": "#ffab5c",
+      "J": "#649aff",
+      "S": "#62d9ad",
+      "Z": "#ff718d",
+      "B": "#996633",
+      "D": "#505050",
+      "F": "#c8c8c8"
     },
-
-    // Game Boy (monochrome green adaptation) (reference I: #306230)
-    // "palette": {
-    //   "O": "#306230", "T": "#306230",
-    //   "L": "#306230", "J": "#306230",
-    //   "S": "#306230", "Z": "#306230",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // Super Tetris 2 + Bombliss (reference I: #e1e58a)
-    // "palette": {
-    //   "O": "#fff020", "T": "#be24f5",
-    //   "L": "#ff7f2a", "J": "#3333ff",
-    //   "S": "#df83a5", "Z": "#3cf52a",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // Super Tetris 3 (reference I: #3333ff)
-    // "palette": {
-    //   "O": "#be24f5", "T": "#fff020",
-    //   "L": "#3cf52a", "J": "#ff7f2a",
-    //   "S": "#ff242c", "Z": "#26eeee",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // V-Tetris (reference I: #ff242c)
-    // "palette": {
-    //   "O": "#ff242c", "T": "#ff242c",
-    //   "L": "#ff242c", "J": "#ff242c",
-    //   "S": "#ff242c", "Z": "#ff242c",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // Tetris X (reference I: #df83a5)
-    // "palette": {
-    //   "O": "#fff020", "T": "#be24f5",
-    //   "L": "#3333ff", "J": "#ff7f2a",
-    //   "S": "#3cf52a", "Z": "#df83a5",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // Tetris DX (reference I: #ff7f2a)
-    // "palette": {
-    //   "O": "#fff020", "T": "#3cf52a",
-    //   "L": "#ff242c", "J": "#3333ff",
-    //   "S": "#ff7f2a", "Z": "#be24f5",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // Tetris 4D (reference I: #ff242c)
-    // "palette": {
-    //   "O": "#3333ff", "T": "#fff020",
-    //   "L": "#df83a5", "J": "#999999",
-    //   "S": "#3cf52a", "Z": "#26eeee",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // The Next Tetris (reference I: #26eeee)
-    // "palette": {
-    //   "O": "#999999", "T": "#fff020",
-    //   "L": "#df83a5", "J": "#3333ff",
-    //   "S": "#ff242c", "Z": "#3cf52a",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
-
-    // The New Tetris (reference I: #26eeee)
-    // "palette": {
-    //   "O": "#999999", "T": "#fff020",
-    //   "L": "#df83a5", "J": "#be24f5",
-    //   "S": "#ff242c", "Z": "#3cf52a",
-    //   "B": "#996633", "D": "#505050", "F": "#c8c8c8"
-    // },
     "appearance": {
       "solidUniform": 1,
       // Any six-digit RGB hex color: "#RRGGBB" (no alpha), e.g. "#c8c8c8".

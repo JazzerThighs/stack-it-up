@@ -38,8 +38,10 @@ try {
   {shape:'jelly',assembly:'whole'},
   {shape:'angular',assembly:'retained'},
   {shape:'angular',assembly:'solids'},
+  {shape:'angular',assembly:{whole:'cubies',fragments:'whole',extras:'solids'}},
  ].entries()){
-  const request={key:'case'+i,cells,initial:cells,shape,assembly,settings,palette,solids:false,gray:false,fixedColors:true,individual:false,filters:{},move:9};
+  const current=cells.slice();if(typeof assembly==='object'){current[20]=current[3];current[3]=null;}
+  const request={key:'case'+i,cells:current,initial:cells,shape,assembly,settings,palette,solids:false,gray:false,fixedColors:true,individual:false,filters:{},move:9};
   options={bevel:settings.jellyBevel/100,opening:settings.jellyOpening/100,profile:settings.jellyProfile,elbows:settings.jellyElbows/100,scale:settings.cubieScale/100};
   const expected=packGeometry(prepare(request)).value;
   const result=await rpc.call('prepare',request);

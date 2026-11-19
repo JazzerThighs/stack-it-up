@@ -1,6 +1,7 @@
 import {refreshStyleTuning} from '../ui/style-tuning.js';
 import {assemblyUsesSolids} from '../render/assembly.js';
 import {createSettingsBrowser,matchesSettings} from '../ui/settings-browser.js';
+import {appearanceViews,createViewAppearancePage} from '../ui/view-appearance.js';
 // Explorer settings keep their original controls/listeners; only their layout moves.
 export function initializeExplorerSettings(root) {
   const content=root.querySelector?.('.settings-content');
@@ -23,6 +24,8 @@ export function initializeExplorerSettings(root) {
   const unpack=(page,node)=>{if(!node)return;for(const child of [...node.children])if(!child.matches('legend,summary'))add(page,child);};
   const help=(page,text)=>{const p=document.createElement('p');p.className='settings-help';p.textContent=text;add(page,p);};
   const home=page('Settings');
+  const appearances=page('Cube Appearances',home);appearances.collapsedChildren=true;
+  for(const [id,title]of appearanceViews)unpack(page(title,appearances),createViewAppearancePage(id));
   unpack(page('Export 3D model',home),find('.family-model-export'));
   const mode=page('Explorer mode',home);unpack(mode,find('.explorer-modes'));
   help(mode,'Turn both modes off to browse target and scrambled cubes.');
@@ -41,25 +44,14 @@ export function initializeExplorerSettings(root) {
   const views=page('Views',home);
   unpack(views,find('.window-controls'));
   $('targetComposite').closest('label').hidden=true;add(views,$('targetComposite').closest('label'));
-  unpack(page('Cube sizes',views),$('cubeSizeSettings'));
   help(views,'Visible-cube switches apply to standard browsing. Family and practice modes use their own views.');
-  const appearance=page('Appearance',home);add(appearance,$('modelStyleBox'),$('effectStyleBox'));
-  unpack(page('Piece assembly',appearance),$('pieceAssemblySettings'));
-  unpack(page('Interface theme',appearance),$('interfaceSettings'));
-  const colors=page('Colors',appearance);unpack(colors,find('.color-controls'));
-  help(colors,'Canonical Colors follows the detected shapes. Multicolor distinguishes physical pieces. Use Lock colors in the family explorer to keep the starting colors. Official-family filters remain available.');
-  const palette=page('Tetromino palette',colors);unpack(palette,find('.piece-colors'));
-  const solids=page('Balls & Platonic Solids',appearance);
-  const solidField=$('familySolidIdentities').closest('fieldset');unpack(solids,solidField);
+  unpack(page('Interface theme',home),$('interfaceSettings'));
+  const colors=page('Color assignment',home);unpack(colors,find('.color-controls'));
+  help(colors,"Canonical Colors follows detected shapes. Multicolor distinguishes physical pieces. Lock colors preserves starting assignments. Set each view's palette under Cube Appearances.");
+  const hiddenAppearance=document.createElement('div');hiddenAppearance.hidden=true;
+  for(const node of [$('cubeSizeSettings'),$('modelStyleBox'),$('effectStyleBox'),$('pieceAssemblySettings'),find('.piece-colors'),$('familySolidIdentities').closest('fieldset'),$('ditherTransparency').closest('details'),$('lightAzimuth').closest('details')])if(node)hiddenAppearance.append(node);
+  body.append(hiddenAppearance);
   const tuning={};
-  for(const [name,id]of [['Transparency','ditherTransparency'],['Lighting','lightAzimuth']]) {
-    const sub=page(name,appearance);unpack(sub,$(id).closest('details'));tuning[id]=sub;
-
-  }
-  const lightClasses=page('Lighting by element',tuning.lightAzimuth);
-  const classes=body.querySelector('#lightingClasses');
-  unpack(lightClasses,classes);classes.remove();
-
   let current=home,query='';
   const browser=createSettingsBrowser({nodes:pages.filter(p=>p!==home),label:n=>n.name,parent:n=>n.parent===home?null:n.parent,
     select:show,search:value=>{query=value;render();},scope:'explorer'});

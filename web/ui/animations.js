@@ -1,13 +1,15 @@
+import {moveFreedShapes} from '../engine/stack-shapes.js';
 import {turnTransform,composeRotation,movedCell} from '../render/transforms.js';
 import {CubeStack} from "../engine/coordinates.js";
 import { S } from "../engine/snapshot.js";
 const $ = (id) => document.getElementById(id);
 const names = ["", "O", "T", "L", "J", "S", "Z", "B", "D", "F", "J/L", "S/Z"];
-export const copyState=s=>{const copy=s.slice();if(s.stackShapes)copy.stackShapes=s.stackShapes;if(s.solidRotations)copy.solidRotations=s.solidRotations.slice();if(s.rebuildIds)copy.rebuildIds=s.rebuildIds.slice();return copy;};
+export const copyState=s=>{const copy=s.slice();if(s.stackShapes)copy.stackShapes=s.stackShapes;if(s.floatingShapes)copy.floatingShapes=s.floatingShapes;if(s.solidRotations)copy.solidRotations=s.solidRotations.slice();if(s.rebuildIds)copy.rebuildIds=s.rebuildIds.slice();return copy;};
 // Carry the visible active cells to the end of the player's completed turn.
 export function landedState(before, move) {
   const state=copyState(before);
   if (move == null) return state;
+  if(before.floatingShapes)state.floatingShapes=moveFreedShapes({stack:before.stackShapes||Array(27).fill(null),floating:before.floatingShapes},move).floating;
   const [,axis,layer,side]=CubeStack.moves[move%15], sign=(move>=15)===(side===0) ? -1 : 1;
   state[S.ACTIVE]=0; state[S.FLOATING]=0;
   state.rebuildIds?.fill(0);
@@ -66,6 +68,7 @@ export function createAnimations(context) {
       next.set(e.board, 0);
       next.set(e.ids, 27);
       if(e.stackShapes)next.stackShapes=e.stackShapes;
+      if(e.floatingShapes)next.floatingShapes=e.floatingShapes;
 
       if (e.kind === 5) {
         next.set(after.slice(S.BANDAGED), S.BANDAGED);

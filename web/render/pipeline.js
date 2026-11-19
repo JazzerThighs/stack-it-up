@@ -5,6 +5,8 @@ import {appearanceIndex} from "./appearance.js";
 import {DitherPass} from "./dither-pass.js";
 import {AsciiPass} from "./ascii-pass.js";
 import {visualSettings,lightDirection} from "./visual-settings.js";
+import {getViewAppearance,hasViewAppearance,withViewAppearance} from '../ui/view-appearance.js';
+import {ViewEffectsPass} from './view-effects-pass.js';
 export function lightingMode(packet,shape,settings=visualSettings) {
   const kind=packet.lightingClass || packet.target.lightingClass ||
     (['stack','packing'].includes(packet.id)?'Pieces':['active','centers','floating'].includes(packet.id)?'Cubies':'Other');
@@ -13,20 +15,33 @@ export function lightingMode(packet,shape,settings=visualSettings) {
 }
 const $ = (id) => document.getElementById(id);
 export function renderPackets(packets, context) {
+  const scopedGame=!this.session&&(hasViewAppearance('active')||hasViewAppearance('stack'));
+  const own=this.isStack?'stack':'active';
+  if(scopedGame&&!this.combined&&!this._packetAppearanceScope&&hasViewAppearance(own))return withViewAppearance(own,this,()=>{
+    this._packetAppearanceScope=true;try{return renderPackets.call(this,packets,context);}finally{this._packetAppearanceScope=false;}
+  });
   const { layerOrder } = context;
   const custom = context.customLayers ?? $("customLayers")?.checked;
   const gl = this.gl;
   packets=hoverIdentityPackets(this,packets);
-  packets=packets.map(p=>({...p,positionalLighting:lightingMode(p,this.modelShape)}));
+  const mixed=scopedGame&&this.combined;
+  const profiles=mixed?[getViewAppearance('stack',this),getViewAppearance('active',this)]:null;
+  packets=packets.map(p=>{
+    const owner=p.id==='stack'?1:['active','centers','floating'].includes(p.id)?2:0;
+    const profile=mixed&&owner?profiles[owner-1]:null;
+    return {...p,owner,profile,positionalLighting:lightingMode(p,profile?.modelShape||this.modelShape,profile||visualSettings)};
+  });
   const pixelRatio=Math.min(globalThis.devicePixelRatio || 1,2);
   const ascii=this.appearance === 'ascii';
   if(this.canvas?.dataset && this.canvas.dataset.appearance !== this.appearance)
     this.canvas.dataset.appearance=this.appearance || 'jelly';
   let screenPass=null;
-  if(ascii) screenPass=this.asciiPass ??= new AsciiPass(gl);
-  else if(this.appearance==='dither') screenPass=this.ditherPass ??= new DitherPass(gl);
+  if(mixed&&profiles.some(p=>['ascii','dither'].includes(p.effect))){screenPass=this.viewEffectsPass??=new ViewEffectsPass(gl);screenPass.profiles=profiles;}
+  else if(!mixed&&ascii) screenPass=this.asciiPass ??= new AsciiPass(gl);
+  else if(!mixed&&this.appearance==='dither') screenPass=this.ditherPass ??= new DitherPass(gl);
   if(screenPass) screenPass.begin(this.canvas.width,this.canvas.height);
   gl.useProgram(this.program);
+  gl.uniform1i(this.uniforms.mixedEffects,mixed?1:0);
   gl.uniform1i(this.uniforms.appearance,appearanceIndex(this.appearance));
   gl.uniform1f(this.uniforms.pixelRatio,pixelRatio);
   gl.uniform3fv(this.uniforms.lightDirection,lightDirection());
@@ -35,8 +50,13 @@ export function renderPackets(packets, context) {
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
   gl.disable(gl.STENCIL_TEST);
-  const stippled=p=>this.appearance==='dither' || !!visualSettings.ditherTransparency || p.id==='recent';
+  const stippled=p=>(p.profile?.effect||this.appearance)==='dither' || !!(p.profile||visualSettings).ditherTransparency || p.id==='recent';
   const draw = (p) => {
+    const settings=p.profile||visualSettings;
+    gl.uniform1i(this.uniforms.viewOwner,mixed?p.owner:0);
+    gl.uniform1i(this.uniforms.appearance,appearanceIndex(p.profile?.effect||this.appearance));
+    gl.uniform3fv(this.uniforms.lightDirection,lightDirection(settings));
+    for(const key of ['transparencyGrain','transparencyResponse','lightIntensity','lightAmbient','ditherLevels','ditherSize','ditherContrast','ditherMidpoint'])gl.uniform1f(this.uniforms[key],settings[key]);
     gl.uniform1i(this.uniforms.gameboyLighting,p.positionalLighting?1:0);
     gl.uniform1i(this.uniforms.fixedShape,p.fixedShape?1:0);
     gl.uniformMatrix3fv(this.uniforms.modelRotation,false,p.rotation || IDENTITY);
@@ -95,7 +115,7 @@ export function renderPackets(packets, context) {
         !run ||
         run.type !== p.type ||
         run.opacity !== p.opacity ||
-        run.unlit !== p.unlit || run.positionalLighting !== p.positionalLighting
+        run.unlit !== p.unlit || run.positionalLighting !== p.positionalLighting || run.profile !== p.profile || run.owner !== p.owner
       ) {
         flush();
         vertices = [];

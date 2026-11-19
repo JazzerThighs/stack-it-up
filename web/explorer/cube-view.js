@@ -1,3 +1,4 @@
+import {getViewAppearance,hasViewAppearance,withViewAppearance,appearanceViewFor} from '../ui/view-appearance.js';
 import {WorkerGeometry,partitionKey} from './worker-geometry.js';
 import {cubieScale} from '../render/cubie-size.js';
 import {bracketCell} from '../render/text-mesh.js';
@@ -163,6 +164,9 @@ export class PackingCube extends Renderer {
     this.changed();
   }
   setState(cells, animation = null) {
+    const viewId=appearanceViewFor(this.displayId);
+    if(viewId&&!this._appearanceScope)getViewAppearance(viewId,this);
+    if(viewId&&!this._appearanceScope&&hasViewAppearance(viewId))return withViewAppearance(viewId,this,config=>{this._appearanceScope=true;try{this.assembly={whole:config.whole,fragments:config.fragments,extras:config.extras};this.individualPieces=false;this.explorationGray=!!config.solidGray;this.explorationSolids=Object.values(this.assembly).includes('solids');this.opacity=config.opacity/100;this.zoomScale=config.size/100;return this.setState(cells,animation);}finally{this._appearanceScope=false;}});
     if(this.destroyed)return;
     if(this.geometry&&!(this.familyExploration||this.connected)){this.geometry.dispose();this.geometry=null;}
     this.currentAnimation = animation;
@@ -171,19 +175,20 @@ export class PackingCube extends Renderer {
       const signature=JSON.stringify([this.familyExploration,cells,cells.map(c=>c?.solidRotation),cells.map(c=>c?.assemblyOrigin),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,this.individualPieces,this.assembly,this.detectionFilters,solidStyleKey(),jellyStyleKey(),PALETTE]);
       if(typeof Worker!=='undefined') {
         if(!this.geometry)this.geometry=new WorkerGeometry(this,()=>new Worker(new URL('../workers/geometry-worker.js',import.meta.url),{type:'module'}));
-        const workerKey=signature+':'+(this.assembly==='retained'?JSON.stringify(this.initial):'');
+        const workerKey=signature+':'+(this.assembly==='retained'||this.assembly?.fragments==='whole'?JSON.stringify(this.initial):'');
         this.geometry.sync(cells,animation,workerKey);
         this.invalidate();this.onFrame?.(cells,animation);return;
       }
       if(signature!==this.explorationSignature) {
         this.explorationSignature=signature;
         let retained=null;
-        if(this.assembly==='retained'){
+        if(this.assembly==='retained'||this.assembly?.fragments==='whole'){
           const key=JSON.stringify([this.modelShape,jellyStyleKey(),PALETTE,this.initial.map(c=>c?.color)]);
           if(!this.retainedSource||this.retainedKey!==key){this.retainedSource=capturePieceFragments(this.initial,this.meshGenerator,this.modelShape);this.retainedKey=key;}
-          retained=retainedPieceFragments(this.retainedSource,cells);
+          if(this.assembly==='retained')retained=retainedPieceFragments(this.retainedSource,cells);
         }
-        this.explorationGeometry=retained?retained.fragments.map((mesh,i)=>exposedFragment(mesh,i,(axis,side)=>!retained.joined(i,axis,side))):explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.familyExploration?this.fixedPieceColors:true,this.individualPieces,this.detectionFilters,this.assembly==='solids',this.assembly);
+        this.explorationGeometry=retained?retained.fragments.map((mesh,i)=>exposedFragment(mesh,i,(axis,side)=>!retained.joined(i,axis,side))):explorationMeshes(cells,this.meshGenerator,this.modelShape,this.explorationSolids,this.explorationGray,this.familyExploration?this.fixedPieceColors:true,this.individualPieces,this.detectionFilters,this.assembly==='solids',this.assembly,null,this.retainedSource);
+        retained ||= this.explorationGeometry.retained;
         const fixed=visualSettings.solidFixed;
         {
           this.fixedSolidBuffers ??= Array.from({length:27},()=>this.buffer());
@@ -310,6 +315,8 @@ export class PackingCube extends Renderer {
     });
   }
   draw() {
+    const viewId=appearanceViewFor(this.displayId);
+    if(viewId&&!this._appearanceScope&&hasViewAppearance(viewId))return withViewAppearance(viewId,this,config=>{this._appearanceScope=true;try{this.assembly={whole:config.whole,fragments:config.fragments,extras:config.extras};this.individualPieces=false;this.explorationGray=!!config.solidGray;this.explorationSolids=Object.values(this.assembly).includes('solids');this.opacity=config.opacity/100;this.zoomScale=config.size/100;return this.draw();}finally{this._appearanceScope=false;}});
     if (this.contextLost || this.gl.isContextLost?.()) return;
     if (!this.isVisible()) return;
     const rect = this.canvas.getBoundingClientRect();
@@ -367,6 +374,7 @@ export class PackingCube extends Renderer {
     this.orbitController?.dispose();
     this.stopOrbitToggle?.();
     this.stopControls?.();
+    this.stopViewAppearance?.();
     unregisterRenderer(this);
     this.generation++;
     this.observer.disconnect();
@@ -378,6 +386,7 @@ export class PackingCube extends Renderer {
     this.buffers.clear();
     this.asciiPass?.destroy();
     this.ditherPass?.destroy();
+    this.viewEffectsPass?.destroy();
     this.gl.deleteProgram(this.program);
     this.host.replaceChildren();
   }

@@ -22,7 +22,7 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly',spa
   }
   const slots=new Map([...new Set([...groups.values()].map(g=>g.id))].map((id,i)=>[id,i]));
   const pieces=[...groups.values()].flatMap(g=>{
-    const kind=typeof individual==='string'?assemblyKind(individual,!!identifyMask(g.mask),!!(g.mask&extrasMask)):individual?'cubies':'whole';
+    const kind=typeof individual==='string'||typeof individual==='object'?assemblyKind(individual,!!identifyMask(g.mask),!!(g.mask&extrasMask)):individual?'cubies':'whole';
     return kind==='whole'?[g]:Array.from({length:27},(_,i)=>i).filter(i=>g.mask&(1<<i)).map(i=>({...g,wholeMask:g.mask,mask:1<<i,solidIdentity:kind==='solids'}));
   });
   return pieces.map(({mask,color,wholeMask,id,solidIdentity})=>{

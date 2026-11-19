@@ -1,3 +1,4 @@
+import {appearanceViewFor,withViewAppearance,hasViewAppearance} from '../ui/view-appearance.js';
 import {arrangePrintLayout} from './print-layout.js';
 import {visualSettings} from '../render/visual-settings.js';
 import {PALETTE} from './model.js';
@@ -52,9 +53,11 @@ export async function captureFamilyModel(view,options={}) {
   if(view.geometry&&!await view.geometry.ready())throw Error('Retry graphics before exporting.');
   if(view.busy||view.currentAnimation||view.destroyed||view.generation!==generation)throw Error('The cube is changing. Try exporting again when it settles.');
   const cells=view.cells,key=view.geometry?.base.key,revision=view.geometry?.revision;
-  const request=structuredClone({...view.geometry?.base,key:key||'export',cells:pack(cells),initial:pack(view.initial),
+  const capture=()=>structuredClone({...view.geometry?.base,key:key||'export',cells:pack(cells),initial:pack(view.initial),
     shape:view.modelShape,assembly:view.assembly,settings:{...visualSettings},palette:{...PALETTE},solids:view.explorationSolids,
     gray:view.explorationGray,fixedColors:view.fixedPieceColors,individual:view.individualPieces,filters:view.detectionFilters||{},exportModel:true});
+  const id=appearanceViewFor(view.displayId);
+  const request=id&&hasViewAppearance(id)?withViewAppearance(id,view,capture):capture();
   const result=view.geometry?await view.geometry.client.request(request):
     (await import('../workers/geometry-preparation.js')).createGeometryPreparation(view.meshGenerator)(request);
   if(!result||view.destroyed||view.busy||view.currentAnimation||view.cells!==cells||view.generation!==generation||view.geometry&&(view.geometry.base.key!==key||view.geometry.revision!==revision))throw Error('The cube changed during export. Please try again.');

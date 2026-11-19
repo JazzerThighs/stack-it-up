@@ -54,6 +54,24 @@ function call(method,params={},session=sessionId){return new Promise((resolve,re
  browser.stdio[3].write(JSON.stringify({id:n,method,params,...(session?{sessionId:session}:{})})+'\0',error=>{if(error)failConnection(Error('CDP write failed: '+error.message));});
 });}
 async function evaluate(expression){const r=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;}
+async function checkPaletteNavigation(rootExpression){
+ assert(await evaluate(`(()=>{
+   const root=${rootExpression};
+   const category=name=>[...root.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent===name);
+   const parent=category('Cube Appearances');
+   if(!parent || !parent.checkVisibility() || category('Active (Game)').checkVisibility())return false;
+   parent.click();
+   for(const [id,title] of [['active','Active (Game)'],['stack','Stack (Game)'],['family','Family Explorer'],['start','Start Cube (2 Packing)'],['target','Target Cube (2 Packing)']]){
+     const button=category(title);if(!button.checkVisibility())return false;button.click();
+     const select=root.querySelector('#viewAppearance'+id+'-palettePreset');
+     if(!select?.checkVisibility() || ![...select.options].some(o=>o.value==='standard'))return false;
+   }
+   const select=root.querySelector('#viewAppearancetarget-palettePreset');
+   select.value='sega-tetris';select.dispatchEvent(new Event('change',{bubbles:true}));
+   return select.value==='sega-tetris' && JSON.parse(localStorage.getItem('stack-it-up.view-appearance')).views.target.palette[2]==='#26eeee';
+ })()`));
+ console.log('PASS: Cube Appearances navigation, visible palette selectors for all five views and saved preset selection');
+}
 try{
  await call('Browser.getVersion');console.log('PASS: browser start and debugging pipe');
  const {targetId}=await call('Target.createTarget',{url:'about:blank'});
@@ -63,6 +81,7 @@ try{
  await waitFor(()=>evaluate("document.querySelector('#control')?.width>0 && document.querySelector('#engineStatus')?.textContent==='Ready'"),'game startup');
  await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open"));
+ await checkPaletteNavigation("document");
  await evaluate("document.querySelector('#settingsClose').click()");
  await evaluate("window.__canvas=document.querySelector('#control');window.__lost=0;window.__restored=0;__canvas.addEventListener('webglcontextlost',()=>__lost++);__canvas.addEventListener('webglcontextrestored',()=>__restored++);window.__ext=__canvas.getContext('webgl2').getExtension('WEBGL_lose_context');if(!__ext)throw Error('No context-loss extension');__ext.loseContext()");
  await waitFor(()=>evaluate('window.__lost===1'),'context lost');await evaluate('__ext.restoreContext()');
@@ -74,6 +93,7 @@ try{
  await evaluate("document.querySelector('#explorer').shadowRoot.querySelector('#settingsPanel summary').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open && document.querySelector('#settingsDialog').dataset.settingsScope==='explorer'"));
  assert(await evaluate("!!document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape') && !document.querySelector('#explorer').shadowRoot.querySelector('.settings-content')"));
+ await checkPaletteNavigation("document.querySelector('#explorerSettingsHost').shadowRoot");
  await evaluate("window.__model=document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape');__model.value='gameboy';__model.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('#settingsClose').click();document.querySelector('#explorer').shadowRoot.querySelector('#settingsPanel summary').click()");
  assert(await evaluate("document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape')===window.__model && __model.value==='gameboy'"));
  await evaluate("document.querySelector('#settingsClose').click()");

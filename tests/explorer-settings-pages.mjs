@@ -56,6 +56,14 @@ const pages=doc.querySelectorAll('.explorer-settings-page');
 assert.equal(pages.filter(p=>!p.hidden).length,1);
 const links=doc.querySelectorAll('.explorer-page-link');
 const go=name=>links.find(b=>b.textContent===name+' ›').onclick();
+const appearanceCategory=doc.querySelector('.settings-sidebar').children.find(b=>b.textContent==='Cube Appearances');
+const activeCategory=doc.querySelector('.settings-sidebar').children.find(b=>b.textContent==='Active (Game)');
+assert(!appearanceCategory.hidden);assert(activeCategory.hidden);
+go('Cube Appearances');assert(!activeCategory.hidden);
+go('Active (Game)');
+const preset=doc.getElementById('viewAppearanceactive-palettePreset');
+assert(!preset.closest('.explorer-settings-page').hidden);
+assert(preset.children.some(option=>option.value==='standard'));
 assert(!links.some(b=>b.textContent==='Packing filters >'));
 for(const id of ['countFilterPanel','familySelect','status'])assert(doc.getElementById(id).closest('.packing-picker'));
 for(const id of ['D','J','S','ExtraV','ExtraCore','Facebound']){assert(!doc.getElementById('countMin'+id).closest('section').hidden);assert.equal(doc.getElementById('countMin'+id).closest('section'),doc.getElementById('countMax'+id).closest('section'));}
@@ -68,12 +76,11 @@ for(const id of ['familyExportModel','familyExportSize','familyExportStatus','fa
  const page=doc.getElementById(id).closest('.explorer-settings-page');
  assert(page&&!page.hidden,`${id} is accessible in the export settings page`);
 }
-go('Balls & Platonic Solids');
-assert(!doc.getElementById('solidColor').disabled);assert(doc.getElementById('solidGray').disabled);
+go('Family Explorer');
+for(const key of ['whole','fragments','extras'])assert(doc.getElementById('viewAppearancefamily-'+key));
+assert(!doc.getElementById('viewAppearancefamily-whole').closest('.explorer-settings-page').hidden);
 assert(doc.getElementById('showSolved').disabled);
-doc.getElementById('pieceAppearance').value='ascii';go('Appearance');
-assert(!doc.getElementById('asciiInline').hidden);
-assert(doc.getElementById('ditherInline').hidden);
+for(const name of ['Active (Game)','Stack (Game)','Family Explorer','Start Cube (2 Packing)','Target Cube (2 Packing)']){go(name);assert.equal(pages.filter(p=>!p.hidden).length,1);}
 assert(!links.some(b=>/Categories|Previous|Next/.test(b.textContent)));
 console.log('PASS: all explorer controls retained, recursive navigation, single visible page and mode/style dependencies.');
 

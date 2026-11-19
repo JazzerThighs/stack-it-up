@@ -265,5 +265,12 @@
     "modelShape": "angular",
     "pieceAppearance": "jelly",
     "targetComposite": true
+  },
+  "viewAppearance": {
+    "active": {},
+    "stack": {},
+    "family": {},
+    "start": {},
+    "target": {}
   }
 }

@@ -21,15 +21,17 @@ export function createGeometryPreparation(generate) {
     if(state?.key!==request.key) {
       const {cells,initial,shape,assembly}=request;
       let retained=null;
-      if(assembly==='retained') {
+      if(assembly==='retained'||assembly?.fragments==='whole') {
         const key=JSON.stringify([initial,shape,request.settings,request.palette]);
         if(retainedKey!==key){retainedSource=capturePieceFragments(initial,generate,shape,request.palette);retainedKey=key;}
-        retained=retainedPieceFragments(retainedSource,cells);
+        if(assembly==='retained')retained=retainedPieceFragments(retainedSource,cells);
       }
       const meshStart=performance.now(),exportParts=[];
       const meshes=retained?retained.fragments.map((mesh,i)=>exposedFragment(mesh,i,(axis,side)=>!retained.joined(i,axis,side))):
-        explorationMeshes(cells,generate,shape,request.solids,request.gray,request.fixedColors,request.individual,request.filters,assembly==='solids',assembly,exportParts);
+        explorationMeshes(cells,generate,shape,request.solids,request.gray,request.fixedColors,request.individual,request.filters,assembly==='solids',assembly,exportParts,retainedSource);
+
       if(retained)meshes.forEach((mesh,i)=>{if(mesh.length)exportParts.push({piece:cells[i].piece,cells:[i],data:mesh});});
+      retained ||= meshes.retained;
       const meshMs=performance.now()-meshStart;
       const cutting=performance.now(),turning=meshes.filter(m=>m.identityCell===undefined);
       const fragments=retained?.fragments||mergeFragments(turning);
