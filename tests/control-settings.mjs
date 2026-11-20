@@ -9,6 +9,13 @@ const root=explorer=>{
  return {elements,getElementById:k=>elements[k]};
 };
 const game=root(false),explorer=root(true);let updates=0;
+// Explorer has no game-only timing controls or reset buttons. Its real smoke
+// fixture throws on missing lookups, before optional chaining can help.
+const gameOnly=new Set(['turnAnimationReset','bluetoothSliceReset','bluetoothWideReset',
+ ...Object.entries(controlsSchema.fields).filter(([,s])=>s.controlIds?.explorer===null).flatMap(([k])=>[k,k+'Value'])]);
+for(const id of gameOnly)delete explorer.elements[id];
+explorer.getElementById=id=>{assert(!gameOnly.has(id),`Explorer must not look up game-only ${id}`);return explorer.elements[id];};
+game.elements.turnAnimationReset={addEventListener(type,handler){assert.equal(type,'click');this.click=handler;}};
 game.elements.bluetoothSliceWindowValue={textContent:''};
 game.elements.bluetoothWideWindowValue={textContent:''};
 const offGame=bindControlSettings(game,()=>updates++),offExplorer=bindControlSettings(explorer,()=>updates++,{explorer:true});
@@ -26,7 +33,7 @@ assert.equal(JSON.parse(saved.get('stack-it-up.controls')).values.turnAnimationS
 setControlSetting('turnAnimationSpeed',.25);assert.equal(Number(game.elements.turnAnimationSpeed.value),.25);
 assert.equal(setControlSetting('turnAnimationSpeed',NaN),false);
 assert.equal(createSettingsStore(controlsSchema,globalThis.localStorage).values.turnAnimationSpeed,.25);
-resetControlSettings('turnAnimationSpeed');
+game.elements.turnAnimationReset.click();
 assert.equal(controlSettings.turnAnimationSpeed,createSettingsStore(controlsSchema).values.turnAnimationSpeed);
 game.elements.bluetoothSliceWindow.value='65';game.elements.bluetoothSliceWindow.change();
 assert.equal(controlSettings.bluetoothSliceWindow,65);

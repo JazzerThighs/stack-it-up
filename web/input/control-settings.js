@@ -18,6 +18,6 @@ export function bindControlSettings(root,onChange,{explorer=false}={}){
  for(const k in controlSettings){const el=get(k);if(el)el.addEventListener(controlsSchema.fields[k].commit,()=>setControlSetting(k,explorer&&k==='perspectiveCamera'?el.value==='perspective':typeof controlsSchema.fields[k].value==='boolean'?el.checked:Number(el.value)));}
  if(!explorer)root.getElementById('bluetoothSliceReset')?.addEventListener('click',()=>store.reset('bluetoothSliceWindow'));
  if(!explorer)root.getElementById('bluetoothWideReset')?.addEventListener('click',()=>store.reset('bluetoothWideWindow'));
- root.getElementById('turnAnimationReset')?.addEventListener('click',()=>store.reset('turnAnimationSpeed'));
+ if(!explorer)root.getElementById('turnAnimationReset')?.addEventListener('click',()=>store.reset('turnAnimationSpeed'));
  refresh();const stopOrbit=bindOrbitSettings(root),stop=subscribeControls(refresh);return()=>{stopOrbit();stop();};
 }
