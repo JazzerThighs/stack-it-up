@@ -1,6 +1,6 @@
 # Architecture
 
-The current game and packing explorer are the reference application. There is no second JavaScript implementation of the game rules. See [the migration plan](REFACTOR_PLAN.md) for future changes; this page describes the current structure.
+The current game and packing explorer are the reference application. There is no second JavaScript implementation of the game rules. See [the implementation plan](IMPLEMENTATION_PLAN.md) for planned improvements; this page describes the current structure.
 
 ## Computation and transport
 
@@ -18,12 +18,13 @@ Settings use shared editor-style navigation in `web/ui/settings-browser.js`: a s
 
 | Location | Current responsibility |
 | --- | --- |
-| `web/app.js` | Application wiring, HUD, spawn animation and view switching; still needs decomposition |
+| `web/app.js` | Application wiring, HUD, spawn animation and view switching |
 | `web/game/session.js` | Setup lifecycle, new-game engine configuration, shared-state codec/import and next-piece policy |
 | `web/ui/game-setup.js`, `web/ui/session.js` | Collect setup controls and bind session dialogs; delegate state transitions to the model |
 | `web/game/controller.js` | Command admission, transaction snapshots, async ownership and undo dispatch; no DOM/render imports |
 | `web/ui/game-effects.js` | Command messages, animation sequencing, focus and renderer cleanup |
 | `web/input/` | Picking and gesture lifecycle |
+| `web/input/bluetooth-cube.js`, `web/ui/bluetooth-controls.js` | GAN face-turn queue, gyro calibration and pairing controls; see `BLUETOOTH.md` |
 | `web/ui/` | Settings, controls and animation choreography |
 | `web/render/` | Geometry, shaders, cameras, buffers and rendering passes |
 | `web/engine/forecast-*` | Forecast/search worker orchestration |
@@ -38,7 +39,7 @@ Settings use shared editor-style navigation in `web/ui/settings-browser.js`: a s
 | `web/explorer/retained-pieces.js` | Retained piece geometry and motion resources |
 | `web/explorer/cube-view.js`, `views.js` | Explorer rendering integration and playback lifecycle |
 
-The explorer reuses game rendering primitives but has a separate domain model. Physical-piece identities and family invariants must not be confused with presentation colors. Existing retained buffers, worker jobs and session caches are preserved by the first migration.
+The explorer reuses game rendering primitives but has a separate domain model. Physical-piece identities and family invariants must not be confused with presentation colors.
 
 ## Command ownership
 
@@ -130,21 +131,21 @@ Both model-shape selectors expose Extruded text []. Shared composite/loose geome
 
 `web/ui/style-tuning.js` owns conditional visibility inside the model/effect selector boxes in both applications. Shape settings stay inline through settings navigation: bevel and O-ring controls apply to Tengen/Jelly; profile and elbow smoothing apply only to Jelly; opening applies only with O rings. Dither and ASCII tuning follow the effect selector. Transparency grain and opacity response are shared shader uniforms, visible while pixel transparency is enabled or forced by Dither. Slider preferences persist through the existing visual settings store; geometry sliders rebuild on release.
 
-## Shared appearance settings (milestone 4, first increment)
+## Shared appearance settings
 
 `data/appearance-settings.json` is the authoring source for shared visual preferences: defaults, bounds, labels, update timing, persistence version, control groups and visibility rules. `npm run settings:generate` emits `web/ui/appearance-schema.js` and marked control blocks in both HTML files. Do not edit generated blocks or the browser schema manually. Add a range or checkbox to an existing group in the schema to receive controls in both apps, binding, validation and persistence; a new conditional wrapper also declares its visibility rule there. Custom select/color controls remain explicitly authored for this increment.
 
 `web/ui/settings-store.js` owns the DOM-free validation and versioned persistence mechanism. `web/render/visual-settings.js` preserves the public appearance API and rendering helpers. Existing unversioned `stack-it-up.visual` preferences load without loss; accepted updates write `{version:1, values:...}` to the same key. Unsupported future envelopes are never overwritten. Storage denial does not stop in-memory preferences. Settings schema/persistence versions are independent of engine ABI and game save versions.
 
-`web/ui/visual-controls.js` binds controls using schema commit timing. Geometry sliders update their output during dragging and commit on release; effect sliders remain live. `web/ui/style-tuning.js` evaluates schema availability rules. `web/ui/settings-components.css` owns shared tuning rows and selector boxes and is loaded by both entry points and the explorer shadow mount. Run `npm run test:settings` for schema freshness, migration, controls, navigation and appearance tests. Display/assembly, input preferences, gameplay rules and explorer filter owners remain separate pending later increments.
+`web/ui/visual-controls.js` binds controls using schema commit timing. Geometry sliders update their output during dragging and commit on release; effect sliders remain live. `web/ui/style-tuning.js` evaluates schema availability rules. `web/ui/settings-components.css` owns shared tuning rows and selector boxes and is loaded by both entry points and the explorer shadow mount. Run `npm run test:settings` for schema freshness, migration, controls, navigation and appearance tests. Display/assembly, input preferences, gameplay rules and explorer filters have separate owners.
 
-## Shared display settings (milestone 4, second increment)
+## Shared display settings
 
 `data/display-settings.json` owns assembly options, per-view assembly defaults, viewport sizes and the theme selector. The settings generator expands reusable option sets and emits `web/ui/display-schema.js` plus marked blocks in both HTML entry points. `web/render/assembly.js` reuses the generated option set; rendering policy remains in that module. `web/ui/display-settings.js` retains theme application and its public API while delegating persistence and validation to the shared store.
 
 Display preferences use a separate version-1 envelope under the existing `stack-it-up.display` key. Schema-declared legacy aliases preserve `gameCombinedSize`, `startSize`, `targetSize` and `gamePieces`, including their prior precedence. Versioned preferences do not reapply legacy aliases. Display numeric values retain rejection of out-of-range inputs and acceptance of fractional API values; appearance settings retain clamping/step normalization. Notifications still identify the changed display key so assembly changes rebuild the right geometry. Run `node tests/display-settings.mjs` or `npm run test:settings` for the migration and binding checks.
 
-## Shared input preferences (milestone 4, third increment)
+## Shared input preferences
 
 `data/controls-settings.json` and `data/orbit-settings.json` own defaults and validation metadata for shared controls and camera preferences. Their existing keys (`stack-it-up.controls`, `stack-it-up.settling-orbit`) now hold independent version-1 preference envelopes and still accept unversioned objects. Persisted booleans remain strict; the control command API retains boolean coercion. Orbit numeric inputs clamp without step rounding, and `smooth` mouse actions still normalize to `xyz`. Mode switches publish both flags atomically.
 
@@ -152,7 +153,7 @@ Display preferences use a separate version-1 envelope under the existing `stack-
 
 ## Settings CSS ownership and authoring gate
 
-`web/ui/game-settings.css` and `web/ui/explorer-settings.css` own active navigation/page styles. The settings generator expands them into marked blocks in the original app stylesheets, preserving selector/declaration order and cascade position. Edit the component sources, not the generated blocks. The extraction checked that the full stylesheet token sequence (excluding comments/whitespace) was unchanged. Shared tuning and camera rules remain in `settings-components.css`, loaded in all app modes. Older general dialog/application shell rules stay with their app until the later reachability/cleanup milestone.
+`web/ui/game-settings.css` and `web/ui/explorer-settings.css` own active navigation/page styles. The settings generator expands them into marked blocks in the original app stylesheets, preserving selector/declaration order and cascade position. Edit the component sources, not the generated blocks. Shared tuning and camera rules remain in `settings-components.css`, loaded in all app modes. General dialog/application shell rules live in their respective app stylesheets.
 
 `tests/settings-authoring.mjs` uses a disposable project fixture and makes one schema edit. It verifies generated labels/help/output associations and controls in both HTML entry points, then exercises the actual visual binder/store for visibility, numeric validation, persistence and reload. It also verifies that stale generated controls and CSS fail checking. The generator's `--root` option lets the test use the fixture without modifying the working project. `npm run test:settings` includes this completion gate.
 
@@ -162,7 +163,7 @@ Display preferences use a separate version-1 envelope under the existing `stack-
 
 `web/ui/shared-settings.js` owns the single application settings dialog and explorer portal. `web/explorer/mount.js` supplies a scoped lookup facade before controller binding, then moves the existing settings subtree into a shadow root within the dialog. This preserves listeners, IDs, styles and live state without restarting exploration. Standalone explorer keeps its single local surface.
 
-## Geometry worker rollout (milestone 5)
+## Geometry preparation workers
 
 Closed cell fragments share `web/render/slice-mesh.js` across worker and synchronous paths. The clipper classifies untouched/discarded triangles before allocating intersection vertices and writes geometry plus transparency ownership into paired typed buffers. Cap topology and ownership interpolation remain the same; `tests/slice-mesh.mjs` checks analytical closed-volume and ownership contracts.
 
@@ -179,3 +180,35 @@ Cell origin and solid-rotation metadata are materialized before structured cloni
 Each accepted result exposes `geometry.timings`: worker mesh/fragment/assembly stages, job duration, transferred bytes, main-thread upload duration and total request duration. These are preparation diagnostics, not input-to-present or GPU timings. `npm run test:geometry-worker` exercises real Node module workers and release Wasm, plus a mocked-WebGL renderer integration. The browser gate also waits for an actual worker-prepared family cube.
 
 The geometry client also exposes a copied `diagnostics` snapshot with job, queue replacement, stale reply and failure counters. The interactive `tools/benchmark-browser.mjs` server runs `tools/browser-probe.mjs` against built, versioned production modules. GL instrumentation is scoped to benchmark-created contexts and lives in `tools/performance-metrics.mjs`; it adds no shipping renderer overhead. See `performance/BROWSER_BENCHMARK.md` for reproducibility and the distinction between draw submission, presentation and resource measurements.
+
+## Game animation timing
+
+`controls.turnAnimationSpeed` in startup-defaults.js supplies the authored
+default for the schema-owned, persisted turn-speed preference. Game turn
+effects pass its live multiplier to `createAnimations`; elapsed-time
+integration keeps progress monotonic when timing changes.
+
+The Bluetooth controller timestamps pending moves using a monotonic local
+clock and exposes pending count/age only while its serialized command runs.
+`input/animation-timing.js` converts that backlog into a bounded presentation
+rate through the app context, including placement and clear effects. Logical
+command admission and ordering remain with the existing controller.
+
+`input/slice-pairing.js` owns the bounded partner timer, timestamp policy,
+opposite-layer eligibility and virtual/device frame math. Bluetooth queues
+calibrated raw commands, resolves them against the committed slice correction
+when draining, and commits rotation compensation only after accepted slice
+commands. Gyro and subsequent face inputs use the same correction; normal
+game command legality remains unchanged. The schema-owned
+`controls.bluetoothSliceWindow` preference is bound in the Bluetooth settings
+area and authored in startup-defaults.js. Tests compare exact labeled-cubie
+permutations as well as cancellation and command-rejection behavior.
+
+`input/wide-turns.js` defines the face-plus-core-rotation equivalence and gyro
+direction/axis tolerance. The pairing owner keeps a bounded recent gyro history
+in the calibrated device basis and arbitrates slice pairs before gyro-assisted
+wide gestures. It queues raw face identity with a wide marker; drain resolves
+the current cumulative correction and invokes the native two-layer command.
+`controls.bluetoothWideWindow` owns its independently saved completion window.
+Real Wasm tests assert center movement relative to the fixed stack, beyond the
+full-cube permutation equivalences used to validate coordinate compensation.

@@ -31,16 +31,20 @@ export function landedState(before, move) {
 }
 export function createAnimations(context) {
   let ghostTimer;
-  function animate(ms, frame) {
-    if (!context.animations.checked) {
+  function animate(ms, frame, speed = () => 1) {
+    if (!context.animations.checked || ms <= 0) {
       frame(1);
       return Promise.resolve();
     }
     return new Promise((resolve) => {
-      let start;
+      let previous, progress = 0;
       const tick = (now) => {
-        start ??= now;
-        const t = Math.min(1, (now - start) / ms),
+        previous ??= now;
+        // Integrate elapsed time, so changes in speed cannot reverse progress.
+        const rate = Math.max(speed(), context.animationRate?.(ms) || 0);
+        progress += Math.max(0,now-previous)*rate/ms;
+        previous = now;
+        const t = Math.min(1, progress),
           ease = t * t * (3 - 2 * t);
         frame(ease);
         context.renderers.forEach((r) => r.draw());

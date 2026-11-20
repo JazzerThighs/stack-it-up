@@ -1,4 +1,7 @@
 import {initializeSharedSettings,openSharedSettings} from './ui/shared-settings.js';
+import {bindBluetoothControls} from './ui/bluetooth-controls.js';
+import {catchUpRate} from './input/animation-timing.js';
+import {stopOrbitMotion} from './input/settling-orbit.js';
 import {applyStartupDefaults} from './ui/startup-defaults.js';
 import {bindGameViewSwitching,bindApplicationTabs} from './ui/view-switching.js';
 import {createGameSession} from './game/session.js';
@@ -56,6 +59,7 @@ let engine,
 let lockMode = false;
 let session;
 let commands;
+let bluetoothCube;
 const gameSession=createGameSession({engine:()=>engine,isBusy:()=>busy||!!commands?.running});
 const localGame = createLocalGame({engine:()=>engine, started:()=>session?.started,
   chooseNext:()=>$('chooseNext').checked});
@@ -390,6 +394,7 @@ function choose(face){return commands.choose(face);}
 function undo(){return commands.undo();}
 async function newGame() {
   if (busy || session?.starting) return;
+  bluetoothCube.suspend();
   animationController.clearGhost();
   renderers[0].ghost = null;
   renderers[0].preview = 0;
@@ -529,8 +534,9 @@ const context = {
   invalidate,
 };
 const animationController = createAnimations(context);
+context.animationRate = duration => catchUpRate(duration, bluetoothCube?.animationBacklog);
 commands=createGameController({
-  engine:()=>engine,state:()=>state,isBusy:()=>busy,isStarting:()=>!!session?.starting,
+  engine:()=>engine,state:()=>state,isBusy:()=>busy||!!bluetoothCube?.calibrating,isStarting:()=>!!session?.starting,
   isLockMode:()=>context.lockMode,isTurnLocked:()=>lockMode,setBusy,copyState,
   effects:createGameEffects({
     $,state:()=>state,renderers:()=>renderers,names,animate,resolveAnimations,update,invalidate,syncChoices,
@@ -669,6 +675,14 @@ function orbitCamera(dx, dy, orientation) {
   }
   invalidate();
 }
+bluetoothCube = bindBluetoothControls({
+  play: move => commands.play(move),
+  active: () => !!engine && !!state && !!renderers.length && !document.hidden &&
+    !$('gamePage').hidden && !$('settingsDialog').open && !$('newDialog').open &&
+    !session?.starting,
+  orientation: () => renderers[0].orientation,
+  rotate: orientation => { stopOrbitMotion(); orbitCamera(0, 0, orientation); },
+});
 $("freeOrbit").addEventListener("change", () => {
   if (!$("freeOrbit").checked)
     for (const r of renderers) {

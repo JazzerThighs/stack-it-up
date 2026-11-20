@@ -1,4 +1,5 @@
 import {bracketCell,bracketPiece} from './text-mesh.js';
+import {extraCubieColor} from './extra-colors.js';
 import {assemblyKind} from './assembly.js';
 import {identitySolid,solidColor} from './identity-solids.js';
 import {angularPiece} from './angular-mesh.js';
@@ -26,11 +27,12 @@ export function compositeParts(board,ids,palette,generate,appearance='jelly',spa
     return kind==='whole'?[g]:Array.from({length:27},(_,i)=>i).filter(i=>g.mask&(1<<i)).map(i=>({...g,wholeMask:g.mask,mask:1<<i,solidIdentity:kind==='solids'}));
   });
   return pieces.map(({mask,color,wholeMask,id,solidIdentity})=>{
-    if(solidIdentity){const out=[],cell=31-Math.clz32(mask),slot=slots.get(id)||0;identitySolid(out,xyz(cell),.465,solidColor(slot,rgb(palette[color])),slot);return tagCoverage(new Float32Array(out),xyz(cell));}
+    const extra=!!(mask&extrasMask),cell=31-Math.clz32(mask);
+    if(solidIdentity){const out=[],slot=slots.get(id)||0;identitySolid(out,xyz(cell),.465,extra?rgb(extraCubieColor(cell)):solidColor(slot,rgb(palette[color])),slot);return tagCoverage(new Float32Array(out),xyz(cell));}
     const cornerO=appearance==='jelly' && !!visualSettings.jellyCornerO && identifyMask(mask)==='O';
     const geometryKey=mask+':'+cornerO+':'+jellyStyleKey();
     const bomb=!!(mask&extrasMask);
-    const hex=(spatialColors && placedTetracubeColor(wholeMask||mask)) || palette[color],key=mask+':'+hex+':'+appearance+':'+bomb+':'+cornerO+':'+jellyStyleKey();
+    const hex=extra?extraCubieColor(cell):(spatialColors && placedTetracubeColor(wholeMask||mask)) || palette[color],key=mask+':'+hex+':'+appearance+':'+bomb+':'+cornerO+':'+jellyStyleKey();
     if(colored.has(key))return colored.get(key);
     const out=[],c=rgb(hex);
     if(appearance==='angular') {

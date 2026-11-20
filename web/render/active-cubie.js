@@ -19,7 +19,8 @@ export function activeCubie(out,p,h,color,cell,state,renderer) {
   if((renderer.activeKinds?.[cell]||displaySettings.activePieces)==='solids' && (state[S.FLOATING]&(1<<cell))) {
     const slot=renderer.rebuildSlots?.get(state.rebuildIds?.[cell]) ?? Math.max(0,(state[S.BAND_IDS+cell]||state[S.REBUILD_COLORS+cell]||1)-1);
     const start=out.length;
-    identitySolid(out,p,h,solidColor(slot,color),slot,state.solidRotations?.[cell]);
+    const extra=!state.rebuildIds?.[cell]&&!state[S.BAND_IDS+cell]&&!state[S.REBUILD_COLORS+cell];
+    identitySolid(out,p,h,extra?color:solidColor(slot,color),slot,state.solidRotations?.[cell]);
     const animation=renderer.animation;
     if(visualSettings.solidFixed && animation?.kind==='turn' && movedCell(cell,animation.move)) {
       const rotation=turnTransform(animation.move,-animation.t);

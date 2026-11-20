@@ -1,5 +1,6 @@
 import {getViewAppearance,hasViewAppearance,withViewAppearance,subscribeViewAppearance,appearanceViewFor} from '../ui/view-appearance.js';
 import {retainedStack} from './retained-stack.js';
+import {extraCubieColor} from './extra-colors.js';
 import {assemblyKind,assemblyUsesSolids} from './assembly.js';
 import {identifyMask} from '../explorer/family-exploration.js';
 import {sliceForTurn,animateSlices} from '../explorer/exploration-mesh.js';
@@ -296,7 +297,7 @@ class Renderer {
             floating
               ? s[S.REBUILD_COLORS + i]
                 ? rgb(colors[s[S.REBUILD_COLORS + i]])
-                : [1, 1, 1]
+                : s[S.BAND_IDS+i] ? [1,1,1] : rgb(extraCubieColor(i))
               : rgb(colors[activePieceColor(s[S.PIECE],s[S.ACTIVE],i)]),
             i,s,this,
           );

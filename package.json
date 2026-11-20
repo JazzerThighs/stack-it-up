@@ -26,6 +26,10 @@
     "test:geometry-worker": "node tools/test.mjs geometry"
   },
   "devDependencies": {
+    "esbuild": "0.28.2",
     "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "smartcube-web-bluetooth": "https://github.com/poliva/smartcube-web-bluetooth/archive/2077416d6c828ec926dee424cf1bbfe4c0f25a47.tar.gz"
   }
 }

@@ -1,5 +1,10 @@
 {
   "all": [
+    "node tests/extra-colors.mjs",
+    "node tests/animation-timing.mjs",
+    "node tests/bluetooth-cube.mjs",
+    "node tests/slice-pairing.mjs",
+    "node tests/wide-turns.mjs",
     "node tests/model-export.mjs",
     "node tests/performance-metrics.mjs",
     "node tests/slice-mesh.mjs",
@@ -129,6 +134,7 @@
     "node tests/explorer-settings-pages.mjs"
   ],
   "render": [
+    "node tests/extra-colors.mjs",
     "node tests/performance-metrics.mjs",
     "node tests/slice-mesh.mjs",
     "node tests/explorer-worker-smoke.mjs",
@@ -147,6 +153,7 @@
     "node tests/real-browser.mjs"
   ],
   "settings": [
+    "node tests/extra-colors.mjs",
     "node tests/startup-defaults.mjs",
     "node tests/defaults-customization.mjs",
     "node tests/settings-authoring.mjs",
@@ -163,6 +170,10 @@
     "node tests/view-appearance.mjs"
   ],
   "input": [
+    "node tests/animation-timing.mjs",
+    "node tests/bluetooth-cube.mjs",
+    "node tests/slice-pairing.mjs",
+    "node tests/wide-turns.mjs",
     "node tests/input-preferences.mjs",
     "node tests/control-settings.mjs",
     "node tests/orbit-settings.mjs",
@@ -171,6 +182,7 @@
     "node tests/wide-drag.mjs"
   ],
   "geometry": [
+    "node tests/extra-colors.mjs",
     "node tests/model-export.mjs",
     "node tests/slice-mesh.mjs",
     "node tests/geometry-worker.mjs",

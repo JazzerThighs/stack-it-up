@@ -1,6 +1,6 @@
 # Browser performance measurements
 
-Run from `stack-it-up-refactor`:
+Run from the `stack-it-up-3d` repository:
 
 ```powershell
 npm run build
@@ -11,7 +11,7 @@ Open `http://127.0.0.1:4174/`, click **Run benchmark**, and keep the tab visible
 
 The Jelly benchmark defaults to and is capped at **15 cycles**, as requested. Choose **1** for a quick integration check or **10** for a shorter run. **Stop after current turn** ends the run safely and exports collected results; checkpoint downloads are also available during a run. Short runs explicitly leave the 10-to-15-cycle plateau unassessed. The initial long interactive run was stopped at the user's request; it is not a completed baseline.
 
-Summarize a downloaded report with `npm run bench:report -- path/to/browser-performance.json`. This prints overall and first/last-five-cycle latency distributions and sampled heap maxima. It exits nonzero for incomplete/invalidated runs, reported errors, missing scenarios/turns, a failed buffer plateau or buffers remaining after destruction. These checks do not certify the broader milestone.
+Summarize a downloaded report with `npm run bench:report -- path/to/browser-performance.json`. This prints overall and first/last-five-cycle latency distributions and sampled heap maxima. It exits nonzero for incomplete/invalidated runs, reported errors, missing scenarios/turns, a failed buffer plateau or buffers remaining after destruction. These checks do not certify full-application performance.
 
 Use the same browser/device, viewport, settings and build when comparing runs; avoid concurrent builds, tests and other heavy workloads. The report records the actual WebGL renderer, so a software renderer cannot be mistaken for hardware GPU evidence. Record CPU/OS and concurrent workload separately when publishing results. Reload before a new run. Hiding the tab invalidates the run; reduced-motion mode is rejected because it bypasses animation.
 
@@ -70,6 +70,6 @@ Latencies include the 180 ms animation. Both median and p95 were lower in the la
 
 ## Remaining coverage
 
-The milestone remains in progress until full application command-to-presentation, total/worker memory, longer paths and additional assembly modes have evidence. The automated smoke command (`npm run test:browser`) remains its own gate; its software-WebGL setup is not hardware performance certification. A successful interactive probe does not erase a smoke-runner failure.
+Full application command-to-presentation, total/worker memory, longer paths and additional assembly modes still need measurement. The automated smoke command (`npm run test:browser`) remains its own gate; its software-WebGL setup is not hardware performance certification. A successful interactive probe does not erase a smoke-runner failure.
 
 Accounting tests run with `npm run test:performance-metrics`; queue diagnostics are covered by `npm run test:geometry-worker`. Both are included in `npm run test:render`. These tests validate instrumentation and lifecycle contracts, not GPU speed.

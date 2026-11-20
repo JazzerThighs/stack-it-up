@@ -1,4 +1,5 @@
 import {cubieScale} from '../render/cubie-size.js';
+import {extraCubieColor} from '../render/extra-colors.js';
 import {bracketCell} from '../render/text-mesh.js';
 import {assemblyKind} from '../render/assembly.js';
 import {joinMeshes,mergeFragments,exposedFragment,neighborCell} from '../render/cell-fragments.js';
@@ -39,7 +40,7 @@ export function explorationMeshes(cells,generate,appearance,solidIdentities=fals
     const out=[];
     for(const i of indices) {
       const key=!fixedColors&&detected.has(cells[i].piece)?detectedColor(detected.get(cells[i].piece),cells[i].color):cells[i].color;
-      const color=rgb(PALETTE[key]||PALETTE.d);
+      const color=rgb(cells[i].piece<0?extraCubieColor(i):PALETTE[key]||PALETTE.d);
       if(kind(cells[i])==='solids') identitySolid(out,xyz(i),.465,cells[i].piece<0?color:solidColor(cells[i].piece,color,gray),cells[i].piece<0?5:cells[i].piece,cells[i].solidRotation);
       else if(['jelly','angular'].includes(appearance))jellyCell(out,i,color,generate,.465,appearance);
       else (appearance==='text'?bracketCell:appearance==='gameboy'?gameboyCell:scaledBalloon)(out,xyz(i),.465,color,cells[i].piece<0?'bomb':'loose');

@@ -48,6 +48,10 @@ export function createStartupDefaults() {
       "F": "#c8c8c8"
     },
     "appearance": {
+      "extraCornerColor": "#ffffff",
+      "extraEdgeColor": "#ffffff",
+      "extraCenterColor": "#000000",
+      "extraCoreColor": "#808080",
       "solidUniform": 1,
       // Any six-digit RGB hex color: "#RRGGBB" (no alpha), e.g. "#c8c8c8".
       "solidColor": "#c8c8c8",
@@ -133,6 +137,9 @@ export function createStartupDefaults() {
       "uiTheme": "violet"
     },
     "controls": {
+      "turnAnimationSpeed": 1,
+      "bluetoothSliceWindow": 40,
+      "bluetoothWideWindow": 150,
       "hoverRings": true,
       "ringLabels": false,
       "hoverOutline": false,

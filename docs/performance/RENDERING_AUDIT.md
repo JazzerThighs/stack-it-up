@@ -74,9 +74,9 @@ Separate quality from cubie size. Use measured error limits or adaptive sampling
 
 Use byte-accounted LRU caches including coverage and source meshes. Track live renderer buffers and dispose resources on eviction/destruction. Do not simply enlarge caches before measuring why requests miss.
 
-## Remaining milestone-5 gate
+## Remaining performance validation
 
-This is an initial CPU baseline and one targeted fix, not milestone completion. Still run named-browser small/large-family scenarios, cold/warm settings and packing changes, and 1/10/15 playback cycles. Record p50/p95 input-to-present latency, long tasks, peak/retained memory, GPU buffers/uploads and worker cancellation. Confirm stable resource plateaus and visual correctness.
+This is an initial CPU baseline and one targeted fix, not a complete performance assessment. Still run named-browser small/large-family scenarios, cold/warm settings and packing changes, and 1/10/15 playback cycles. Record p50/p95 input-to-present latency, long tasks, peak/retained memory, GPU buffers/uploads and worker cancellation. Confirm stable resource plateaus and visual correctness.
 
 The previously failing local CDP startup requires resolution or execution in the user's working browser environment before claiming real-browser results. Mock-WebGL tests establish behavior, not GPU speed.
 
@@ -101,4 +101,4 @@ Same-device before/after runs (five cache misses per case, Node v25.3.0, Ryzen 7
 
 An isolated comparison against the pre-change implementation passed 390 byte-exact geometry and coverage comparisons: scaled/profiled Jelly, concave and disconnected pieces, individual planes and successive cell cuts, with explicit and inferred ownership. The old implementation was used only for this experiment, not added as a second production/reference renderer. `tests/slice-mesh.mjs` provides permanent analytic checks for volume, closed cuts, repeated clipping, colors, interpolated ownership and immutable inputs. Existing rendering tests cover exposed caps and all turn directions.
 
-These timings measure CPU preparation only, not browser frame rate. Native meshing and resource accounting remain separate optimization work; milestone 5's browser and playback gates are still outstanding.
+These timings measure CPU preparation only, not browser frame rate. Native meshing and resource accounting remain separate optimization work; browser and playback validation is still outstanding.

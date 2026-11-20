@@ -2719,6 +2719,13 @@ input, textarea, [contenteditable="true"], [contenteditable="true"] * {
 .core-choices button { min-height:42px; }
 
 /* The restart card shares the HUD's stacking context, above the bottom toolbar. */
+#cubeCalibration { margin:12px; padding:16px; border:1px solid #587482; border-radius:12px; background:#18232c; }
+#cubeCalibration[hidden] { display:none; }
+#cubeCalibration h2 { margin:0 0 8px; }
+#cubeCalibration p { max-width:80ch; }
+#cubeCalibration button { min-height:44px; margin:4px; }
+#cubeCalibration button[aria-pressed="true"] { outline:2px solid #70dcc2; }
+
 .views > .game-over {
   bottom: calc(var(--tools-space, 76px) + 12px);
   max-width: min(260px, calc(100% - 24px));

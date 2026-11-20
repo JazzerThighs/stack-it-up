@@ -28,6 +28,11 @@
 .settings-sidebar button:focus-visible,.settings-search input:focus-visible{outline:2px solid #9ce5cc;outline-offset:-2px}
 .settings-search-hidden{display:none!important}
 .settings-search-result:before{content:attr(data-settings-path);display:block;font-size:12px;font-weight:600;color:var(--mint,#9ce5cc);margin-bottom:8px}
+.piece-color-swatches { display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 18px; }
+.piece-color-swatches h3 { flex-basis:100%; margin:0; }
+.piece-color-swatches > label { display:flex; align-items:center; gap:6px; }
+.extra-color-swatches { flex-basis:100%; display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:8px; }
+.extra-color-swatches .setting-row { margin:0; }
 @media(max-width:680px){
  .settings-workbench{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:10px}
  .settings-sidebar{display:flex;overflow-x:auto;max-height:100px;border-right:0;border-bottom:1px solid #425762;padding:0 0 6px;gap:4px}

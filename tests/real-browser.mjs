@@ -88,6 +88,16 @@ try{
  await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open"));
  await checkPaletteNavigation("document.querySelector('#settingsDialog')");
+ assert(await evaluate(`(async()=>{
+   const source=document.querySelector('#gameInputSource');
+   if(source.value!=='manual')return false;
+   source.value='bluetooth';source.dispatchEvent(new Event('change'));
+   const entry=document.querySelector('script[type="module"][src]').src;
+   const library=await import(new URL('./vendor/smartcube.js',entry));
+   if(typeof library.connectSmartCube!=='function'||document.querySelector('#bluetoothOptions').hidden)return false;
+   source.value='manual';source.dispatchEvent(new Event('change'));
+   return document.querySelector('#bluetoothOptions').hidden && document.querySelector('#bluetoothConnect').disabled;
+ })()`));
  await evaluate("document.querySelector('#settingsClose').click()");
  await evaluate("window.__canvas=document.querySelector('#control');window.__lost=0;window.__restored=0;__canvas.addEventListener('webglcontextlost',()=>__lost++);__canvas.addEventListener('webglcontextrestored',()=>__restored++);window.__ext=__canvas.getContext('webgl2').getExtension('WEBGL_lose_context');if(!__ext)throw Error('No context-loss extension');__ext.loseContext()");
  await waitFor(()=>evaluate('window.__lost===1'),'context lost');await evaluate('__ext.restoreContext()');

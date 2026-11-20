@@ -3,6 +3,7 @@ import {spawnSync} from 'node:child_process';
 import {mkdir,copyFile,cp,rm} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+import {build} from 'esbuild';
 const root=fileURLToPath(new URL('..',import.meta.url));
 const settings=spawnSync(process.execPath,['tools/generate-settings.mjs','--check'],{cwd:root,stdio:'inherit'});
 if(settings.status!==0)process.exit(settings.status||1);
@@ -21,6 +22,10 @@ if(path.dirname(output)!==path.resolve(root)||path.basename(output)!=='dist')thr
 await rm(output,{recursive:true,force:true});
 await mkdir(output,{recursive:true});
 await cp(path.join(root,'web'),path.join(root,'dist'),{recursive:true});
+await build({entryPoints:[path.join(root,'node_modules/smartcube-web-bluetooth/src/smartcube/index.ts')],bundle:true,format:'esm',platform:'browser',target:'es2022',outfile:path.join(output,'vendor/smartcube.js'),legalComments:'eof'});
+await copyFile(path.join(root,'node_modules/smartcube-web-bluetooth/LICENSE.txt'),path.join(output,'vendor/smartcube-LICENSE.txt'));
+for(const [name,file] of [['aes-js','LICENSE.txt'],['rxjs','LICENSE.txt'],['lz-string','LICENSE']])
+  await copyFile(path.join(root,'node_modules',name,file),path.join(output,`vendor/${name}-LICENSE.txt`));
 await copyFile(path.join(root,'target/wasm32-unknown-unknown/release/cube_stack.wasm'),path.join(root,'dist/cube_stack.wasm'));
 const data=spawnSync(process.execPath,['tools/build-packing-data.mjs',path.join(output,'explorer/data')],{cwd:root,stdio:'inherit'});
 if(data.status!==0)process.exit(data.status||1);

@@ -375,6 +375,50 @@
       "help": "1 follows the opacity slider. Lower values keep more pixels; higher values reveal more of the scene behind the piece.",
       "group": "transparency",
       "commit": "input"
+    },
+    "extraCornerColor": {
+      "value": "#ffffff",
+      "color": true,
+      "label": "Extra Corners",
+      "group": null,
+      "commit": "change",
+      "controlIds": {
+        "game": null,
+        "explorer": null
+      }
+    },
+    "extraEdgeColor": {
+      "value": "#ffffff",
+      "color": true,
+      "label": "Extra Edges",
+      "group": null,
+      "commit": "change",
+      "controlIds": {
+        "game": null,
+        "explorer": null
+      }
+    },
+    "extraCenterColor": {
+      "value": "#000000",
+      "color": true,
+      "label": "Extra Centers",
+      "group": null,
+      "commit": "change",
+      "controlIds": {
+        "game": null,
+        "explorer": null
+      }
+    },
+    "extraCoreColor": {
+      "value": "#808080",
+      "color": true,
+      "label": "Extra Core",
+      "group": null,
+      "commit": "change",
+      "controlIds": {
+        "game": null,
+        "explorer": null
+      }
     }
   }
 }

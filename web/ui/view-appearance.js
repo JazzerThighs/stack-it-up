@@ -114,6 +114,8 @@ export function createViewAppearancePage(id){
   presetSelect.addEventListener('change',()=>setViewPalettePreset(id,presetSelect.value));
   presetRow.append(presetLabel,presetSelect);section.append(presetRow);
   subscribeViewAppearance(changed=>{if(changed===id)presetSelect.value=viewPalettePreset(id);});
+  const palette=document.createElement('div'),paletteLegend=document.createElement('h3');palette.className='piece-color-swatches';paletteLegend.textContent='Piece colors';palette.append(paletteLegend);
+  section.append(palette);
   let parent=section;
   const group=title=>{const field=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent=title;field.append(legend);section.append(field);return field;};
   function add(name,label,options,spec={}){
@@ -138,17 +140,21 @@ export function createViewAppearancePage(id){
   add('size','Cube size (%)',null,{min:50,max:160});add('opacity','Opacity (%)',null,{min:0,max:100});
   const groups=new Map();
   for(const [name,spec]of Object.entries(visualSpecs)){
+    if(name.startsWith('extra')&&spec.color)continue;
     const category=spec.group|| (name.startsWith('light')?'Lighting':name.startsWith('solid')?'Balls & Solids':'transparency');
     const title=({jelly:'Model shaping',cubie:'Cubie size',ascii:'ASCII',dither:'Dither',transparency:'Transparency'})[category]||category;
     if(!groups.has(title))groups.set(title,group(title));parent=groups.get(title);add(name,spec.label,null,spec);
   }
   parent=section;
-  const palette=document.createElement('fieldset'),paletteLegend=document.createElement('legend');paletteLegend.textContent='Piece colors';palette.append(paletteLegend);
+
   for(const [i,letter]of ['O','T','L','J','S','Z','B','D','F'].entries()){
     const label=document.createElement('label'),input=document.createElement('input');input.type='color';input.value=config.palette[i+1];label.textContent=letter;
     input.setAttribute('aria-label',title+' '+letter+' color');input.addEventListener('change',()=>{const values=getViewAppearance(id).palette.slice();values[i+1]=input.value;setViewAppearance(id,'palette',values);});label.append(input);palette.append(label);paletteControls.push([i+1,input]);
   }
-  section.append(palette);
+  const extraRow=document.createElement('div');extraRow.className='extra-color-swatches';parent=extraRow;
+  for(const name of ['extraCornerColor','extraEdgeColor','extraCenterColor','extraCoreColor'])add(name,visualSpecs[name].label,null,visualSpecs[name]);
+  palette.append(extraRow);
+
   const reset=document.createElement('button');reset.type='button';reset.textContent='Reset this view';reset.addEventListener('click',()=>resetViewAppearance(id));section.append(reset);
   subscribeViewAppearance(changed=>{if(changed===id){const latest=getViewAppearance(id);for(const [name,input,output,spec]of controls){input.value=latest[name];input.checked=!!latest[name];output.textContent=spec.checkbox?'':String(latest[name])+(spec.unit||'');}for(const [index,input]of paletteControls)input.value=latest.palette[index];}});
   return section;

@@ -1,5 +1,6 @@
 import {S} from '../engine/snapshot.js';
 import {moveLabels} from '../engine/coordinates.js';
+import {controlSettings} from '../input/control-settings.js';
 
 /** DOM/renderer effects for commands; no engine mutations belong here. */
 export function createGameEffects({$,state,renderers,names,animate,resolveAnimations,update,invalidate,syncChoices,clearGhost,focusChoice}) {
@@ -14,7 +15,7 @@ export function createGameEffects({$,state,renderers,names,animate,resolveAnimat
       async present({before,after,trace,move,fromT}) {
         const label=`${moveLabels[move%15]}${move>=15?"'":''}`;
         $('message').textContent=`Turning ${label}.`;
-        await animate(220*(1-fromT),t=>active().setState(before,{kind:'turn',move,t:fromT+(1-fromT)*t}));
+        await animate(220*(1-fromT),t=>active().setState(before,{kind:'turn',move,t:fromT+(1-fromT)*t}),()=>controlSettings.turnAnimationSpeed);
         if(trace.length)await resolveAnimations(before,after,trace,move);
         else update(`${label} · Build ${names[after[S.PIECE]]}.`);
       },

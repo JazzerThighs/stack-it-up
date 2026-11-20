@@ -1,8 +1,8 @@
 # Project guide
 
-This is the independent refactoring copy of Tetris Cube Explorer. Work only in this folder unless the user requests changes to the original.
+This is the Stack It Up game and packing explorer repository. Work only in this folder unless the user requests otherwise.
 
-Read `docs/ARCHITECTURE.md` for the current code map and `docs/REFACTOR_PLAN.md` for staged changes. The current dual game/explorer is authoritative; do not reintroduce a historical HTML rules oracle.
+Read `docs/ARCHITECTURE.md` for the current code map and `docs/IMPLEMENTATION_PLAN.md` for planned improvements. The current dual game/explorer is authoritative; do not reintroduce a historical HTML rules oracle.
 
 - Rules and deterministic computation: `crates/puzzle-core/src/`.
 - ABI layout source: `data/engine-abi.json`; regenerate with `node tools/generate-abi.mjs`. Never edit generated ABI constants directly.

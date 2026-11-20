@@ -61,6 +61,18 @@
       </header>
 
       <div id="gamePage" hidden role="tabpanel" aria-labelledby="gameTab">
+        <section id="cubeCalibration" hidden aria-label="Smartcube calibration">
+          <h2>Align your smartcube</h2>
+          <p>Keep the same grip. Select Record U, turn your top face, then undo that turn. Repeat for the front (F) and right (R) faces. These turns do not affect the game.</p>
+          <button id="calibrateU" type="button">Record U</button>
+          <button id="calibrateF" type="button">Record F</button>
+          <button id="calibrateR" type="button">Record R</button>
+          <p>Drag either displayed cube to match the cube in your hands. Shift-drag to adjust roll. Hold your natural pose and confirm. Orbit snapping is paused during this adjustment.</p>
+          <label><input id="calibrationRoll" type="checkbox"> Drag to adjust roll (also available with Shift)</label>
+          <p id="cubeCalibrationStatus" role="status" aria-live="polite"></p>
+          <button id="calibrationConfirm" type="button" disabled>Confirm alignment</button>
+          <button id="calibrationCancel" type="button">Cancel and use manual controls</button>
+        </section>
         <div class="workspace">
           <section class="game-panel" aria-label="Game board">
             <div class="views combined">
@@ -101,7 +113,7 @@
                   aria-label="Separate active cube and stack"
                 >
                   Split cubes</button
-                ><button id="stageUndo" disabled>↶ Undo</button>
+                ><button id="bluetoothRecenter" type="button" disabled>Recenter gyro</button><button id="stageUndo" disabled>↶ Undo</button>
               </div>
               <div class="score-hud">
                 <span class="hud-caption">SCORE</span
@@ -586,6 +598,27 @@
 <div class="settings-section-body">
 <fieldset>
 <legend>Input</legend>
+<label for="gameInputSource">Game input</label>
+<select id="gameInputSource"><option value="manual">Manual</option><option value="bluetooth">Bluetooth</option></select>
+<div id="bluetoothOptions" hidden>
+<label for="bluetoothSliceWindow">Slice pairing window <output id="bluetoothSliceWindowValue" for="bluetoothSliceWindow">40 ms</output></label>
+<input id="bluetoothSliceWindow" type="range" min="0" max="150" step="5" value="40" aria-describedby="bluetoothSliceHelp">
+<button id="bluetoothSliceReset" type="button">Reset slice timing</button>
+<p id="bluetoothSliceHelp" class="muted">Opposite-face turns in opposite directions within this window become one slice turn. Set to 0 to disable. Larger windows add input delay and may combine intentional outer turns. Slice recognition also adjusts the face frame and gyro orientation.</p>
+<label for="bluetoothWideWindow">Wide turn completion window <output id="bluetoothWideWindowValue" for="bluetoothWideWindow">150 ms</output></label>
+<input id="bluetoothWideWindow" type="range" min="0" max="500" step="10" value="150" aria-describedby="bluetoothWideHelp">
+<button id="bluetoothWideReset" type="button">Reset wide timing</button>
+<p id="bluetoothWideHelp" class="muted">Move two layers together: a face-turn event plus the matching quarter-turn gyro motion becomes one wide game move, including its centers. This window limits gesture completion time. Set to 0 to disable. Longer windows allow slower gestures but delay ordinary face turns.</p>
+<label><input id="bluetoothShowAll" type="checkbox"> Show all Bluetooth devices (if your cube is missing)</label>
+<label for="bluetoothMac">Cube MAC address (optional)</label>
+<input id="bluetoothMac" type="text" value="9C:7F:64:8A:A2:73" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" spellcheck="false" aria-describedby="bluetoothHelp">
+<p id="bluetoothHelp" class="muted">Disconnect your smartcube from other apps, wake it, then select Connect. If your cube is missing, try Show all Bluetooth devices and select your cube. The optional MAC address helps decode data after selection; it does not find a missing device. U/D/F/B/R/L turns play the matching regular game moves; inverse turns stay inverse. Rotation controls both game views. Close settings to calibrate your grip and face mapping. Manual buttons remain available for hold, choices and undo.</p>
+<button id="bluetoothConnect" type="button" disabled>Connect</button>
+<button id="bluetoothDisconnect" type="button" disabled>Disconnect</button>
+
+<button id="bluetoothCalibrate" type="button" disabled>Calibrate cube</button>
+</div>
+<p id="bluetoothStatus" role="status" aria-live="polite">Manual controls active.</p>
 <label
               ><input id="classicControls" type="checkbox" /> Show classic
               button grid</label
@@ -800,6 +833,10 @@
               Animations</label
             >
 <p class="muted">Includes placement, clear and gravity animations, plus breathing in every style. The current piece uses spheres.</p>
+<label for="turnAnimationSpeed">Turn animation speed <output id="turnAnimationSpeedValue" for="turnAnimationSpeed">1×</output></label>
+<input id="turnAnimationSpeed" type="range" min="0.25" max="4" step="0.25" value="1" aria-describedby="turnAnimationHelp">
+<button id="turnAnimationReset" type="button">Reset turn speed</button>
+<p id="turnAnimationHelp" class="muted">Higher values turn faster. Smartcube play automatically accelerates animations to keep up with your moves.</p>
 </fieldset>
 <fieldset>
 <legend>Freed-piece shapes</legend>

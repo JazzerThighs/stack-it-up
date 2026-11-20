@@ -1,8 +1,8 @@
 # Stack It Up — Rust + WebAssembly
 
-The current dual game and packing explorer are the reference application. This folder is the independent refactoring copy; the original checkout is unchanged.
+This repository contains the Stack It Up game and packing explorer.
 
-Start with [the refactor master plan](docs/REFACTOR_PLAN.md) and [the current architecture](docs/ARCHITECTURE.md). The first migration separates the Rust computational core from the browser ABI and replaces historical-HTML parity with current engine contracts.
+See [the implementation plan](docs/IMPLEMENTATION_PLAN.md) for upcoming smartcube controls and appearance improvements, and [the architecture](docs/ARCHITECTURE.md) for the current code map.
 
 ## Run the included build
 
@@ -20,7 +20,7 @@ needed to rebuild. Opening HTML through `file://` will not load Wasm correctly.
 
 ## Build and test
 
-Requires Rust 1.91+, its Wasm target, and Node.js 22+. The Cargo workspace currently uses a local core dependency; run `npm ci` once to install the pinned TypeScript development tool. External dependencies are allowed as the migration progresses.
+Requires Rust 1.91+, its Wasm target, and Node.js 22+. The Cargo workspace currently uses a local core dependency; run `npm ci` once to install the pinned dependencies and development tools.
 
 ```powershell
 
@@ -42,7 +42,7 @@ rules tests, builds Wasm, checks the production engine contract,
 
 and imports the actual browser modules with real Wasm and mock DOM/WebGL.
 
-Focused suites: `npm run test:core`, `npm run test:engine`, `npm run test:game`, `npm run test:explorer`, and `npm run test:render`. Build first when running browser suites. See [validation notes](docs/REFACTOR_VALIDATION.md) for known baseline failures.
+Focused suites: `npm run test:core`, `npm run test:engine`, `npm run test:game`, `npm run test:explorer`, and `npm run test:render`. Build first when running browser suites.
 
 `npm run typecheck` checks the engine transport implementation and compile-time usage tests without producing JavaScript. Browser runtime remains plain JavaScript/Wasm; TypeScript is a development dependency only.
 

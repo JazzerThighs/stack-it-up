@@ -62,3 +62,22 @@ New-game confirmation remains a separate action dialog and reuses the game-rule 
 ## Cube appearance palettes
 
 Settings > Cube Appearances groups Active (Game), Stack (Game), Family Explorer, Start Cube (2 Packing), and Target Cube (2 Packing). Each page has a Color palette selector above the composition controls. Presets are authored in web/render/palette-presets.js; individual color edits show Custom. Selecting a preset affects only that view and is saved with its appearance profile. Standard Tetris is the startup palette; saved preferences still take precedence.
+
+Piece color swatches sit directly below each view palette selector, followed
+by Extra Corners, Extra Edges, Extra Centers and Extra Core. The shared
+`appearance.extraCornerColor`, `extraEdgeColor`, `extraCenterColor` and
+`extraCoreColor` defaults in startup-defaults.js are white, white, black and
+grey respectively. Each view can override these independently. Presets affect
+piece colors only; Reset this view restores authored extra-color defaults.
+Old saved profiles inherit missing extra-color fields, while historical extra
+color markers in packing data no longer override type-based rendering.
+
+## Bluetooth gesture timing
+
+`controls.bluetoothSliceWindow` and `controls.bluetoothWideWindow` in
+startup-defaults.js set the authored slice-pairing and gyro-assisted wide-turn
+completion windows in milliseconds. Saved controls override these values;
+each Bluetooth timing slider has its own reset button. Zero disables the
+corresponding recognizer. Timing changes recognition latency, not animation
+speed; `controls.turnAnimationSpeed` remains independent. See BLUETOOTH.md for
+direction rules, gyro tolerance, timing tradeoffs and physical validation.

@@ -1,6 +1,7 @@
 import {getViewAppearance,hasViewAppearance,withViewAppearance,appearanceViewFor} from '../ui/view-appearance.js';
 import {WorkerGeometry,partitionKey} from './worker-geometry.js';
 import {cubieScale} from '../render/cubie-size.js';
+import {extraCubieColor,extraColorFields} from '../render/extra-colors.js';
 import {bracketCell} from '../render/text-mesh.js';
 import {CubeSession} from './cube-session.js';
 import {capturePieceFragments,retainedPieceFragments} from './retained-pieces.js';
@@ -172,7 +173,7 @@ export class PackingCube extends Renderer {
     this.currentAnimation = animation;
     const out = [];
     if ((this.familyExploration||this.connected) && this.meshGenerator) {
-      const signature=JSON.stringify([this.familyExploration,cells,cells.map(c=>c?.solidRotation),cells.map(c=>c?.assemblyOrigin),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,this.individualPieces,this.assembly,this.detectionFilters,solidStyleKey(),jellyStyleKey(),PALETTE]);
+      const signature=JSON.stringify([this.familyExploration,cells,cells.map(c=>c?.solidRotation),cells.map(c=>c?.assemblyOrigin),this.modelShape,this.explorationSolids,this.explorationGray,this.fixedPieceColors,this.individualPieces,this.assembly,this.detectionFilters,solidStyleKey(),jellyStyleKey(),extraColorFields.map(k=>visualSettings[k]),PALETTE]);
       if(typeof Worker!=='undefined') {
         if(!this.geometry)this.geometry=new WorkerGeometry(this,()=>new Worker(new URL('../workers/geometry-worker.js',import.meta.url),{type:'module'}));
         const workerKey=signature+':'+(this.assembly==='retained'||this.assembly?.fragments==='whole'?JSON.stringify(this.initial):'');
@@ -183,7 +184,7 @@ export class PackingCube extends Renderer {
         this.explorationSignature=signature;
         let retained=null;
         if(this.assembly==='retained'||this.assembly?.fragments==='whole'){
-          const key=JSON.stringify([this.modelShape,jellyStyleKey(),PALETTE,this.initial.map(c=>c?.color)]);
+          const key=JSON.stringify([this.modelShape,jellyStyleKey(),extraColorFields.map(k=>visualSettings[k]),PALETTE,this.initial.map(c=>c?.color)]);
           if(!this.retainedSource||this.retainedKey!==key){this.retainedSource=capturePieceFragments(this.initial,this.meshGenerator,this.modelShape);this.retainedKey=key;}
           if(this.assembly==='retained')retained=retainedPieceFragments(this.retainedSource,cells);
         }
@@ -214,8 +215,9 @@ export class PackingCube extends Renderer {
     cells.forEach((cell, i) => {
       if (!cell) return;
       const start = out.length;
-      if(['jelly','angular'].includes(this.modelShape) && this.meshGenerator)jellyCell(out,i,rgb(PALETTE[cell.color] || PALETTE.d),this.meshGenerator,.465,this.modelShape);
-      else (this.modelShape==='text'?bracketCell:this.modelShape==='gameboy'?gameboyCell:scaledBalloon)(out, xyz(i), 0.465, rgb(PALETTE[cell.color] || PALETTE.d),cell.piece<0?'bomb':'loose');
+      const color=rgb(cell.piece<0?extraCubieColor(i):PALETTE[cell.color] || PALETTE.d);
+      if(['jelly','angular'].includes(this.modelShape) && this.meshGenerator)jellyCell(out,i,color,this.meshGenerator,.465,this.modelShape);
+      else (this.modelShape==='text'?bracketCell:this.modelShape==='gameboy'?gameboyCell:scaledBalloon)(out, xyz(i), 0.465, color,cell.piece<0?'bomb':'loose');
       if (animation?.kind === "turn") rotateCell(out, start, i, animation.move, animation.t);
     });
     this.upload(this.solid, new Float32Array(out));
