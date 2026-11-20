@@ -11,7 +11,10 @@ $('pieceAppearance').value='jelly';
 $('explorer').explorerReady=Promise.resolve();
 await configureBuiltDefaults(new URL('../dist/',import.meta.url));
 const {context}=await import('../dist/app.js');
-for(let i=0;i<100&&!context.engine;i++)await new Promise(resolve=>setTimeout(resolve,10));
+for(let i=0;i<100&&$('engineStatus').textContent!=='Ready';i++) {
+  flush({time:performance.now()+1000});
+  await new Promise(resolve=>setTimeout(resolve,10));
+}
 assert.equal($('engineStatus').textContent,'Ready');
 flush();
 assert($('gamePage').hidden);assert(!$('explorerPage').hidden);assert(!$('setupDialog').open);

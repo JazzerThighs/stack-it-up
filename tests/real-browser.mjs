@@ -85,8 +85,13 @@ try{
  await call('Runtime.enable');
  await call('Page.navigate',{url:base+'/#game'});
  await waitFor(()=>evaluate("document.querySelector('#control')?.width>0 && document.querySelector('#engineStatus')?.textContent==='Ready'"),'game startup');
+ // Fresh profiles first open the new-game dialog. Complete that user flow
+ // before opening Settings; both dialogs share the navigation owner.
+ await waitFor(()=>evaluate("document.querySelector('#startupScreen').hidden && document.querySelector('#setupDialog').open"),'initial game setup ready');
+ await evaluate("document.querySelector('#setupStart').click()");
+ await waitFor(()=>evaluate("!document.querySelector('#setupDialog').open && !document.querySelector('#new').disabled"),'initial game setup complete');
  await evaluate("document.querySelector('#settingsOpen').click()");
- assert(await evaluate("document.querySelector('#settingsDialog').open"));
+ assert(await evaluate("document.querySelector('#settingsDialog').open && !document.querySelector('#setupDialog').open"));
  await checkPaletteNavigation("document.querySelector('#settingsDialog')");
  assert(await evaluate(`(async()=>{
    const source=document.querySelector('#gameInputSource');

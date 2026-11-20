@@ -728,7 +728,6 @@ async function start() {
     const observer = new ResizeObserver(invalidate);
     renderers.forEach((r) => observer.observe(r.canvas));
     $("new").disabled = false;
-    $("engineStatus").textContent = "Ready";
     const saved = localGame.restore();
     if (saved.restored) {
       session.resume(saved.chooseNext);
@@ -740,6 +739,9 @@ async function start() {
       if (!$("gamePage").hidden) session.setup();
     }
     installRecovery();
+    // Publish readiness only after the initial animation and setup navigation
+    // settle; consumers must not race the setup dialog opening afterward.
+    $("engineStatus").textContent = "Ready";
   } catch (error) {
     startupError(error);
     $("message").textContent = error.message;
