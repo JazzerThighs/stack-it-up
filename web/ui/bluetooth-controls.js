@@ -23,22 +23,29 @@ export function bindBluetoothControls({root = document, ...options}) {
     $('bluetoothOptions').hidden = mode !== 'bluetooth';
     $('bluetoothConnect').disabled = mode !== 'bluetooth' || !supported || !library || connecting || connected;
     $('bluetoothDisconnect').disabled = !connecting && !connected;
-    $('bluetoothRecenter').disabled = !connected || current.calibration !== 'ready';
-    $('bluetoothRecenter').title = !connected ? 'Connect a smartcube to recenter its gyroscope'
-      : current.calibration !== 'ready' ? 'Complete cube calibration before recentering'
-      : 'Hold your natural pose and recenter the gyroscope; face mapping stays unchanged';
+    for(const id of ['bluetoothUfrReset','bluetoothGyroReset'])$(id).disabled=!connected||current.calibration!=='ready';
     $('bluetoothCalibrate').disabled = !connected;
     $('bluetoothStatus').textContent = message;
     $('cubeCalibration').hidden = current.calibration !== 'calibrating';
     $('cubeCalibrationStatus').textContent = message;
-    for (const face of ['U','F','R']) {
-      $('calibrate'+face).textContent = `Record ${face}${current.faces[face] ? ' ✓' : ''}`;
-      $('calibrate'+face).setAttribute('aria-pressed', String(current.capture === face));
-    }
-    $('calibrationConfirm').disabled = !current.dragged || !['U','F','R'].every(face => current.faces[face]);
+    $('calibrationSteps').textContent = current.calibrationKind==='gyro' ? 'Gyro Reset: adjust neutral angle'
+      : current.calibrationKind==='ufr' ? 'UFR Reset: U / U′, F / F′, R / R′'
+      : '1. U / U′   2. F / F′   3. R / R′   4. Neutral angle';
+    $('calibrationRoll').disabled=current.calibrationStep!==3;
+    $('calibrationConfirm').hidden=current.calibrationStep!==3;
+    $('calibrationConfirm').disabled = !current.dragged || current.calibrationStep!==3;
+
   };
   const controller = createBluetoothCube({...options,
     sliceWindow: () => controlSettings.bluetoothSliceWindow,
+    smoothing: () => controlSettings.bluetoothGyroSmoothing,
+    smoothingResponse: () => controlSettings.bluetoothGyroResponse,
+    smoothingSpeed: () => controlSettings.bluetoothGyroSpeed,
+    smoothingAcceleration: () => controlSettings.bluetoothGyroAcceleration,
+    neutralCutoff: () => controlSettings.bluetoothNeutralCutoff,
+    neutralDelay: () => controlSettings.bluetoothNeutralDelay,
+    neutralSpeed: () => controlSettings.bluetoothNeutralSpeed,
+    neutralTolerance: () => controlSettings.bluetoothNeutralTolerance,
     wideWindow: () => controlSettings.bluetoothWideWindow,
     availability: () => globalThis.navigator.bluetooth.getAvailability?.(),
     connect: onStatus => library.connectSmartCube({onStatus,
@@ -48,13 +55,10 @@ export function bindBluetoothControls({root = document, ...options}) {
       return value || null;
     }}),
     status: state => {
-      const previous = current?.calibration;
       current = state; refresh();
-      if (state.calibration === 'calibrating' && previous !== 'calibrating') options.rotate(options.orientation());
       if (state.calibration === 'pending') queueMicrotask(() => controller.beginCalibration());
     },
   });
-  for (const face of ['U','F','R']) $('calibrate'+face).addEventListener('click', () => controller.captureFace(face));
   $('calibrationConfirm').addEventListener('click', () => controller.confirmCalibration());
   $('calibrationCancel').addEventListener('click', () => {
     $('gameInputSource').value = 'manual'; controller.setMode('manual');
@@ -64,8 +68,9 @@ export function bindBluetoothControls({root = document, ...options}) {
   let drag;
   const consume = e => { e.preventDefault(); e.stopImmediatePropagation(); };
   root.addEventListener('pointerdown', e => {
-    if (!controller.calibrating || !options.active() || !e.target.closest?.('#gamePage .viewport')) return;
-    consume(e); drag = {id:e.pointerId,x:e.clientX,y:e.clientY,target:e.target};
+    if (!controller.calibrating || !options.active() || !e.target.closest?.('#gamePage canvas')) return;
+    consume(e);
+    if(!controller.adjustingNeutral)return; drag = {id:e.pointerId,x:e.clientX,y:e.clientY,target:e.target};
     e.target.setPointerCapture?.(e.pointerId);
   }, true);
   root.addEventListener('pointermove', e => {
@@ -108,9 +113,8 @@ export function bindBluetoothControls({root = document, ...options}) {
   });
   $('bluetoothDisconnect').addEventListener('click', () => void controller.disconnect());
   $('bluetoothCalibrate').addEventListener('click', () => controller.recalibrate());
-  $('bluetoothRecenter').addEventListener('click', () => {
-    if (controller.recenter()) $('message').textContent = 'Gyro recentering: hold your natural pose. Face mapping is unchanged.';
-  });
+  $('bluetoothUfrReset').addEventListener('click', () => controller.resetUfr());
+  $('bluetoothGyroReset').addEventListener('click', () => controller.resetGyro());
   globalThis.addEventListener?.('pagehide', () => void controller.disconnect());
   for (const id of ['settingsDialog','newDialog']) $(id).addEventListener('toggle', resume);
   for (const id of ['gameTab','explorerTab']) $(id).addEventListener('click', () => controller.suspend());

@@ -117,7 +117,7 @@ for(const face of faces)for(const kind of ['slice','wide']) {
     play:m=>commands.play(m),orientation:()=>matrix(identity),rotate:()=>{},status:()=>{}});
   cube.setMode('bluetooth');await cube.connect();cube.beginCalibration();
   const frame=calibrationFrame(grip);
-  for(const face of ['U','F','R']){cube.captureFace(face);observer.next({type:'MOVE',move:grip[face]});}
+  for(const face of ['U','F','R']){observer.next({type:'MOVE',move:grip[face]});observer.next({type:'MOVE',move:grip[face]+"'"});}
   observer.next(asEvent(identity));cube.markDragged();assert(cube.confirmCalibration());
   const event=m=>({type:'MOVE',move:Object.keys(frame.mapping).find(key=>frame.mapping[key]===moveLabels[m%15])+(m>=15?"'":'')});
   f.advance(10);observer.next(event(face));

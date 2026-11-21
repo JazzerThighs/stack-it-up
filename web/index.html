@@ -63,11 +63,8 @@
       <div id="gamePage" hidden role="tabpanel" aria-labelledby="gameTab">
         <section id="cubeCalibration" hidden aria-label="Smartcube calibration">
           <h2>Align your smartcube</h2>
-          <p>Keep the same grip. Select Record U, turn your top face, then undo that turn. Repeat for the front (F) and right (R) faces. These turns do not affect the game.</p>
-          <button id="calibrateU" type="button">Record U</button>
-          <button id="calibrateF" type="button">Record F</button>
-          <button id="calibrateR" type="button">Record R</button>
-          <p>Drag either displayed cube to match the cube in your hands. Shift-drag to adjust roll. Hold your natural pose and confirm. Orbit snapping is paused during this adjustment.</p>
+          <p id="calibrationSteps">U / U&#8242;, F / F&#8242;, R / R&#8242;, then neutral angle.</p>
+          <p>Follow the steps below. Calibration turns never affect the game. During the neutral-angle step, drag either cube to match your natural grip. Shift-drag or enable Roll to adjust roll.</p>
           <label><input id="calibrationRoll" type="checkbox"> Drag to adjust roll (also available with Shift)</label>
           <p id="cubeCalibrationStatus" role="status" aria-live="polite"></p>
           <button id="calibrationConfirm" type="button" disabled>Confirm alignment</button>
@@ -113,7 +110,7 @@
                   aria-label="Separate active cube and stack"
                 >
                   Split cubes</button
-                ><button id="bluetoothRecenter" type="button" disabled>Recenter gyro</button><button id="stageUndo" disabled>↶ Undo</button>
+                ><button id="bluetoothUfrReset" type="button" disabled>UFR Reset</button><button id="bluetoothGyroReset" type="button" disabled>Gyro Reset</button><button id="stageUndo" disabled>↶ Undo</button>
               </div>
               <div class="score-hud">
                 <span class="hud-caption">SCORE</span
@@ -605,6 +602,27 @@
 <input id="bluetoothSliceWindow" type="range" min="0" max="150" step="5" value="40" aria-describedby="bluetoothSliceHelp">
 <button id="bluetoothSliceReset" type="button">Reset slice timing</button>
 <p id="bluetoothSliceHelp" class="muted">Opposite-face turns in opposite directions within this window become one slice turn. Set to 0 to disable. Larger windows add input delay and may combine intentional outer turns. Slice recognition also adjusts the face frame and gyro orientation.</p>
+<label><input id="bluetoothGyroSmoothing" type="checkbox" checked> Smooth gyro motion</label>
+<p class="muted">Ease rotation between sensor updates and soften sudden direction changes. Lower speed and acceleration improve readability; higher values follow your hand more closely.</p>
+<label for="bluetoothGyroResponse">Gyro easing time <output id="bluetoothGyroResponseValue" for="bluetoothGyroResponse">180 ms</output></label>
+<input id="bluetoothGyroResponse" type="range" min="40" max="600" step="10" value="180">
+<label for="bluetoothGyroSpeed">Maximum gyro rotation speed <output id="bluetoothGyroSpeedValue" for="bluetoothGyroSpeed">180 degrees/s</output></label>
+<input id="bluetoothGyroSpeed" type="range" min="30" max="720" step="10" value="180">
+<label for="bluetoothGyroAcceleration">Maximum gyro acceleration <output id="bluetoothGyroAccelerationValue" for="bluetoothGyroAcceleration">1200 degrees/s²</output></label>
+<input id="bluetoothGyroAcceleration" type="range" min="100" max="6000" step="100" value="1200">
+<p class="muted">Longer easing times make the final approach gentler. Speed limits large rotations; acceleration softens starts, stops and reversals. These settings affect the view only.</p>
+<label for="bluetoothNeutralTolerance">Neutral gyro correction zone <output id="bluetoothNeutralToleranceValue" for="bluetoothNeutralTolerance">10 degrees</output></label>
+<input id="bluetoothNeutralTolerance" type="range" min="0" max="30" step="1" value="10" aria-describedby="bluetoothNeutralHelp">
+<p id="bluetoothNeutralHelp" class="muted">Hold your cube steadily near your calibrated natural angle to gently correct gyro drift. Any of the 24 face orientations works; you do not need to restore the original U/F/R faces. This also works after slice and wide turns. Set to 0 to disable correction; the existing alignment is retained.</p>
+<label for="bluetoothNeutralCutoff">Neutral correction motion cutoff <output id="bluetoothNeutralCutoffValue" for="bluetoothNeutralCutoff">6 degrees/s</output></label>
+<input id="bluetoothNeutralCutoff" type="range" min="1" max="90" step="1" value="6" aria-describedby="bluetoothNeutralCutoffHelp">
+<p id="bluetoothNeutralCutoffHelp" class="muted">Correction stops and its delay resets whenever physical gyro motion exceeds this speed. Higher values allow correction during more movement; lower values require a steadier hold.</p>
+<label for="bluetoothNeutralDelay">Neutral correction delay <output id="bluetoothNeutralDelayValue" for="bluetoothNeutralDelay">125 ms</output></label>
+<input id="bluetoothNeutralDelay" type="range" min="0" max="1000" step="25" value="125" aria-describedby="bluetoothNeutralDelayHelp">
+<p id="bluetoothNeutralDelayHelp" class="muted">How long to hold steadily near neutral before correction starts. Set to 0 to start as soon as steady motion is detected.</p>
+<label for="bluetoothNeutralSpeed">Neutral correction speed <output id="bluetoothNeutralSpeedValue" for="bluetoothNeutralSpeed">2.5x</output></label>
+<input id="bluetoothNeutralSpeed" type="range" min="0.25" max="10" step="0.25" value="2.5" aria-describedby="bluetoothNeutralSpeedHelp">
+<p id="bluetoothNeutralSpeedHelp" class="muted">How quickly the view settles into its neutral angle once correction starts. Higher values settle faster.</p>
 <label for="bluetoothWideWindow">Wide turn completion window <output id="bluetoothWideWindowValue" for="bluetoothWideWindow">150 ms</output></label>
 <input id="bluetoothWideWindow" type="range" min="0" max="500" step="10" value="150" aria-describedby="bluetoothWideHelp">
 <button id="bluetoothWideReset" type="button">Reset wide timing</button>
@@ -635,6 +653,18 @@
             >
 </fieldset>
 </div>
+</fieldset>
+<fieldset id="turnAnimationSettings">
+<legend>Turn animations</legend>
+<label
+              ><input id="animations" type="checkbox" checked />
+              Animations</label
+            >
+<p class="muted">Enable game animations, including turns, placement, clears, gravity and breathing. Enable this to see the turn-speed adjustment.</p>
+<label for="turnAnimationSpeed">Turn animation speed <output id="turnAnimationSpeedValue" for="turnAnimationSpeed">1×</output></label>
+<input id="turnAnimationSpeed" type="range" min="0.25" max="4" step="0.25" value="1" aria-describedby="turnAnimationHelp">
+<button id="turnAnimationReset" type="button">Reset turn speed</button>
+<p id="turnAnimationHelp" class="muted">Controls face, slice and wide-turn animation playback. Higher values turn faster. Smartcube play also accelerates queued animations automatically to catch up. This does not change gyro smoothing or slice/wide recognition timing.</p>
 </fieldset>
 <fieldset>
 <legend>Camera</legend>
@@ -828,15 +858,6 @@
 <div class="setting-row"><label for="transparencyGrain">Transparency grain <output id="transparencyGrainValue" for="transparencyGrain">1px</output></label><input id="transparencyGrain" type="range" min="1" max="6" step="0.5" value="1" aria-describedby="transparencyGrainHelp"><p class="muted" id="transparencyGrainHelp">Smaller grains make finer holes; larger grains make a coarser pattern.</p></div>
 <div class="setting-row"><label for="transparencyResponse">Opacity response <output id="transparencyResponseValue" for="transparencyResponse">1</output></label><input id="transparencyResponse" type="range" min="0.25" max="3" step="0.05" value="1" aria-describedby="transparencyResponseHelp"><p class="muted" id="transparencyResponseHelp">1 follows the opacity slider. Lower values keep more pixels; higher values reveal more of the scene behind the piece.</p></div>
 <!-- settings:transparency:end --></div>
-<label
-              ><input id="animations" type="checkbox" checked />
-              Animations</label
-            >
-<p class="muted">Includes placement, clear and gravity animations, plus breathing in every style. The current piece uses spheres.</p>
-<label for="turnAnimationSpeed">Turn animation speed <output id="turnAnimationSpeedValue" for="turnAnimationSpeed">1×</output></label>
-<input id="turnAnimationSpeed" type="range" min="0.25" max="4" step="0.25" value="1" aria-describedby="turnAnimationHelp">
-<button id="turnAnimationReset" type="button">Reset turn speed</button>
-<p id="turnAnimationHelp" class="muted">Higher values turn faster. Smartcube play automatically accelerates animations to keep up with your moves.</p>
 </fieldset>
 <fieldset>
 <legend>Freed-piece shapes</legend>

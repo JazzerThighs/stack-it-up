@@ -32,11 +32,15 @@ function fixture(options={}) {
     get closed(){return closed;},get unsubscribed(){return unsubscribed;}};
 }
 function calibrate(f, faces={U:'U',F:'F',R:'R'}) {
-  f.cube.beginCalibration();
-  for (const face of ['U','F','R']) { f.cube.captureFace(face); f.emit({type:'MOVE',move:faces[face]}); }
+  f.cube.recalibrate();f.cube.beginCalibration();
+  for (const face of ['U','F','R']) { f.emit({type:'MOVE',move:faces[face]}); f.emit({type:'MOVE',move:faces[face]+"'"}); }
   f.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});
   f.cube.markDragged();
   assert.equal(f.cube.confirmCalibration(),true);
+  f.rotations.length=0;
+}
+function resetGyro(f,q={x:0,y:0,z:0,w:1}) {
+ assert(f.cube.resetGyro());f.emit({type:'GYRO',quaternion:q});f.cube.markDragged();assert(f.cube.confirmCalibration());
 }
 const f=fixture();f.cube.setMode('bluetooth');await f.cube.connect();calibrate(f);
 const g=deferred();f.gate(g);f.emit({type:'MOVE',move:'R'});f.emit({type:'MOVE',move:"U'"});
@@ -49,7 +53,7 @@ f.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});
 f.rotations[0].forEach((v,i)=>assert.ok(Math.abs(v-f.view[i])<1e-10));
 f.emit({type:'GYRO',quaternion:{x:0,y:0,z:Math.SQRT1_2,w:Math.SQRT1_2}});
 assert.notDeepEqual(f.rotations[1],f.view);
-f.cube.recenter();f.emit({type:'GYRO',quaternion:{x:0,y:0,z:1,w:0}});
+resetGyro(f,{x:0,y:0,z:1,w:0});f.emit({type:'GYRO',quaternion:{x:0,y:0,z:1,w:0}});
 f.rotations.at(-1).forEach((v,i)=>assert.ok(Math.abs(v-f.view[i])<1e-10));
 f.enable(false);f.emit({type:'MOVE',move:'F'});assert.deepEqual(f.moves,[4,15]);
 f.enable(true);const g2=deferred();f.gate(g2);
@@ -119,16 +123,16 @@ assert.equal(calibrationFrame({U:'U',F:'F',R:'L'}),null);
 const c=fixture();c.cube.setMode('bluetooth');await c.cube.connect();
 c.enable(false);c.cube.beginCalibration();
 assert.equal(c.statuses.at(-1).calibration,'pending');
-assert.equal(c.cube.recenter(),false,'Recenter requires completed calibration');
+assert.equal(c.cube.resetGyro(),false,'Recenter requires completed calibration');
 c.emit({type:'MOVE',move:'R'});assert.deepEqual(c.moves,[]);
 c.enable(true);c.cube.beginCalibration();
-for (const face of ['U','F','R']) {c.cube.captureFace(face);c.emit({type:'MOVE',move:face});}
+for (const face of ['U','F','R']) {c.emit({type:'MOVE',move:face});c.emit({type:'MOVE',move:face+"'"});}
 assert.equal(c.cube.confirmCalibration(),false,'Manual drag is required');
 c.cube.markDragged();assert.equal(c.cube.confirmCalibration(),false,'Gyro sample is required');
 calibrate(c,{U:'F',F:'D',R:'R'});
 assert.deepEqual(c.moves,[],'Calibration turns never enter gameplay');
 c.emit({type:'MOVE',move:"F'"});await tick();assert.deepEqual(c.moves,[15]);
-assert.equal(c.cube.recenter(),true);
+resetGyro(c,{x:0,y:0,z:1,w:0});
 c.emit({type:'GYRO',quaternion:{x:0,y:0,z:1,w:0}});
 c.rotations.at(-1).forEach((v,i)=>assert.ok(Math.abs(v-c.view[i])<1e-10));
 assert.deepEqual(c.moves,[15],'Recentering does not mutate the puzzle');
@@ -136,7 +140,7 @@ c.emit({type:'MOVE',move:'D'});await tick();assert.deepEqual(c.moves,[15,2],'Rec
 c.cube.suspend();c.cube.beginCalibration();assert.equal(c.statuses.at(-1).calibration,'ready');
 await c.cube.disconnect();await c.cube.connect();assert.equal(c.statuses.at(-1).calibration,'pending');
 c.cube.beginCalibration();c.cube.setMode('manual');assert.equal(c.cube.calibrating,false);
-assert.equal(c.cube.recenter(),false,'Disconnected recenter is ignored');
+assert.equal(c.cube.resetGyro(),false,'Disconnected recenter is ignored');
 console.log('Bluetooth mapping, calibration, queue, connection lifecycle and failure diagnostics passed');
 
 // Pairing goes through one ordinary command, and only accepted pairs change
@@ -153,7 +157,7 @@ console.log('Bluetooth mapping, calibration, queue, connection lifecycle and fai
   const pair=pairedSlice(4,20);assert.deepEqual(f.moves,[pair.move]);
   f.emit({type:'MOVE',move:'U'});flush();await tick();
   assert.equal(f.moves.at(-1),correctedFace(0,pair.rotation));
-  f.cube.recenter();f.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});
+  resetGyro(f);f.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});
   f.rotations.at(-1).forEach((v,i)=>assert.ok(Math.abs(v-f.view[i])<1e-8));
   const count=f.moves.length;
   for(const cancel of [()=>f.cube.suspend(),()=>{f.enable(false);},()=>f.cube.recalibrate()]) {
@@ -170,3 +174,86 @@ console.log('Bluetooth mapping, calibration, queue, connection lifecycle and fai
   f.emit({type:'MOVE',move:'F'});await f.cube.disconnect();flush();assert.equal(f.moves.at(-1),0);
 }
 console.log('Bluetooth paired command, frame correction, rejection, recenter and pending cancellation passed');
+
+// Sensor drift correction changes presentation only, including after a real
+// detected slice has changed the discrete frame used for subsequent moves.
+{
+  const f=fixture({sliceWindow:()=>40});
+  f.cube.setMode('bluetooth');await f.cube.connect();calibrate(f);
+  f.emit({type:'MOVE',move:'R',cubeTimestamp:100});
+  f.advance(10);f.emit({type:'MOVE',move:"L'",cubeTimestamp:110});await tick();
+  const pair=pairedSlice(4,20);
+  const {multiply,quaternion,distance}=await import('../web/input/orbit-math.js');
+  const inv=q=>[-q[0],-q[1],-q[2],q[3]];
+  const q=multiply(axisAngle([0,1,0],5*Math.PI/180),inv(pair.rotation));
+  for(let i=0;i<160;i++){
+    f.advance(20);
+    f.emit({type:'GYRO',quaternion:{x:-q[0],y:q[2],z:q[1],w:q[3]}});
+  }
+  assert(distance(quaternion(f.rotations.at(-1)),quaternion(f.view))<.1*Math.PI/180);
+  assert.deepEqual(f.moves,[pair.move],'orientation settling never sends a game turn');
+  f.emit({type:'MOVE',move:'U'});f.advance(50);await new Promise(r=>setTimeout(r,60));
+  assert.equal(f.moves.at(-1),correctedFace(0,pair.rotation),'drift offset never remaps logical faces');
+  await f.cube.disconnect();
+}
+console.log('PASS: post-slice neutral convergence preserves game commands and calibrated face mapping.');
+
+// Real scheduler path: one packet continues moving between frames; suspending
+// cancels old motion and disabling smoothing restores direct sensor following.
+{
+ const frames=new Map();let next=0,enabled=true;
+ const f=fixture({smoothing:()=>enabled,neutralTolerance:()=>0,
+  requestFrame:fn=>{frames.set(++next,fn);return next;},cancelFrame:id=>frames.delete(id)});
+ const step=time=>{const pending=[...frames.values()];frames.clear();for(const fn of pending)fn(time);};
+ f.cube.setMode('bluetooth');await f.cube.connect();calibrate(f);
+ f.emit({type:'GYRO',quaternion:{x:0,y:0,z:Math.SQRT1_2,w:Math.SQRT1_2}});
+ assert.equal(f.rotations.length,0,'gyro packet schedules presentation instead of jumping');
+ step(0);step(16);const early=f.rotations.at(-1);
+ step(32);assert.notDeepEqual(f.rotations.at(-1),early,'motion continues without another packet');
+ f.cube.suspend();assert.equal(frames.size,0,'suspension cancels queued frames');
+ f.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});step(1000);
+ f.rotations.at(-1).forEach((v,i)=>assert(Math.abs(v-f.view[i])<1e-8,'resume uses visible pose'));
+ enabled=false;
+ f.emit({type:'GYRO',quaternion:{x:0,y:0,z:Math.SQRT1_2,w:Math.SQRT1_2}});
+ assert.equal(frames.size,0);assert.notDeepEqual(f.rotations.at(-1),f.view);
+ enabled=true;
+ f.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});
+ assert.equal(frames.size,1);f.cube.resetGyro();assert.equal(frames.size,0);
+ await f.cube.disconnect();
+}
+console.log('PASS: frame-driven gyro continuation, suspension, reset and direct-follow toggle.');
+
+// Guided flow accepts every rigid U/F/R assignment and only advances after
+// the matching inverse. Neither calibration mode sends a gameplay command.
+{
+ const {cubeRotations,quaternion,distance}=await import('../web/input/orbit-math.js');
+ for(const U of 'UDFBRL')for(const F of 'UDFBRL')for(const R of 'UDFBRL'){
+  if(!calibrationFrame({U,F,R}))continue;
+  let view=matrix(axisAngle([1,0,0],.37));
+  const f=fixture({orientation:()=>view,rotate:m=>{view=m;}});
+  f.cube.setMode('bluetooth');await f.cube.connect();f.cube.beginCalibration();
+  f.emit({type:'MOVE',move:U+"'"});assert.equal(f.statuses.at(-1).calibrationStep,0);
+  f.emit({type:'MOVE',move:U});
+  assert(f.statuses.at(-1).awaitingUndo);
+  f.emit({type:'MOVE',move:F+"'"});assert.equal(f.statuses.at(-1).calibrationStep,0);
+  f.emit({type:'MOVE',move:U+"'"});
+  for(const face of [F,R]){f.emit({type:'MOVE',move:face});f.emit({type:'MOVE',move:face+"'"});}
+  assert(f.cube.adjustingNeutral);
+  assert.deepEqual(view,[-1,0,0,0,1,0,0,0,-1],'F faces camera with U up');
+  assert.equal(f.cube.confirmCalibration(),false,'drag and fresh gyro required');
+  view=matrix(axisAngle([1,0,0],.37));f.cube.markDragged();
+  f.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});assert(f.cube.confirmCalibration());
+  assert.deepEqual(f.moves,[]);
+  const saved=view.slice();
+  assert(f.cube.resetUfr());
+  for(const face of [U,F,R]){f.emit({type:'MOVE',move:face});f.emit({type:'MOVE',move:face+"'"});}
+  assert.equal(f.statuses.at(-1).calibration,'ready');assert.deepEqual(view,saved,'UFR reset leaves view untouched');
+  assert.deepEqual(f.moves,[]);
+  assert(f.cube.resetGyro());assert(f.cube.adjustingNeutral);
+  f.emit({type:'MOVE',move:F});assert.deepEqual(f.moves,[],'gyro edit consumes turns');
+  f.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});f.cube.markDragged();assert(f.cube.confirmCalibration());
+  f.emit({type:'MOVE',move:F});await tick();assert.deepEqual(f.moves,[2],'gyro reset retains face mapping');
+  await f.cube.disconnect();
+ }
+}
+console.log('PASS: guided inverse validation, canonical view and independent UFR/gyro reset across all 24 frames.');

@@ -81,3 +81,7 @@ each Bluetooth timing slider has its own reset button. Zero disables the
 corresponding recognizer. Timing changes recognition latency, not animation
 speed; `controls.turnAnimationSpeed` remains independent. See BLUETOOTH.md for
 direction rules, gyro tolerance, timing tradeoffs and physical validation.
+
+## Stable setting IDs for menu design
+
+Every authored setting has an end-of-line `SID` comment in `startup-defaults.js`. Use these numbers to describe menu layouts; see [the complete setting ID index](SETTING_IDS.md). IDs in the 90000+ range are legacy-only or have no modern behavior. Hidden controls that still seed modern views retain normal IDs. Keep IDs stable when reordering settings or changing defaults.

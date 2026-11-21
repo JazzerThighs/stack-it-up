@@ -5,6 +5,42 @@ export const controlsSchema = {
   "groups": [],
   "availability": {},
   "fields": {
+    "bluetoothNeutralDelay": {
+      "value": 125,
+      "min": 0,
+      "max": 1000,
+      "step": 25,
+      "label": "Neutral correction delay",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
+    "bluetoothNeutralSpeed": {
+      "value": 2.5,
+      "min": 0.25,
+      "max": 10,
+      "step": 0.25,
+      "label": "Neutral correction speed",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
+    "bluetoothNeutralTolerance": {
+      "value": 10,
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "label": "Neutral gyro correction zone",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
     "bluetoothWideWindow": {
       "value": 150,
       "min": 0,
@@ -123,6 +159,64 @@ export const controlsSchema = {
       "group": null,
       "controlIds": {
         "game": null
+      }
+    },
+    "bluetoothGyroSmoothing": {
+      "value": true,
+      "label": "Smooth gyro motion",
+      "commit": "change",
+      "checkbox": true,
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
+    "bluetoothGyroResponse": {
+      "value": 180,
+      "min": 40,
+      "max": 600,
+      "step": 10,
+      "label": "Gyro easing time",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
+    "bluetoothGyroSpeed": {
+      "value": 180,
+      "min": 30,
+      "max": 720,
+      "step": 10,
+      "label": "Maximum gyro rotation speed",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
+    "bluetoothGyroAcceleration": {
+      "value": 1200,
+      "min": 100,
+      "max": 6000,
+      "step": 100,
+      "label": "Maximum gyro acceleration",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
+    "bluetoothNeutralCutoff": {
+      "value": 6,
+      "min": 1,
+      "max": 90,
+      "step": 1,
+      "label": "Neutral correction motion cutoff",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "explorer": null
       }
     }
   }

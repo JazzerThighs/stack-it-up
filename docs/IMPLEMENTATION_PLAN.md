@@ -1,209 +1,103 @@
-# Smartcube controls and appearance implementation plan
+# Smartcube issues and implementation plan
 
-Status: all six milestones implemented; physical-cube and visual validation pending.
+Status: reported issues awaiting implementation and physical-cube validation.
 
-## 1. Calibrate face identities and the player's natural holding angle
+## 1. Guided calibration and independent HUD resets
 
-- [x] After a cube connects, begin calibration when the player closes settings
-  and the game becomes visible. Do not silently calibrate behind the settings menu.
-- [x] Establish which physical faces the player treats as U, F and R. Derive
-  the remaining faces consistently and apply that mapping to incoming turns.
-- [x] Require the player to manually drag the displayed cube into the same
-  orientation as their natural cubing angle while holding the physical cube
-  in that pose, then explicitly confirm the alignment.
-- [x] Keep this neutral pose independent of the default XYZ orbit-snapping
-  pitch, yaw and roll sliders. Those defaults must not dictate the player's grip.
-- [x] Store face mapping and gyro alignment as distinct calibration results.
-  Suspend gameplay input during calibration; discard calibration gestures and
-  turns rather than replaying them when calibration finishes.
-- [x] Define reconnect, cancellation and recalibration behavior. Reopening
-  ordinary settings during an already calibrated session must not silently
-  overwrite the confirmed alignment.
+### Found issues
 
-Acceptance: U/F/R turns match the player's chosen faces; gyro motion follows
-the manually aligned view without jumping to orbit defaults. Verify both game
-views, different grips, disconnect during calibration and reconnect.
+- The HUD's Recenter gyro button appears to do nothing.
+- Dragging the displayed cube into alignment with the smartcube is not reliably available.
+- Connection calibration is useful, but requires too much manual interaction.
 
-Validation so far: simulated connection/calibration tests cover all 24 face
-frames, invalid frames, required dragging/gyro data, ignored calibration turns,
-remapped moves, reconnect and cancellation. Input tests, type checks and schema
-checks pass. The local build is blocked by esbuild ancestor-directory access;
-the real-browser runner fails because its GPU process cannot start. Physical
-U/F/R direction and neutral-pose checks remain required before acceptance.
+### Required behavior
 
-## 2. Control animation speed and keep Bluetooth play responsive
+- [x] Replace the current calibration interaction with four mandatory steps, in order:
+  1. Perform U, then U'.
+  2. Perform F, then F'.
+  3. Perform R, then R'.
+  4. Edit the neutral orientation by dragging, then confirm and save it.
+- [x] Automatically advance through the face-recording steps as each turn and its inverse are completed. Keep calibration turns out of gameplay.
+- [x] Before the dragging step, automatically orient the displayed cube with F facing the camera directly and U facing the ceiling directly.
+- [x] Let the player drag from that initial orientation to their desired natural holding angle, then confirm it as the saved neutral position. Ensure gyro updates do not prevent this editing.
+- [x] Replace Recenter gyro in the main HUD with two separate buttons:
+  - **UFR Reset:** redo face-identity calibration independently of the saved neutral gyro alignment.
+  - **Gyro Reset:** redo the neutral gyro alignment independently of the established U/F/R face identities.
+- [x] Keep the two calibration aspects separate so the player can repair either without unnecessarily repeating the other.
 
-- [x] Add a regular-game turn-animation speed slider, using the shared settings
-  conventions for authored defaults, persistence and reset.
-- [x] During Bluetooth play, accelerate queued turn animations as needed to
-  catch up with the physical cube. Consider both pending move count and the
-  age of the oldest pending move; return to the selected speed when caught up.
-- [x] Preserve smooth visible motion while minimizing input-to-display delay.
-  Do not drop or reorder logical turns to shorten the visual queue.
-- [x] Preserve rule checks, placement/clear sequencing, undo and final state
-  when fast input overlaps animations. Define safe bounds for animation duration.
+Implemented: clockwise/inverse validation advances U, F and R automatically; inconsistent face assignments are rejected. Full calibration then rotates F toward the camera and U up, suspends gyro following, and requires a manual drag plus fresh gyro data before confirmation. UFR Reset omits the angle editor and keeps the saved neutral angle. Gyro Reset opens only the angle editor, retaining the face mapping and slice/wide correction. Calibration consumes physical turns without sending game commands. Reset requests during an active turn wait for the player to retry after it finishes.
 
-Acceptance: compare slow turns, rapid bursts and sustained fast sequences.
-Measure queue age and input-to-display latency on the physical cube, verify
-the final state against the complete ordered move sequence, and check that
-manual play still respects its slider.
+Validation: automated controller coverage includes all 24 face frames, inverse validation, canonical orientation and both independent resets. Physical-cube verification remains pending.
 
-Implementation notes: the turn-speed slider supports 0.25x–4x and persists
-through the controls settings store; its default lives in startup-defaults.js.
-Bluetooth animation timing updates every frame from pending count and oldest
-pending event age. An idle Bluetooth turn targets at most 90 ms; backlog
-catch-up targets 24–90 ms per visual stage, subject to frame/render costs.
-Placement, clear and spawn effects in the same Bluetooth command also catch
-up, in order. Animation progress is monotonic and the existing Animations
-switch still applies. The pre-existing 64-pending-turn overload safeguard
-remains; catch-up itself never removes moves.
+Acceptance: complete the four-step connection flow on desktop and mobile; verify that dragging is usable, confirmation saves the chosen neutral angle, and each HUD reset changes only its intended calibration aspect.
 
-Validation: input/settings suites, controller tests, synthetic frame-timing
-tests, schema checks and type checks pass. Hardware latency measurement and
-visual acceptance remain pending. Local bundling and browser testing encounter
-the same filesystem/GPU restrictions recorded above.
+## 2. Make turn-animation speed controls visible on mobile
 
-## 3. Put gyro reset on the main HUD
+### Found issue
 
-- [x] Move the gyro reset/recenter control into the main HUD beside the other
-  lower buttons so it is accessible during play without opening settings.
-- [x] Recenter the gyro against the player's current pose without changing the
-  established U/F/R face mapping or puzzle state.
-- [x] Provide clear availability when disconnected or awaiting calibration;
-  verify the lower-button layout on desktop and mobile.
+The expected turning-animation speed sliders cannot be found in the mobile app. They may be hidden, inaccessible, or absent from the visible settings routes.
 
-Implementation: Recenter gyro now sits beside the lower HUD view/undo buttons.
-It remains visible but disabled until connected and calibrated, with a tooltip
-explaining availability. Recenter feedback appears in the game message area.
-The next gyro sample anchors the current view; U/F/R mapping and puzzle state
-are unchanged. Tests cover those invariants and unavailable states. The button
-uses the existing wrapping/mobile HUD styles; visual desktop/mobile acceptance
-remains pending because of the browser GPU restriction.
+### Required behavior
 
-## 4. Recognize slice and gyro-assisted wide moves
+- [x] Locate the existing animation-speed controls and determine why they are not discoverable on mobile.
+- [x] Make the turning-animation speed sliders visible and reachable in mobile settings, with clear labels and readable current values.
+- [x] Distinguish animation playback speed from slice-pairing and wide-turn recognition timing.
+- [x] Verify that adjustments actually affect turning animations and retain the intended saved-preference and reset behavior.
 
-Status: implemented; resumed at the user's request. Physical-cube acceptance pending.
+Acceptance: find and operate the animation-speed controls on a mobile viewport without relying on desktop-only navigation or hidden controls.
 
-- [x] Detect eligible pairs of physical face turns within a configurable time
-  window and interpret/display them as a single slice move where appropriate.
-- [x] Expose the pairing window so players can tune it for different cube
-  models and their turning style. Define which timestamp source is reliable
-  and how to handle missing or batched device timestamps.
-- [x] Specify and validate eligible face/direction pairs in the calibrated
-  frame, including any whole-cube rotation compensation needed to preserve
-  the intended puzzle transformation. Timing proximity alone is insufficient.
-- [x] Flush unmatched turns promptly and in order. Keep pairing latency small;
-  clear pending pairs on disconnect, calibration or input suspension.
-- [x] Apply normal legality and bandaging checks to the resulting move.
-- [x] Verify that recognized slices move active centers relative to the placed
-  stack through the same engine command as manual slices.
-- [x] Combine a single face event with the matching gyro quarter rotation to
-  recognize a wide move, including actual center movement. Add a separate
-  persisted completion-time control, reset, and zero-to-disable behavior.
+Implementation: the turn-speed slider was nested inside Rendering style. It and the animation toggle now live on the dedicated Controls and camera > Turn animations page, independent of visual style and Bluetooth mode. Playback speed remains distinct from gyro smoothing and gesture timing. Mobile browser coverage checks visibility, live values, persistence and reset; physical-device validation remains pending.
 
-Acceptance: verify M/E/S directions, timing boundaries, unrelated fast turns,
-batched events, different calibration orientations and disconnect mid-pair.
-Compare resulting states, not only the displayed animation.
+## 3. Correct gyro drift near the player's saved neutral pose
 
-Implementation: the persisted Slice pairing window in Bluetooth settings is
-0-150 ms (0 disables recognition), with an authored 40 ms startup default and
-a reset button. Only adjacent opposite-face quarter turns with opposite
-notation directions pair. Half turns and unrelated moves preserve ordering.
-Device timestamp intervals are preferred; local intervals are a fallback.
-Recovered events without usable timestamps and unstamped same-tick batches
-are not paired. Monotonic receipt time bounds the wait independently of the
-device clock. A timeout flushes an unmatched turn; lifecycle changes clear it.
+### Found issue
 
-Each pair submits one ordinary slice command through the existing legality
-and bandaging path. After acceptance, a cumulative whole-cube correction
-updates subsequent face mapping and gyro output. Rejected commands clear
-pending input without applying that correction. Recalibration resets it;
-gyro recenter preserves it. Exact labeled-cell tests cover all pair directions,
-follow-up turns, repeated pairs and all 24 rigid frames. Integration tests cover
-rejection, recenter, suspension, recalibration and disconnect. Hardware timing,
-physical M/E/S feel and visual acceptance still require testing with the cube.
+Slice and wide-turn recognition can commit the game's move before the player has aligned the physical layers exactly. When the player subsequently straightens those layers, the gyro linkage may interpret that correction as whole-cube rotation. This can misalign the displayed active cubies and stack with the intended physical orientation. Small discrepancies can accumulate across multiple moves.
 
-Wide extension: a 0-500 ms completion window (authored default 150 ms) matches
-the inverse gyro quarter rotation to one face report and submits the opposite
-two-layer command. Direction/axis checks allow 20 degrees of orientation error.
-Gyro evidence may precede or follow the report, cannot be reused, and is cleared
-at lifecycle boundaries. Slice pairs take precedence within their own window.
-Ordinary faces wait up to the larger enabled window; recovered face events
-cannot correlate with current gyro motion. Real-controller/Wasm tests verify
-center relocation relative to a stationary stack for every slice/wide direction,
-matching manual moves, and verify that ordinary faces cannot do this. Hardware
-wide-turn and gyro-frame acceptance remains pending.
+### Proposed behavior
 
-Validation: input and settings suites, generated-schema checks and type checks
-pass. The build still fails at esbuild's denied ancestor-directory access;
-the agent browser runner cannot start its GPU process. Build and visual checks
-must be rerun in the user's normal local environment.
+Use the player's saved neutral pose and their tendency to return to a natural grip to gradually correct the gyro linkage.
 
-## 5. Make connection instructions product-neutral
+- [x] Define a configurable leniency zone around the player's saved neutral pose, with a default angular tolerance of **10 degrees** and a slider to adjust it.
+- [x] Detect moments of low gyro angular velocity while the player is within that neutral zone.
+- [x] During those moments, smoothly correct the linkage between physical gyro orientation and the displayed game cube, guiding the view back toward the saved neutral angle.
+- [x] Make this correction cooperate with the player's natural tendency to hold their cube so that it matches the on-screen view.
+- [x] After a slice or wide turn, let the player align the physical layers and hold the cube near neutral briefly to settle the gyro discrepancy.
+- [x] Do not require a neutral pause after every move. Allow the player to continue turning, then correct accumulated drift when they return to a steady neutral grip.
+- [x] Allow the same compensation during ordinary face-turn play, rather than limiting it to slices and wide turns.
+- [x] Keep intentional whole-cube motion responsive; compensation should not pull the view toward neutral while the player is deliberately rotating outside the zone or moving too quickly.
+- [x] Preserve actual game state and move semantics: correction adjusts orientation linkage, not the logical slice, wide turn, center positions, or placed stack.
 
-- [x] Remove GAN-specific names and instructions from user-facing help, status
-  messages and connection/calibration prompts. Use “smartcube” or “cube.”
-- [x] Keep device/protocol-specific handling inside the integration layer;
-  generic wording must not imply that unsupported devices are supported.
+### Implemented design
 
-Acceptance: review disconnected, connecting, connected, error and calibration
-states for product-neutral wording while retaining useful diagnostics.
+- The confirmed calibration view defines the session's natural holding angle. Correction accepts all 24 rigid cube orientations at that angle, choosing the nearest target without changing U/F/R mapping. Only explicit gyro calibration requires the reference face arrangement. The Bluetooth settings slider accepts 0-30 degrees (0 disables further correction while preserving the current alignment).
+- Neutral proximity is measured after discrete slice/wide compensation and accumulated drift alignment. An error outside the configured zone of every one of the 24 targets is not automatically pulled back; bring the view into the zone or explicitly recenter.
+- Raw sensor angular velocity must remain at or below the configurable motion cutoff (default 6 degrees/second, range 1-90, authored in `startup-defaults.js`) for a configurable delay (default 125 ms). Correction speed is configurable (default 2.5x): both the base 450 ms convergence time and 8 degrees/second cap scale together, giving a default 180 ms time constant and 20 degrees/second cap. The tolerance, delay and speed sliders all have authored values in `web/ui/startup-defaults.js`. Gaps above 250 ms restart settling.
+- A separate presentation offset preserves the discrete frame used for move mapping. Raw gyro samples still drive wide recognition. Ordinary turns do not inhibit compensation.
+- Suspension and recognized slice/wide frame changes restart settling without discarding the alignment. Calibration, disconnect, and explicit recenter clear compensation. Recenter establishes a fresh neutral using the current view and next sensor sample. UFR Reset remaps faces while retaining the saved neutral angle; Gyro Reset edits only the gyro alignment and preserves the current logical face correction.
+- Automated checks cover settling, convergence, motion and zone gates, sample-rate variation, saved settings, reset/suspension, and post-slice game-command isolation. Physical-cube feel and both-view hardware validation remain pending.
 
-Completed: connection help and calibration prompts use cube/smartcube wording.
-Actual connected-device names and underlying error diagnostics remain visible.
-Protocol-specific code and supported-device behavior are unchanged.
+Acceptance: test incomplete physical alignment followed by correction for slices and wide turns, repeated drift accumulation, ordinary turns near neutral, deliberate whole-cube rotations, and return to neutral. Verify both game views and check the feel on the actual smartcube.
 
-## 6. Group palette controls and color extras by cubie type
+## 4. Smooth incoming gyro orientation updates
 
-- [x] Keep each Color Palette dropdown at the top of its appearance controls.
-- [x] Place its individual piece color swatches directly underneath it.
-- [x] Add separate swatches for Extra Corners, Extra Edges, Extra Centers and
-  Extra Core in the corresponding appearance controls.
-- [x] Replace the previous extra-piece color hierarchy with selection based
-  solely on the individual extra cubie's type:
+### Found issue
 
-  | Extra cubie type | Default color |
-  | --- | --- |
-  | Corner | White |
-  | Edge | White |
-  | Center | Black |
-  | Core | Grey |
+The displayed cube currently jumps directly to each newly reported gyro orientation. The lack of interpolation makes rotation visibly jerky.
 
-- [x] Apply the type-based colors consistently across relevant cube views and
-  render styles. Keep extra-cubie classification separate from gameplay state
-  and the identity of retained tetrominoes or fragments.
-- [x] Define migration of saved extra-color preferences so the obsolete
-  hierarchy cannot override the new type-based policy. Keep defaults editable
-  in startup-defaults.js and preserve normal preference/reset behavior.
+### Required behavior
 
-Acceptance: verify all four extra types, per-view overrides, palette selection,
-save/reload/reset and both combined/split game views. Tests should use authored
-defaults rather than pinning changeable colors to literal values.
+- [x] Interpolate displayed orientation between gyro updates instead of rendering each message as an immediate jump.
+- [x] Enable gyro interpolation by default.
+- [x] Expose the interpolation control in the same Bluetooth settings page as Connect.
+- [x] Coordinate interpolation with neutral-pose compensation so both remain smooth and do not fight each other or introduce excessive lag.
+- [x] Handle connection, calibration, resets, and input suspension without blending from a stale orientation.
 
-Implementation: each view page now places its nine piece swatches and four
-extra-type swatches immediately under the palette dropdown, outside nested
-settings pages. Extra colors are schema-owned, inherited from startup-defaults.js
-and saved independently in each view profile. Older profiles without these
-fields inherit the new defaults. Legacy w/k/l/d extra markers remain readable
-in puzzle data but no longer choose rendered extra colors. Presets change
-piece colors only; Reset this view resets extra colors too.
+Acceptance: compare interpolation on and off using slow rotation, fast rotation, and uneven gyro update intervals. Verify smoothness, acceptable responsiveness, and clean behavior across both HUD resets.
 
-Validation: settings tests, type checks, all-27-cell classification tests,
-per-view persistence/reset, UI structure checks, and synchronous worker-owner
-color checks pass. Full worker integration requires the missing built Wasm;
-local bundling is blocked by esbuild directory access. Browser visual checks
-remain pending.
 
-## Implementation and verification
+Implemented: `web/input/gyro-smoothing.js` runs a critically damped angular spring with continuous velocity and bounded acceleration on animation frames. It follows the latest compensated target without replaying a backlog of sensor packets. This provides eased starts/stops/reversals beyond simple frame interpolation; it does not use literal Bezier segments that restart on every sample.
 
-Implement calibration first, then animation timing and HUD recentering, then
-palette controls and extra-cubie colors. Slice recognition is now implemented. Product-neutral copy and palette work can be completed
-independently. Update the current architecture and Bluetooth documentation as
-behavior ships; check off tasks only after implementation and validation.
+Bluetooth settings include Smooth gyro motion (default on), Gyro easing time (180 ms), Maximum gyro rotation speed (180 degrees/s), and Maximum gyro acceleration (1200 degrees/s squared). All values are authored in `startup-defaults.js` and saved as preferences. Higher limits reduce lag; lower limits favor readability. Raw samples still feed gesture recognition and neutral compensation. Suspension, disconnect, calibration and recenter discard stale animation state. Independent HUD resets now use the guided calibration flow in issue #1.
 
-Use the existing input, game-controller, settings and rendering owners described
-in [ARCHITECTURE.md](ARCHITECTURE.md). Run focused tests for each changed boundary,
-type checks and generated-settings checks as applicable, then build and run the
-real-browser gate for UI changes. Physical-cube testing is required for face
-calibration, gyro alignment, slice timing and perceived latency; mocks cannot
-certify those results.
+Automated checks cover frame continuation without packets, speed/acceleration bounds, frame rates, direction reversals, exact rest, quaternion sign equivalence, lifecycle cancellation and direct-follow mode. Physical-cube feel/latency validation remains pending.

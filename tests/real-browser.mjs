@@ -93,6 +93,45 @@ try{
  await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open && !document.querySelector('#setupDialog').open"));
  await checkPaletteNavigation("document.querySelector('#settingsDialog')");
+ await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+ assert(await evaluate(`(async()=>{
+   const root=document.querySelector('#settingsDialog');
+   [...root.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent==='Controls and camera').click();
+   [...root.querySelectorAll('#controlSettings .settings-page-link')].find(b=>b.textContent.startsWith('Input ')).click();
+   const source=document.querySelector('#gameInputSource');
+   source.value='bluetooth';source.dispatchEvent(new Event('change'));
+   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+   const slider=document.querySelector('#bluetoothNeutralTolerance');
+   if(!slider.checkVisibility())throw Error('Neutral correction slider hidden on mobile');
+   const original=slider.value;
+   slider.value='17';slider.dispatchEvent(new Event('input'));
+   if(document.querySelector('#bluetoothNeutralToleranceValue').textContent!=='17 degrees')throw Error('Neutral correction label did not update');
+   if(JSON.parse(localStorage.getItem('stack-it-up.controls')).values.bluetoothNeutralTolerance!==17)throw Error('Neutral correction was not saved');
+   slider.value=original;slider.dispatchEvent(new Event('input'));
+   for(const [id,value,suffix] of [['bluetoothNeutralDelay',375,' ms'],['bluetoothNeutralSpeed',3.5,'x'],['bluetoothNeutralCutoff',18,' degrees/s'],['bluetoothGyroResponse',250,' ms'],['bluetoothGyroSpeed',240,' degrees/s'],['bluetoothGyroAcceleration',1500,' degrees/s²']]){
+     const control=document.getElementById(id),saved=control.value;
+     if(!control.checkVisibility())throw Error(id+' hidden on mobile');
+     control.value=String(value);control.dispatchEvent(new Event('input'));
+     if(document.getElementById(id+'Value').textContent!==String(value)+suffix)throw Error(id+' label not updated');
+     if(JSON.parse(localStorage.getItem('stack-it-up.controls')).values[id]!==value)throw Error(id+' not saved');
+     control.value=saved;control.dispatchEvent(new Event('input'));
+   }
+
+   source.value='manual';source.dispatchEvent(new Event('change'));
+   [...root.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent==='Turn animations').click();
+   const speed=document.querySelector('#turnAnimationSpeed'),animations=document.querySelector('#animations');
+   if(!speed.checkVisibility()||!animations.checkVisibility())throw Error('Turn animation controls hidden on mobile');
+   const originalSpeed=speed.value;
+   speed.value='2.5';speed.dispatchEvent(new Event('input'));
+   if(document.querySelector('#turnAnimationSpeedValue').textContent!=='2.5x')throw Error('Turn speed label did not update');
+   if(JSON.parse(localStorage.getItem('stack-it-up.controls')).values.turnAnimationSpeed!==2.5)throw Error('Turn speed not saved');
+   document.querySelector('#turnAnimationReset').click();
+   if(speed.value!==originalSpeed)throw Error('Turn speed reset did not restore authored default');
+   return true;
+ })()`));
+ await call('Emulation.clearDeviceMetricsOverride');
+ console.log('PASS: mobile neutral gyro slider visibility, live value and persistence');
+
  assert(await evaluate(`(async()=>{
    const source=document.querySelector('#gameInputSource');
    if(source.value!=='manual')return false;

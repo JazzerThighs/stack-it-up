@@ -3,6 +3,8 @@
     "node tests/extra-colors.mjs",
     "node tests/animation-timing.mjs",
     "node tests/bluetooth-cube.mjs",
+    "node tests/gyro-neutral.mjs",
+    "node tests/gyro-smoothing.mjs",
     "node tests/slice-pairing.mjs",
     "node tests/wide-turns.mjs",
     "node tests/model-export.mjs",
@@ -172,6 +174,8 @@
   "input": [
     "node tests/animation-timing.mjs",
     "node tests/bluetooth-cube.mjs",
+    "node tests/gyro-neutral.mjs",
+    "node tests/gyro-smoothing.mjs",
     "node tests/slice-pairing.mjs",
     "node tests/wide-turns.mjs",
     "node tests/input-preferences.mjs",

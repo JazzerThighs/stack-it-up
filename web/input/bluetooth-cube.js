@@ -2,6 +2,8 @@ import {moveLabels} from '../engine/coordinates.js';
 import {multiply, quaternion, matrix} from './orbit-math.js';
 import {calibrationFrame} from './cube-calibration.js';
 import {createSlicePairing, pairedSlice, correctedFace} from './slice-pairing.js';
+import {createGyroNeutral} from './gyro-neutral.js';
+import {createGyroSmoothing} from './gyro-smoothing.js';
 import {wideFromFace} from './wide-turns.js';
 
 export function faceMoves(notation) {
@@ -20,15 +22,39 @@ export function ganQuaternion(q) {
 const inverse = q => [-q[0],-q[1],-q[2],q[3]];
 
 /** Device/session ownership; all game mutations go through the supplied command. */
-export function createBluetoothCube({connect, availability, play, active, orientation, rotate, status, now = () => performance.now(), sliceWindow = () => 0, wideWindow = () => 0, setTimer, cancelTimer}) {
+export function createBluetoothCube({connect, availability, play, active, orientation, rotate, status, now = () => performance.now(), sliceWindow = () => 0, wideWindow = () => 0, neutralTolerance = () => 10, neutralDelay = () => 125, neutralSpeed = () => 2.5, neutralCutoff = () => 6, smoothing = () => true, smoothingResponse, smoothingSpeed, smoothingAcceleration, requestFrame = globalThis.requestAnimationFrame?.bind(globalThis), cancelFrame = globalThis.cancelAnimationFrame?.bind(globalThis), setTimer, cancelTimer}) {
   let mode = 'manual', connection, subscription, generation = 0, connecting = false;
   let queue = [], draining = false, reference, base;
   let playing = false;
   let correction = [0,0,0,1];
   let calibration = 'disconnected', faces = {}, capture = null, dragged = false, latestGyro, frame;
+  let calibrationKind = 'full', calibrationStep = 0, awaitingUndo = false, savedNeutral;
   const report = message => status({mode, connecting, connected:!!connection, message,
-    calibration, faces:{...faces}, capture, dragged});
-  const recenter = () => { reference = base = null; };
+    calibration, calibrationKind, calibrationStep, awaitingUndo, faces:{...faces}, capture, dragged});
+  const neutral = createGyroNeutral({tolerance:neutralTolerance, delay:neutralDelay, speed:neutralSpeed, cutoff:neutralCutoff});
+  const smooth = createGyroSmoothing({response:smoothingResponse,speed:smoothingSpeed,acceleration:smoothingAcceleration});
+  let animationFrame=null, lastFrame=null, smoothStarted=false, smoothTarget;
+  const stopSmoothing = () => {
+    if(animationFrame!==null)cancelFrame?.(animationFrame);
+    animationFrame=lastFrame=null; smoothStarted=false;
+  };
+  function animateGyro(time){
+    animationFrame=null;
+    if(!active()||calibration!=='ready'||!connection){stopSmoothing();return;}
+    if(!smoothing()){rotate(matrix(smoothTarget));stopSmoothing();return;}
+    const dt=lastFrame===null?0:(time-lastFrame)/1000;lastFrame=time;
+    const result=smooth.step(dt);rotate(matrix(result.pose));
+    if(!result.done)animationFrame=requestFrame(animateGyro);
+    else lastFrame=null;
+  }
+  function presentGyro(target){
+    smoothTarget=target;
+    if(!smoothing()||!requestFrame){stopSmoothing();rotate(matrix(target));return;}
+    if(!smoothStarted){smooth.reset(quaternion(orientation()));smoothStarted=true;}
+    smooth.target(target);
+    if(animationFrame===null)animationFrame=requestFrame(animateGyro);
+  }
+  const recenter = () => { reference = base = null; neutral.reset(); stopSmoothing(); };
   const clear = () => { queue = []; pairing.clear(); };
   const pairing = createSlicePairing({windowMs:sliceWindow,wideWindowMs:wideWindow,now,setTimer,cancelTimer,emit:command=>{
     if (!active() || calibration !== 'ready' || !connection) { clear(); return; }
@@ -36,17 +62,18 @@ export function createBluetoothCube({connect, availability, play, active, orient
     queue.push(command); void drain(generation);
   }});
   const calibratedGyro = () => multiply(inverse(frame.rotation),multiply(latestGyro,frame.rotation));
-  function updateGyro() {
+  function updateGyro(sample = false) {
     if (!latestGyro || !frame) return;
-    if (!reference) { reference = latestGyro; base = multiply(quaternion(orientation()),inverse(correction)); }
+    if (!reference) { reference = latestGyro; base = multiply(quaternion(orientation()),inverse(correction)); neutral.reset(quaternion(orientation())); }
     const delta = multiply(inverse(frame.rotation), multiply(multiply(inverse(reference), latestGyro), frame.rotation));
-    rotate(matrix(multiply(multiply(base,delta),correction)));
+    const pose = multiply(multiply(base,delta),correction);
+    presentGyro(sample ? neutral.apply(pose,latestGyro,now()) : neutral.orient(pose));
   }
   async function disconnect(message = 'Disconnected. Select Connect to pair again.') {
     generation++; connecting = false;
     subscription?.unsubscribe(); subscription = null;
     const old = connection; connection = null; clear(); recenter();
-    calibration = 'disconnected'; faces = {}; capture = null; latestGyro = frame = null; report(message);
+    calibrationKind='full';calibrationStep=0;awaitingUndo=false;savedNeutral=null;calibration = 'disconnected'; faces = {}; capture = null; latestGyro = frame = null; report(message);
     try { await old?.disconnect(); } catch { report('Connection closed.'); }
   }
   async function drain(token) {
@@ -65,7 +92,7 @@ export function createBluetoothCube({connect, availability, play, active, orient
         if (token !== generation) break;
         if (!accepted) { clear(); report('Turn unavailable under the current game rules. Pending turns cleared.'); break; }
         if (pair && frame === commandFrame && calibration === 'ready') {
-          correction = multiply(correction,pair.rotation); if(active())updateGyro();
+          correction = multiply(correction,pair.rotation); neutral.pause(); if(active())updateGyro();
         }
       }
     } catch (error) {
@@ -76,16 +103,65 @@ export function createBluetoothCube({connect, availability, play, active, orient
       else if (!active()) clear();
     }
   }
+  function promptCalibration() {
+    const face=['U','F','R'][calibrationStep];
+    report(awaitingUndo ? `Step ${calibrationStep+1}/4: undo that ${face} turn (${face}').`
+      : `Step ${calibrationStep+1}/4: turn your ${face==='U'?'top':face==='F'?'front':'right'} face clockwise (${face}), then undo it. Keep the same grip.`);
+  }
+  function neutralStep() {
+    calibrationStep=3; capture=null; dragged=false; latestGyro=null;
+    // Camera lies on +Z. F is -Z, so half a turn about Y faces F toward
+    // the camera with U (+Y) toward the ceiling.
+    rotate(matrix([0,1,0,0]));
+    report('Step 4/4: hold the calibrated U face up, F forward and R right. Drag either cube to edit your natural angle, then confirm. Use Roll to adjust tilt.');
+  }
+  function finishFaces() {
+    const selected=calibrationFrame(faces);
+    if(!selected){faces={};calibrationStep=0;awaitingUndo=false;promptCalibration();return;}
+    if(calibrationKind==='ufr') {
+      // Rebase at the visible pose when the face basis changes. Retain the
+      // previously saved neutral angle; no gyro pose-edit step is required.
+      frame=selected;reference=latestGyro;base=quaternion(orientation());
+      correction=[0,0,0,1];neutral.reset(savedNeutral);stopSmoothing();clear();
+      calibration='ready';capture=null;
+      report('UFR mapping reset. Your saved neutral angle is unchanged.');
+    } else { frame=selected;neutralStep(); }
+  }
+  function calibrationMove(move) {
+    if(calibrationStep>=3)return;
+    const logical=['U','F','R'][calibrationStep];
+    if(awaitingUndo){
+      if(move!==faces[logical]+"'"){report(`Undo the recorded ${logical} turn on the same face before continuing. Restore any accidental turns first.`);return;}
+      awaitingUndo=false;calibrationStep++;
+      if(calibrationStep===3)finishFaces();else promptCalibration();
+      return;
+    }
+    if(!/^[URFDLB]$/.test(move)){report(`Start with one clockwise ${logical} quarter-turn. Restore any accidental turns first.`);return;}
+    const proposed={...faces,[logical]:move};
+    // Reject repeated/opposite/mirrored face assignments before accepting them.
+    const candidates='UDFBRL';
+    const valid=[...candidates].some(U=>[...candidates].some(F=>[...candidates].some(R=>
+      Object.entries(proposed).every(([k,v])=>({U,F,R})[k]===v)&&calibrationFrame({U,F,R}))));
+    if(!valid){report('That face is inconsistent with the previous faces. Undo that turn, keep the same grip, and try the requested face again.');return;}
+    faces=proposed;awaitingUndo=true;promptCalibration();
+  }
+  function startCalibration(kind) {
+    if(!connection)return false;
+    if(playing){report('Wait for the current turn to finish, then select reset again.');return false;}
+    if(kind!=='full'&&(!frame||!savedNeutral))return false;
+    clear();stopSmoothing();neutral.pause();calibrationKind=kind;
+    calibration='pending';calibrationStep=0;awaitingUndo=false;capture=null;dragged=false;
+    if(kind!=='gyro')faces={};
+    report('Close settings to continue cube calibration.');
+    return true;
+  }
   function event(e, token) {
     if (token !== generation || mode !== 'bluetooth') return;
     if (e.type === 'DISCONNECT') { void disconnect('Cube disconnected. Select Connect to reconnect.'); return; }
-    if (e.type === 'GYRO') latestGyro = ganQuaternion(e.quaternion);
-    if (!active()) { clear(); return; }
+    if (e.type === 'GYRO') {const sample=ganQuaternion(e.quaternion);if(!sample)return;latestGyro=sample;}
+    if (!active()) { clear(); neutral.pause(); stopSmoothing(); return; }
     if (calibration !== 'ready') {
-      if (calibration === 'calibrating' && capture && e.type === 'MOVE' && faceMoves(e.move).length) {
-        faces[capture] = e.move[0]; capture = null;
-        report('Face recorded. Undo that physical turn before recording another face.');
-      }
+      if (calibration === 'calibrating' && e.type === 'MOVE') calibrationMove(e.move);
       return;
     }
     if (e.type === 'MOVE') {
@@ -95,49 +171,33 @@ export function createBluetoothCube({connect, availability, play, active, orient
       const q = ganQuaternion(e.quaternion);
       if (!q) return;
       pairing.gyro(calibratedGyro());
-      updateGyro();
+      updateGyro(true);
     }
   }
   return {
     get mode() { return mode; },
     get animationBacklog() { return {playing, pending:queue.length, oldestAge:queue.length ? Math.max(0,now()-queue[0].received) : 0}; },
     get calibrating() { return calibration === 'calibrating'; },
+    get adjustingNeutral() { return calibration === 'calibrating' && calibrationStep === 3; },
     beginCalibration() {
-      if (!connection || calibration === 'ready' || !active()) return;
-      if (calibration === 'calibrating') return;
-      clear(); faces = {}; capture = null; dragged = false; calibration = 'calibrating';
-      report('Record U, F and R, then drag the displayed cube to match your grip.');
+      if (!connection || calibration !== 'pending' || !active() || playing) return;
+      clear(); stopSmoothing(); calibration = 'calibrating';
+      if(calibrationKind==='gyro')neutralStep();else promptCalibration();
     },
-    captureFace(face) {
-      if (calibration !== 'calibrating' || !['U','F','R'].includes(face)) return;
-      capture = face; report(`Turn the physical face you want to use as ${face}, then undo it.`);
-    },
-    markDragged() { if (calibration === 'calibrating' && !dragged) { dragged = true; report('View adjusted. Hold the cube in your natural pose and confirm when ready.'); } },
+    markDragged() { if (calibration === 'calibrating' && calibrationStep === 3 && !dragged) { dragged = true; report('Angle adjusted. Hold your physical cube in the matching natural pose and confirm.'); } },
     confirmCalibration() {
-      if (calibration !== 'calibrating' || !active()) return false;
-      const selected = calibrationFrame(faces);
-      if (!selected) { report('U, F and R must be three adjacent faces in a valid cube orientation. Record them again.'); return false; }
-      if (!dragged) { report('Drag the displayed cube to match your natural grip before confirming.'); return false; }
-      if (!latestGyro) { report('Waiting for orientation data. Gently move the physical cube, then confirm.'); return false; }
-      frame = selected; reference = latestGyro; base = quaternion(orientation());
-      correction = [0,0,0,1]; clear(); pairing.gyro(calibratedGyro()); capture = null; calibration = 'ready'; report('Cube calibrated. Ready to play.'); return true;
+      if (calibration !== 'calibrating' || calibrationStep !== 3 || !active()) return false;
+      if (!dragged) { report('Drag the displayed cube to edit your natural grip before confirming.'); return false; }
+      if (!latestGyro) { report('Waiting for fresh orientation data. Gently move the physical cube, then confirm.'); return false; }
+      reference = latestGyro; savedNeutral=quaternion(orientation());
+      if(calibrationKind==='full')correction=[0,0,0,1];
+      base=multiply(savedNeutral,inverse(correction)); neutral.reset(savedNeutral); stopSmoothing(); clear(); pairing.gyro(calibratedGyro());
+      capture = null; calibration = 'ready'; report('Cube calibrated. Ready to play.'); return true;
     },
-    recenter() {
-      if (!connection || calibration !== 'ready') return false;
-      pairing.clear();
-      recenter();
-      report('Gyro recentering: hold your natural pose. Face mapping is unchanged.');
-      return true;
-    },
-    suspend() {
-      clear();
-      if (capture) { capture = null; report('Face recording paused. Select Record again when ready.'); }
-    },
-    recalibrate() {
-      if (!connection) return;
-      clear(); capture = null; calibration = 'pending';
-      report('Close settings to calibrate your cube again.');
-    },
+    resetUfr() { const started=startCalibration('ufr');if(started)this.beginCalibration();return started; },
+    resetGyro() { const started=startCalibration('gyro');if(started)this.beginCalibration();return started; },
+    suspend() { clear(); neutral.pause(); stopSmoothing(); },
+    recalibrate() { return startCalibration('full'); },
     disconnect,
     setMode(value) {
       mode = value === 'bluetooth' ? value : 'manual';
@@ -156,7 +216,7 @@ export function createBluetoothCube({connect, availability, play, active, orient
         });
         if (token !== generation) { await next.disconnect(); return; }
         connection = next; connecting = false; clear();
-        calibration = 'pending'; latestGyro = null;
+        calibrationKind='full';calibrationStep=0;awaitingUndo=false;calibration = 'pending'; latestGyro = null;
         subscription = next.events$.subscribe({next:e=>event(e,token), error:()=>void disconnect('Bluetooth stream failed. Reconnect your cube.'), complete:()=>{if(token===generation)void disconnect('Cube disconnected.');}});
         report(`Connected to ${next.deviceName || 'cube'}. Close settings to calibrate.`);
       } catch (error) {

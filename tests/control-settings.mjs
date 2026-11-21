@@ -18,6 +18,7 @@ explorer.getElementById=id=>{assert(!gameOnly.has(id),`Explorer must not look up
 game.elements.turnAnimationReset={addEventListener(type,handler){assert.equal(type,'click');this.click=handler;}};
 game.elements.bluetoothSliceWindowValue={textContent:''};
 game.elements.bluetoothWideWindowValue={textContent:''};
+game.elements.bluetoothNeutralToleranceValue={textContent:''};
 const offGame=bindControlSettings(game,()=>updates++),offExplorer=bindControlSettings(explorer,()=>updates++,{explorer:true});
 assert(game.elements.hoverRings.checked);assert(explorer.elements.hoverRings.checked);
 explorer.elements.hoverRings.checked=false;explorer.elements.hoverRings.change();
@@ -50,5 +51,22 @@ setControlSetting('bluetoothWideWindow',0);assert.equal(controlSettings.bluetoot
 assert.equal(setControlSetting('bluetoothWideWindow',NaN),false);
 resetControlSettings('bluetoothWideWindow');
 assert.equal(controlSettings.bluetoothWideWindow,createSettingsStore(controlsSchema).values.bluetoothWideWindow);
+game.elements.bluetoothNeutralTolerance.value='15';game.elements.bluetoothNeutralTolerance.change();
+assert.equal(controlSettings.bluetoothNeutralTolerance,15);
+assert.equal(game.elements.bluetoothNeutralToleranceValue.textContent,'15 degrees');
+assert.equal(createSettingsStore(controlsSchema,globalThis.localStorage).values.bluetoothNeutralTolerance,15);
+assert.equal(setControlSetting('bluetoothNeutralTolerance',NaN),false);
+resetControlSettings('bluetoothNeutralTolerance');
+assert.equal(controlSettings.bluetoothNeutralTolerance,createSettingsStore(controlsSchema).values.bluetoothNeutralTolerance);
+for(const [key,value,unit] of [['bluetoothNeutralDelay',375,' ms'],['bluetoothNeutralSpeed',3.5,'x'],['bluetoothNeutralCutoff',18,' degrees/s'],['bluetoothGyroResponse',250,' ms'],['bluetoothGyroSpeed',240,' degrees/s'],['bluetoothGyroAcceleration',1500,' degrees/s²']]){
+ game.elements[key+'Value']={textContent:''};
+ game.elements[key].value=String(value);game.elements[key].change();
+ assert.equal(controlSettings[key],value);
+ assert.equal(game.elements[key+'Value'].textContent,String(value)+unit);
+ assert.equal(createSettingsStore(controlsSchema,globalThis.localStorage).values[key],value);
+ assert.equal(setControlSetting(key,NaN),false);
+ resetControlSettings(key);
+ assert.equal(controlSettings[key],createSettingsStore(controlsSchema).values[key]);
+}
 offGame();offExplorer();const before=updates;setControlSetting('wideTurns',false);assert.equal(before,updates);
 console.log('PASS: bidirectional control settings, camera mapping, dependencies, persistence and unsubscribe.');
