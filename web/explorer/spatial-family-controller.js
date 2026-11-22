@@ -81,7 +81,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     if(locked&&p.familyId!==family)throw Error(`Unlock ${[locked.shapes?'shapes':null,locked.colors?'colors':null].filter(Boolean).join(' and ')} to leave family ${family}.`);
     cancel();++lookupGeneration;source=p;family=p.familyId;remember([p]);
     $('familyExploreTitle').textContent=`Family ${family} · Line ${p.lineNumber}`;
-    view=get('familyExploreCube',{onChange:changed,onAvailabilityChange:syncButton,leadingControls:[button,colorButton]});view.familyExploration=true;
+    view=get('familyExploreCube',{onChange:changed,onAvailabilityChange:syncButton,leadingControls:[button,colorButton,$('familyFacemaps')]});view.familyExploration=true;
     const shown=data.presentation(p);
     if(!locked){view.fixedPieceColors=shown.fixed;view.setCells(shown.cells);return;}
     const token=run;

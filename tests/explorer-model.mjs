@@ -9,12 +9,29 @@ import {
   matchesTarget,
   displayIndex,
 } from "../web/explorer/model.js";
+import {PackingCube} from "../web/explorer/cube-view.js";
 import { xyz, rotateCell } from "../web/render/geometry.js";
 
 const cells = Array.from({ length: 27 }, (_, i) => ({
   color: String(i),
   piece: i,
 }));
+// Derive face centers from the cells the named turn actually moves.
+for (const perspective of [false, true]) {
+  const view = Object.create(PackingCube.prototype);
+  view.perspective = perspective;
+  view.resetView();
+  const centers = {};
+  for (const face of 'UDFBLR') {
+    const after = turn(cells, parseMoves([face])[0]);
+    const moved = cells.flatMap((cell,i) => after[i] === cell ? [] : [xyz(i)]);
+    centers[face] = view.project([0,1,2].map(axis =>
+      moved.reduce((sum,p) => sum + p[axis],0) / moved.length));
+  }
+  assert(centers.L[0] < 0 && centers.R[0] > 0);
+  assert.equal(centers.F[2], Math.max(...Object.values(centers).map(p => p[2])));
+  assert.equal(centers.U[1], Math.max(...Object.values(centers).map(p => p[1])));
+}
 for (let m = 0; m < 30; m++) {
   assert.deepEqual(turn(turn(cells, m), (m + 15) % 30), cells);
   assert.deepEqual([m, m, m, m].reduce(turn, cells), cells);
@@ -31,7 +48,7 @@ for (let m = 0; m < 30; m++) {
   }
 }
 assert.equal(new Set(ROTATIONS.map((r) => r.join(","))).size, 24);
-assert.deepEqual(parseMoves(["R2", "U'", "F"]), [5, 5, 15, 2]);
+assert.deepEqual(parseMoves(["R2", "U'", "F"]), [5, 5, 15, 3]);
 // Native frame preserves catalog handedness; legacy facelets remain archived.
 for (const [indices, axis, side] of [
   ["123456789", 1, 1],

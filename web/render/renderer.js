@@ -14,6 +14,9 @@ import {registerRenderer,graphicsNotice} from './recovery.js';
 import {vertexCoverage,withCoverage} from './transparency.js';
 import {activeCubie,rebuildSlots} from './active-cubie.js';
 import {mergeFragments,joinMeshes,exposedFragment,neighborCell} from './cell-fragments.js';
+import {matrix, orbitTilt} from '../input/orbit-math.js';
+import {orbitSettings} from '../input/orbit-settings.js';
+import {flipCameraFrame} from '../engine/coordinates.js';
 import {CAMERA_DISTANCE, projectPoint, viewPoint} from "./camera.js";
 import {compositeParts} from "./piece-mesh.js";
 import { S } from "../engine/snapshot.js";
@@ -55,9 +58,7 @@ class Renderer {
     this.canvas = canvas;
     this.labels = labels;
     this.isStack = stack;
-    this.yaw = Math.PI - 0.55;
-    this.pitch = 0.4;
-    this.resetOrientation();
+    this.resetView();
     this.perspective = true;
     this.xray = true;
     this.gravity = 0;
@@ -216,15 +217,26 @@ class Renderer {
     const parts=this.state ? compositeParts(this.state.slice(0,27),this.state.slice(27,54),colors,(mask,cornerO)=>context.engine.bandMesh(mask,cornerO),this.modelShape,true,0,displaySettings.stackPieces) : [data];
     this.upload(this.stackMesh,joinMeshes(parts));
   }
+  updateOverlapMarks() {
+    if (this.isStack || !this.state) return;
+    const vertices = [], state = this.state, thickness = displaySettings.overlapThickness;
+    const active = state[S.ACTIVE] | state[S.FLOATING];
+    for (let i = 0; thickness && i < 27; i++) {
+      if (!state[i] || !(active & (1 << i))) continue;
+      const start = vertices.length;
+      overlapMarks(vertices, xyz(i), thickness);
+      if (this.animation?.kind === 'turn') rotateCell(vertices, start, i, this.animation.move, this.animation.t);
+    }
+    this.upload(this.overlaps, new Float32Array(vertices));
+  }
   setState(s, animation = null) {
-    if(!this._appearanceScope)getViewAppearance('active',this);
+    if(!this._appearanceScope){getViewAppearance('active',this);this.onState?.(s,animation);}
     if(!this._appearanceScope&&hasViewAppearance('active'))return withViewAppearance('active',this,()=>{this._appearanceScope=true;try{return this.setState(s, animation);}finally{this._appearanceScope=false;}});
     this.gridKey = null;
     this.state = s;
     this.rebuildSolidIdentities=assemblyUsesSolids(displaySettings.activePieces);
     this.rebuildSlots=rebuildSlots(s,this.rebuildSlots);
     this.animation = animation;
-    this.onState?.(s,animation);
     this.gravity = s[S.GRAVITY];
     const activeGeometry = [], floatingGeometry = [],identityGeometry=[];
     const grid = [],
@@ -235,8 +247,7 @@ class Renderer {
       ghostSolid = [],
       ghostLines = [],
       preview = [],
-      centers = [],
-      overlaps = [];
+      centers = [];
     this.cellGenerator=(m,o)=>context.engine.bandMesh(m,o);
     let assembledMask=0;
     this.activeKinds=Array(27).fill('cubies');
@@ -279,11 +290,9 @@ class Renderer {
         const floating = !!(s[S.FLOATING] & (1 << i));
         const p = xyz(i),
           active = !!((s[S.ACTIVE] | s[S.FLOATING]) & (1 << i)),
-          occupied = s[i] !== 0,
           startLine = lines.length,
           startSolid = solid.length,
           startEmpty = empty.length,
-          startOverlap = overlaps.length,
           startCenter = centers.length,
           startActiveLine = activeLines.length;
         if (active) wire(activeLines, p, 0.445, [1, 0.95, 0.77]);
@@ -301,14 +310,12 @@ class Renderer {
               : rgb(colors[activePieceColor(s[S.PIECE],s[S.ACTIVE],i)]),
             i,s,this,
           );
-          if (occupied) overlapMarks(overlaps, p);
         } else box(empty, p, 0.438, [0.13, 0.18, 0.21]);
         if (animation?.kind === "turn")
           for (const [out, start] of [
             [lines, startLine],
             [solid, startSolid],
             [empty, startEmpty],
-            [overlaps, startOverlap],
             [centers, startCenter],
             [activeLines, startActiveLine],
           ])
@@ -322,7 +329,7 @@ class Renderer {
     this.upload(this.identityMesh,new Float32Array(identityGeometry));
     this.upload(this.activeLines, new Float32Array(activeLines));
     this.upload(this.centers, new Float32Array(centers));
-    this.upload(this.overlaps, new Float32Array(overlaps));
+    this.updateOverlapMarks();
     if (!this.isStack && this.ghost) {
       for (let i = 0; i < 27; i++)
         if (this.ghost.mask & (1 << i)) {
@@ -478,7 +485,7 @@ class Renderer {
       add("recent", this.ghostLines, gl.LINES, 0.45, true);
       if (this.activeOutlines)
         add("outlines", this.activeLines, gl.LINES, 1, true, breath);
-      add("overlaps", this.overlaps, gl.LINES, 0.95, true);
+      add("overlaps", this.overlaps, displaySettings.overlapThickness > 1 ? gl.TRIANGLES : gl.LINES, 0.95, true);
       add("choice", this.previewLines, gl.LINES, 1, true);
     }
     const gridKey = this.rearGridOnly ? this.perspective + ":" + this.orientation.join(",") : "all";
@@ -510,6 +517,17 @@ class Renderer {
     return sceneDecorations.call(this, add, unit, context);
   }
 
+  resetView(frontOnPositiveZ = false) {
+    this.orbitController?.cancel();
+    const tilt = matrix(orbitTilt(orbitSettings));
+    const pose = frontOnPositiveZ ? tilt : flipCameraFrame(tilt);
+    this.orientation = pose;
+    // Keep the classic drag camera in the same pose for its next update.
+    const horizontal = Math.hypot(pose[2], pose[8]);
+    this.pitch = Math.atan2(pose[5], horizontal);
+    this.yaw = horizontal > 1e-8 ? Math.atan2(-pose[2], pose[8]) : 0;
+    this.roll = horizontal > 1e-8 ? Math.atan2(-pose[3], pose[4]) : Math.atan2(pose[1], pose[0]);
+  }
   resetOrientation() {
     this.orbitController?.cancel();
     const cy = Math.cos(this.yaw),
@@ -527,6 +545,14 @@ class Renderer {
       -cy * sp,
       cy * cp,
     ];
+    if (this.roll) {
+      const c = Math.cos(this.roll), s = Math.sin(this.roll);
+      for (let i = 0; i < 9; i += 3) {
+        const x = this.orientation[i], y = this.orientation[i+1];
+        this.orientation[i] = c*x - s*y;
+        this.orientation[i+1] = s*x + c*y;
+      }
+    }
   }
   orbit(dx, dy) {
     const c = Math.cos(dx),

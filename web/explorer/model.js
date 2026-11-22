@@ -1,4 +1,4 @@
-import { CubeStack } from "../engine/coordinates.js";
+import { CubeStack, explorerMoveLabels, notationMove } from "../engine/coordinates.js";
 
 // Catalog identities are preserved by the proper rotation into renderer space.
 export const displayIdentity = identity => identity;
@@ -52,23 +52,7 @@ export function turn(cells, move) {
 }
 // Conventional notation in the explorer's displayed frame (game labels retain
 // their historical R/L naming). Geometry index 4 is x-negative, index 5 positive.
-export const NOTATION = [
-  "U",
-  "D",
-  "F",
-  "B",
-  "L",
-  "R",
-  "M",
-  "E",
-  "S",
-  "u",
-  "d",
-  "f",
-  "b",
-  "l",
-  "r",
-];
+export const NOTATION = explorerMoveLabels;
 export function parseMoves(tokens) {
   return tokens.flatMap((token) => {
     const match = /^([UDFBLRMESudfblr])(['2]?)$/.exec(token);
@@ -76,7 +60,7 @@ export function parseMoves(tokens) {
     const move = NOTATION.indexOf(match[1]);
     return match[2] === "2"
       ? [move, move]
-      : [move + (match[2] === "'" ? 15 : 0)];
+      : [notationMove(move + (match[2] === "'" ? 15 : 0), NOTATION)];
   });
 }
 export const ROTATIONS = [];

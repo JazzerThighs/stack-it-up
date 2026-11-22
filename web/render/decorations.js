@@ -15,7 +15,7 @@ import {
   rotateCell,
   overlapMarks,
 } from "./geometry.js";
-import { CubeStack, moveLabels } from "../engine/coordinates.js";
+import { CubeStack, formatMove } from "../engine/coordinates.js";
 import { stickerCenter, sliceCandidates } from "../input/drag.js";
 const $ = (id) => document.getElementById(id);
 export function sceneDecorations(add, unit, context) {
@@ -192,7 +192,8 @@ export function sceneDecorations(add, unit, context) {
         for (const reverse of [false, true]) {
           const angle = front + (reverse ? 0.38 : -0.38),
             p = point(angle),
-            label = moveLabels[c.base],
+            notation = formatMove(c.base + (reverse ? 15 : 0), "'", context.moveLabels),
+            label = notation[0],
             size = c.base >= 9 ? 14 : 18;
           for (const [x, y, u, v] of glyphs[label.toUpperCase()])
             segment(
@@ -202,7 +203,7 @@ export function sceneDecorations(add, unit, context) {
               [0.95, 0.98, 1],
               2,
             );
-          if (reverse)
+          if (notation.endsWith("'"))
             segment(
               arrows,
               offset(p, 11, 12),

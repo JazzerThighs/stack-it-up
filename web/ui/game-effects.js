@@ -1,5 +1,5 @@
 import {S} from '../engine/snapshot.js';
-import {moveLabels} from '../engine/coordinates.js';
+import { formatMove } from '../engine/coordinates.js';
 import {controlSettings} from '../input/control-settings.js';
 
 /** DOM/renderer effects for commands; no engine mutations belong here. */
@@ -13,7 +13,7 @@ export function createGameEffects({$,state,renderers,names,animate,resolveAnimat
       locked(){ $('message').textContent='Select Resume turns to turn slices again.'; },
       rejected(){active().setState(state());invalidate();$('message').textContent='That turn would split a bandaged fragment.';},
       async present({before,after,trace,move,fromT}) {
-        const label=`${moveLabels[move%15]}${move>=15?"'":''}`;
+        const label=formatMove(move);
         $('message').textContent=`Turning ${label}.`;
         await animate(220*(1-fromT),t=>active().setState(before,{kind:'turn',move,t:fromT+(1-fromT)*t}),()=>controlSettings.turnAnimationSpeed);
         if(trace.length)await resolveAnimations(before,after,trace,move);

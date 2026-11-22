@@ -82,7 +82,7 @@ export function identitySolid(out,p,h,color,id,rotation=IDENTITY) {
 
 export function identityGray(id) {const value=[.34,.46,.58,.70,.82,.94][((id%6)+6)%6];return [value,value,value];}
 
-export function solidColor(id,color,gray=visualSettings.solidGray) {
-  return visualSettings.solidUniform?rgb(visualSettings.solidColor):gray?identityGray(id):color;
+export function solidColor(id,color,gray=visualSettings.solidGray,settings=visualSettings) {
+  return settings.solidUniform?rgb(settings.solidColor):gray?identityGray(id):color;
 }
 export function solidStyleKey(){return [visualSettings.cubieScale,visualSettings.solidGray,visualSettings.solidUniform,visualSettings.solidColor,visualSettings.solidFixed].join(':');}

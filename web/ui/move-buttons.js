@@ -1,4 +1,4 @@
-import { moveLabels } from "../engine/coordinates.js";
+import { formatMove } from "../engine/coordinates.js";
 const $ = (id) => document.getElementById(id);
 export function createMoveButtons(context) {
   const $ = context.getElementById || ((id) => document.getElementById(id));
@@ -177,7 +177,7 @@ export function createMoveButtons(context) {
       stem.style.width = `${Math.max(0, length - 9)}px`;
       stem.style.transform = `rotate(${angle}rad)`;
       stem.style.opacity = opacity;
-      const label = moveLabels[move % 15] + (move >= 15 ? "′" : "");
+      const label = formatMove(move, "′", context.moveLabels);
       button.querySelector("small").textContent = label;
       button.title = label + (slice ? " — slice" : " — Shift-click for wide");
       button.setAttribute(

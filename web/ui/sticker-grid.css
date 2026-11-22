@@ -1,0 +1,9 @@
+.face-grid i:has(.map-layer) {display:block;position:relative;aspect-ratio:1;background:transparent;font-style:normal;container-type:inline-size}
+.map-layer {position:absolute;inset:0;display:grid;place-items:center;font:bold 70cqi/1 system-ui}
+.map-layer::before {content:"";position:absolute;inset:0;border-radius:12%}
+.map-filled::before,.map-ball::before {background:currentColor}
+.map-ball::before {inset:8%;border-radius:50%}
+.map-extra::before {border:2px dotted currentColor}
+.map-layer.map-overlap {outline:2px solid var(--pink,#ef7fa9);outline-offset:-2px}
+.map-layer:first-child {clip-path:inset(0 0 calc(100% - var(--map-boundary,100%)) 0)}
+.map-layer:last-child {clip-path:inset(var(--map-boundary,100%) 0 0 0)}

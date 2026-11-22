@@ -1,4 +1,4 @@
-import {moveLabels} from '../engine/coordinates.js';
+import {moveLabels,explorerMoveLabels} from '../engine/coordinates.js';
 import {multiply, quaternion, matrix} from './orbit-math.js';
 import {calibrationFrame} from './cube-calibration.js';
 import {createSlicePairing, pairedSlice, correctedFace} from './slice-pairing.js';
@@ -6,10 +6,10 @@ import {createGyroNeutral} from './gyro-neutral.js';
 import {createGyroSmoothing} from './gyro-smoothing.js';
 import {wideFromFace} from './wide-turns.js';
 
-export function faceMoves(notation) {
+export function faceMoves(notation, labels = moveLabels) {
   const match = /^([URFDLB])(['2]?)$/.exec(notation);
   if (!match) return [];
-  const move = moveLabels.indexOf(match[1]);
+  const move = labels.indexOf(match[1]);
   return match[2] === '2' ? [move, move] : [move + (match[2] === "'" ? 15 : 0)];
 }
 
@@ -196,7 +196,7 @@ export function createBluetoothCube({connect, availability, play, active, explor
       const target = explorerTurnTarget();
       if (!target) clear();
       else if (e.type === 'MOVE') {
-        const moves = faceMoves((frame.mapping[e.move?.[0]] || '') + (e.move?.slice(1) || ''));
+        const moves = faceMoves((frame.mapping[e.move?.[0]] || '') + (e.move?.slice(1) || ''), explorerMoveLabels);
         for (const move of moves) enqueue({target, moves:[move], received:now()});
       }
       if (target && e.type === 'GYRO' && reference) {

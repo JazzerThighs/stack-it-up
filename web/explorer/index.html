@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./workspace.css" />
   <link rel="stylesheet" href="../ui/settings-components.css" />
+  <link rel="stylesheet" href="../ui/sticker-grid.css" />
   </head>
   <body>
     <div class="app">
@@ -1202,7 +1203,8 @@
         aria-label="Family exploration"
       >
         <h2 id="familyExploreTitle">Family exploration</h2>
-        <div id="familyExploreCube" class="cube"><button id="familyLockShapes" type="button" class="family-lock-shapes" aria-pressed="false" disabled>Lock Shapes</button><button id="familyLockColors" type="button" aria-pressed="false" disabled>Lock Colors</button></div>
+        <div id="familyExploreCube" class="cube"><button id="familyLockShapes" type="button" class="family-lock-shapes" aria-pressed="false" disabled>Lock Shapes</button><button id="familyLockColors" type="button" aria-pressed="false" disabled>Lock Colors</button><button id="familyFacemaps" type="button" aria-pressed="false" aria-controls="familyMapPanel">Facemaps</button></div>
+        <section id="familyMapPanel" aria-label="Family Explorer facemaps" hidden><div id="familyNet"></div></section>
         <details class="family-explore-info">
           <summary id="familyExploreProgress" role="status">
             Choose a family

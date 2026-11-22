@@ -234,8 +234,8 @@ cube.reset();
 assert.deepEqual(cube.cells, cells);
 
 const { sliceCandidates } = await import(new URL("input/drag.js",assetRoot));
-const p = cube.project([0, 0, -1.5]),
-  c = sliceCandidates(cube, { p: [0, 0, -1.5], axis: 2 })[0];
+const p = cube.project([0, 0, 1.5]),
+  c = sliceCandidates(cube, { p: [0, 0, 1.5], axis: 2 })[0];
 const x = 600 + p[0] * cube.unit,
   y = 400 - p[1] * cube.unit;
 const down = {

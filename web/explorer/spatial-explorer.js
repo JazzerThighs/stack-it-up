@@ -119,6 +119,7 @@ export async function initializeSpatialExplorer(
   };
   const views = createExplorerViews({
     root,
+    mapCoordinates: engine.snapshot(),
     meshGenerator: (mask, cornerO) => engine.bandMesh(mask, cornerO),
     data: provider,
   });

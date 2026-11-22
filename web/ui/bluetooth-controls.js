@@ -12,9 +12,74 @@ export function formatMacInput(input) {
   input.setSelectionRange(caret, caret);
 }
 
+const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
+
+function bindMacHistory($) {
+  const field = $('bluetoothMacField'), input = $('bluetoothMac'), menu = $('bluetoothMacHistory');
+  const key = 'stack-it-up.bluetooth.macHistory';
+  let addresses = [];
+  try {
+    const saved = JSON.parse(globalThis.localStorage?.getItem(key) || '[]');
+    if (Array.isArray(saved)) addresses = [...new Set(saved.filter(a => typeof a === 'string' && macPattern.test(a)).map(a => a.toUpperCase()))];
+  } catch { /* Storage may be unavailable. */ }
+
+  function save() {
+    try { globalThis.localStorage?.setItem(key, JSON.stringify(addresses)); } catch { /* Keep this session's history. */ }
+  }
+  function open() {
+    menu.replaceChildren();
+    for (const address of addresses) {
+      const row = document.createElement('div');
+      const select = document.createElement('button'), remove = document.createElement('button');
+      select.type = remove.type = 'button';
+      select.textContent = address;
+      select.onclick = () => {
+        input.value = address;
+        input.focus();
+        menu.hidden = true;
+      };
+      remove.textContent = '\u00d7';
+      remove.setAttribute('aria-label', 'Delete ' + address + ' from history');
+      remove.onclick = () => {
+        addresses = addresses.filter(a => a !== address);
+        save();
+        input.focus();
+        open();
+      };
+      row.append(select, remove);
+      menu.append(row);
+    }
+    menu.hidden = addresses.length === 0;
+  }
+  input.addEventListener('focus', open);
+  input.addEventListener('click', open);
+  input.addEventListener('input', () => { formatMacInput(input); menu.hidden = true; });
+  field.addEventListener('focusout', event => {
+    if (!field.contains(event.relatedTarget)) menu.hidden = true;
+  });
+  field.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !menu.hidden) {
+      event.preventDefault();
+      event.stopPropagation();
+      input.focus();
+      menu.hidden = true;
+    }
+    if (event.key === 'ArrowDown' && event.target === input) {
+      open();
+      if (!menu.hidden) { event.preventDefault(); menu.querySelector('button').focus(); }
+    }
+  });
+  return address => {
+    if (!macPattern.test(address)) return;
+    address = address.toUpperCase();
+    addresses = [address, ...addresses.filter(a => a !== address)];
+    save();
+  };
+}
+
 export function bindBluetoothControls({root = document, ...options}) {
   const $ = id => root.getElementById(id);
-  $('bluetoothMac').addEventListener('input', () => formatMacInput($('bluetoothMac')));
+  const rememberMac = bindMacHistory($);
   const supported = !!globalThis.navigator?.bluetooth && globalThis.isSecureContext;
   // Load before the Connect click so requestDevice retains user activation.
   let library, current;
@@ -50,12 +115,15 @@ export function bindBluetoothControls({root = document, ...options}) {
     neutralTolerance: () => controlSettings.bluetoothNeutralTolerance,
     wideWindow: () => controlSettings.bluetoothWideWindow,
     availability: () => globalThis.navigator.bluetooth.getAvailability?.(),
-    connect: onStatus => library.connectSmartCube({onStatus,
-      deviceSelection: $('bluetoothShowAll').checked ? 'any' : 'filtered',
-      macAddressProvider:async () => {
-      const value = $('bluetoothMac').value.trim();
-      return value || null;
-    }}),
+    connect: async onStatus => {
+      const manualMac = $('bluetoothMac').value.trim();
+      const connection = await library.connectSmartCube({onStatus,
+        deviceSelection: $('bluetoothShowAll').checked ? 'any' : 'filtered',
+        macAddressProvider: async () => manualMac || null,
+      });
+      rememberMac(connection.deviceMAC || manualMac);
+      return connection;
+    },
     status: state => {
       current = state; refresh();
       if (state.calibration === 'pending') queueMicrotask(() => controller.beginCalibration());
@@ -111,7 +179,7 @@ export function bindBluetoothControls({root = document, ...options}) {
   });
   $('bluetoothConnect').addEventListener('click', () => {
     const mac = $('bluetoothMac').value.trim();
-    if (mac && !/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(mac)) {
+    if (mac && !macPattern.test(mac)) {
       $('bluetoothStatus').textContent = 'Enter a MAC address as AA:BB:CC:DD:EE:FF, or leave it blank for automatic detection.'; return;
     }
     void controller.connect();

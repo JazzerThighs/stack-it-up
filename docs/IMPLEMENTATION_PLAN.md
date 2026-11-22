@@ -1,6 +1,6 @@
 # Implementation plan: navigation, cube controls, and facemaps
 
-Milestones 1 through 3 are implemented. Physical Bluetooth hardware verification remains open.
+Milestones 1 through 4 are complete. Physical Bluetooth hardware verification remains open.
 
 ## 1. Shared top bar
 
@@ -99,8 +99,10 @@ The Game toolbar and Settings checkbox control the same facemap layout. Closing 
 
 - [x] Move **Lock Shapes** and **Lock Colors** into the Family Explorer's bottom pool of buttons.
 - [x] They must be the **first** and **second** buttons, respectively.
-- [ ] Add facemaps for the Family Explorer cube.
-- [ ] Use the shared facemap appearance and motion rules below.
+- [x] Add facemaps for the Family Explorer cube.
+- [x] Use the shared facemap appearance and motion rules below.
+
+The **Facemaps** button follows the two locks. It opens six face maps and the M, E, and S slices beside the cube on desktop and below it on phones. Game and Explorer share the sticker renderer. Chrome verified all nine Explorer maps fit above the toolbar at 320, 390, and 1280 CSS pixels. The Game tests exercised partial, reversed, cancelled, and completed turns for all 30 moves.
 
 ## 5. Shared facemap appearance
 
@@ -115,26 +117,28 @@ Apply these rules wherever facemaps are available. Determine the appearance from
 | Ball | Replace the square sticker with a circle, slightly smaller in diameter than a normal sticker's width; color the circle to match the ball |
 | Empty cell | Do not render a sticker |
 
-- [ ] Extra cubies shown as cubies use the ghostlike outline treatment. When represented as balls or solids, use the corresponding ball or solid treatment.
-- [ ] Solid numbers must describe the shape actually being displayed.
-- [ ] Empty stickers disappear visually without collapsing the facemap's spatial cell positions.
-- [ ] Use the owning view's colors and composition settings so that its facemaps match its 3D cube.
+- [x] Extra cubies shown as cubies use the ghostlike outline treatment. When represented as balls or solids, use the corresponding ball or solid treatment.
+- [x] Solid numbers must describe the shape actually being displayed.
+- [x] Empty stickers disappear visually without collapsing the facemap's spatial cell positions.
+- [x] Use the owning view's colors and composition settings so that its facemaps match its 3D cube.
 
 ### Dragged-move animation
 
-- [ ] Preserve the existing meter-filling transition used while the player drags a move.
-- [ ] Apply the transition to the **entire sticker representation**, including its contents and outline.
-- [ ] The meter level must control replacement of the old sticker with the new sticker as one coordinated transition.
-- [ ] Filled squares, ghost outlines, numbers, circles, and empty cells must all follow the same motion-transition behavior.
-- [ ] Do not update just the background color while leaving a number, outline, or circle unchanged.
+- [x] Preserve the existing meter-filling transition used while the player drags a move.
+- [x] Apply the transition to the **entire sticker representation**, including its contents and outline.
+- [x] The meter level must control replacement of the old sticker with the new sticker as one coordinated transition.
+- [x] Filled squares, ghost outlines, numbers, circles, and empty cells must all follow the same motion-transition behavior.
+- [x] Do not update just the background color while leaving a number, outline, or circle unchanged.
+
+The Game and Family Explorer clip the outgoing and incoming sticker at the same meter boundary, including the overlap outline. Family Explorer detects pieces in the proposed end position so a turn that breaks or completes a piece previews its new appearance before release.
 
 ## 6. Implementation sequence
 
 - [x] 1. Refactor the shared top bar: QR panel, screen selector, sole Settings entry, Bluetooth entry, and Graphics Reset.
 - [x] 2. Separate the Bluetooth page and route physical-cube input across Game, Explorer, and Solver, including the Start/Target toggle and per-view resets.
 - [x] 3. Update bottom control pools: Game Facemaps, Split Stack, and Explorer's ordered Lock Shapes / Lock Colors buttons.
-- [ ] 4. Share facemap rendering between Game and Explorer, including wrapping and view-specific composition/color interpretation.
-- [ ] 5. Apply the complete-sticker meter transition to every facemap representation.
+- [x] 4. Share facemap rendering between Game and Explorer, including wrapping and view-specific composition/color interpretation.
+- [x] 5. Apply the complete-sticker meter transition to every facemap representation.
 - [ ] 6. Validate desktop and mobile layouts, application navigation, rendering, and physical-cube behavior.
 
 ## 7. Acceptance checks
@@ -151,7 +155,7 @@ Apply these rules wherever facemaps are available. Determine the appearance from
 - [x] The game's bottom controls include Facemaps and use the label Split Stack.
 - [x] Facemaps wrap within their reserved area on small screens.
 - [x] Explorer's first two bottom controls are Lock Shapes and Lock Colors.
-- [ ] Explorer facemaps reflect its current cube.
-- [ ] Whole pieces, individual cubies, extras, solids, balls, and empty cells follow the shared appearance rules.
-- [ ] Dragging forward, reversing, cancelling, and completing a move transitions the entire sticker representation consistently with the meter level.
+- [x] Explorer facemaps reflect its current cube.
+- [x] Whole pieces, individual cubies, extras, solids, balls, and empty cells follow the shared appearance rules.
+- [x] Dragging forward, reversing, cancelling, and completing a move transitions the entire sticker representation consistently with the meter level.
 - [ ] Test physical-cube routing and calibration resets with a real connected cube, in addition to automated checks.

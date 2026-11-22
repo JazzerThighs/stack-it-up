@@ -20,9 +20,12 @@ for(let a=0;a<3;a++)for(let b=0;b<3;b++)if(a!==b)for(const sa of [-1,1])for(cons
 // Camera-facing normal for labels and diagnostics. Snapping instead compares
 // complete resting poses, including the configured camera-relative tilt and roll.
 export function frontFace(m){let axis=0;for(let k=1;k<3;k++)if(Math.abs(m[k*3+2])>Math.abs(m[axis*3+2]))axis=k;return {axis,sign:m[axis*3+2]>=0?1:-1};}
-export function snapTarget(q,settings){
+export function orbitTilt(settings){
  const rad=Math.PI/180;
- const tilt=multiply(multiply(axisAngle([0,1,0],settings.orbitHorizontal*rad),axisAngle([1,0,0],-settings.orbitVertical*rad)),axisAngle([0,0,1],settings.orbitRoll*rad));
+ return multiply(multiply(axisAngle([0,1,0],settings.orbitHorizontal*rad),axisAngle([1,0,0],-settings.orbitVertical*rad)),axisAngle([0,0,1],settings.orbitRoll*rad));
+}
+export function snapTarget(q,settings){
+ const tilt=orbitTilt(settings);
  let best=null,face=null,error=Infinity;
  for(const m of cubeRotations){const target=multiply(tilt,quaternion(m)),d=distance(q,target);if(d<error){best=target;face=frontFace(m);error=d;}}
  return {q:best,face,error};

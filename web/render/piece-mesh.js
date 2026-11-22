@@ -15,13 +15,17 @@ import {joinMeshes} from './cell-fragments.js';
 import {rgb, xyz} from './geometry.js';
 const cache=new Map(),colored=new Map();
 let coloredBytes=0;
-export function compositeParts(board,ids,palette,generate,appearance='jelly',spatialColors=false,extrasMask=0,individual=false) {
+export function pieceIdentitySlots(board,ids) {
+  const slots = new Map();
+  for (let i=0;i<27;i++) if (board[i] && !slots.has(ids[i])) slots.set(ids[i],slots.size);
+  return slots;
+}
+export function compositeParts(board,ids,palette,generate,appearance='jelly',spatialColors=false,extrasMask=0,individual=false,slots=pieceIdentitySlots(board,ids)) {
   const groups=new Map();
   for(let i=0;i<27;i++)if(board[i]) {
     const key=ids[i]+':'+board[i],g=groups.get(key)||{mask:0,color:board[i],id:ids[i]};
     g.mask|=1<<i;groups.set(key,g);
   }
-  const slots=new Map([...new Set([...groups.values()].map(g=>g.id))].map((id,i)=>[id,i]));
   const pieces=[...groups.values()].flatMap(g=>{
     const kind=typeof individual==='string'||typeof individual==='object'?assemblyKind(individual,!!identifyMask(g.mask),!!(g.mask&extrasMask)):individual?'cubies':'whole';
     return kind==='whole'?[g]:Array.from({length:27},(_,i)=>i).filter(i=>g.mask&(1<<i)).map(i=>({...g,wholeMask:g.mask,mask:1<<i,solidIdentity:kind==='solids'}));

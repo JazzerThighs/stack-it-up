@@ -22,7 +22,7 @@ export function createBrowserFixture(html,{
   });
   function element() {
     return {
-      checked:false,value:defaultValue,style:{},dataset:{},children:[],hidden:false,disabled:false,textContent:'',
+      checked:false,value:defaultValue,style:{setProperty(name,value){this[name]=value;}},dataset:{},children:[],hidden:false,disabled:false,textContent:'',
       classList:{toggle(){},add(){},remove(){}},
       append(...children){this.children.push(...children);},replaceChildren(...children){this.children=children;},
       after(){},remove(){},removeAttribute(){},attachShadow(){return this.shadowRoot??=element();},

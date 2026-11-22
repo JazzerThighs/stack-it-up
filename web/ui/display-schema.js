@@ -56,6 +56,19 @@ export const displaySchema = {
     }
   ],
   "fields": {
+    "overlapThickness": {
+      "value": 1,
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "label": "3D overlap line thickness",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "game": "overlapThickness",
+        "explorer": null
+      }
+    },
     "faceMapSize": {
       "value": 104,
       "min": 64,

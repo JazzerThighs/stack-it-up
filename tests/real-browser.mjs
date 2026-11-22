@@ -116,6 +116,14 @@ try{
        const rect = grid.getBoundingClientRect();
        return rect.left < bounds.left - 1 || rect.right > bounds.right + 1 || rect.width <= 0;
      })) throw Error('Face grids exceed the map panel at ' + innerWidth);
+     const cell = grids[0].querySelector('i');
+     for (const boundary of [25,75,100,0]) {
+       cell.style.setProperty('--map-boundary', boundary+'%');
+       const [oldLayer,newLayer] = [...cell.children].map(layer=>getComputedStyle(layer).clipPath);
+       if (oldLayer !== 'inset(0px 0px '+(100-boundary)+'%)' ||
+           newLayer !== 'inset('+boundary+'% 0px 0px)') throw Error('Unexpected sticker clips: '+oldLayer+' / '+newLayer);
+     }
+     cell.style.removeProperty('--map-boundary');
      button.click();
      if (button.getAttribute('aria-pressed') !== 'false' || split.textContent !== previousLabel ||
          document.getElementById('stageFaceMap').checked) throw Error('Facemaps toggle did not restore the layout');
@@ -201,6 +209,36 @@ try{
 
  await waitFor(()=>evaluate("document.querySelector('#explorer').shadowRoot.querySelector('#familyExploreCube canvas')?.dataset.geometrySource==='worker' && document.querySelector('#explorer').shadowRoot.querySelector('#familyExploreCube canvas').getAttribute('aria-busy')==='false'"),'worker geometry ready');
  const familyRoot = "document.querySelector('#explorer').shadowRoot";
+ await evaluate(`document.querySelector('#explorer').shadowRoot.getElementById('familyFacemaps').click()`);
+ for (const width of [320, 390, 1280]) {
+   await call('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:width<600});
+   assert(await evaluate(`(async()=>{
+     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+     const root=${familyRoot}, panel=root.getElementById('familyMapPanel'), net=root.getElementById('familyNet');
+     const rect=panel.getBoundingClientRect(), toolbar=root.querySelector('#familyExploreCube .packing-actions').getBoundingClientRect();
+     return net.querySelectorAll('.face-grid').length===9 && net.querySelectorAll('i').length===81 &&
+       panel.checkVisibility() && panel.clientHeight>0 && panel.scrollWidth<=panel.clientWidth+1 &&
+       rect.bottom<=toolbar.top+1;
+   })()`), 'Family maps must wrap above controls at '+width);
+ }
+ await call('Emulation.clearDeviceMetricsOverride');
+ assert(await evaluate(`(async()=>{
+   const host=document.querySelector('#explorer'),root=host.shadowRoot,cube=host.physicalTurnTarget('explorer');
+   const m=await import(new URL('ui/view-appearance.js', document.querySelector('script[type=module][src]').src));
+   m.setViewAppearance('family','whole','solids');
+   m.setViewAppearance('family','fragments','solids');
+   m.setViewAppearance('family','extras','cubies');
+   const net=root.getElementById('familyNet');
+   const numbers = new Set([...net.querySelectorAll('.map-number')].map(layer=>layer.textContent));
+   if(!['4','6','8','12','20'].every(n=>numbers.has(n)) || !net.querySelector('.map-extra') || !net.querySelector('.map-ball'))return false;
+   cube.setState(cube.cells,{kind:'turn',move:0,t:.4});
+   const partial=getComputedStyle(net.querySelector('i').lastElementChild).clipPath.includes('60%');
+   cube.setState(cube.cells);
+   m.setViewAppearance('family','extras','solids');
+   return partial && !net.querySelector('.map-extra') && !!net.querySelector('.map-ball');
+ })()`), 'Family maps follow actual solid identities, extras, and turn progress');
+ await evaluate(`${familyRoot}.getElementById('familyFacemaps').click()`);
+
  await evaluate(`(async () => {
    const module = await import(new URL('ui/view-appearance.js', document.querySelector('script[type=module][src]').src));
    module.setViewAppearance('family','whole','cubies');

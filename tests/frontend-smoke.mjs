@@ -30,7 +30,7 @@ const previous=context.state[54];await context.play(6);flush();assert(context.en
 $('customLayers').checked=true;$('customLayers').onchange();flush();assert($('renderLayers').children.length>=17);$('resetLayers').onclick();flush();assert(!$('customLayers').checked);
 assert.equal($('stageNet').children.length,9);
 assert.deepEqual($('stageNet').children.slice(6).map(n=>n.children[0].textContent),['M','E','S']);
-const {faceMapCell}=await import('../dist/ui/face-map.js');
+const {faceMapCell}=await import('../dist/ui/sticker-grid.js');
 for(let map=6;map<9;map++){
  const cells=Array.from({length:9},(_,c)=>faceMapCell(context.state,map,c));
  assert.equal(new Set(cells).size,9);assert.equal(cells[4],13);
@@ -275,7 +275,7 @@ assert(context.renderers[0].combined,'face-map layout keeps active field and sta
 assert.equal($('viewMode').textContent,'Hide face map');
 const mapBefore=context.state;
 context.renderers[0].setState(mapBefore,{kind:'turn',move:4,t:.5});
-assert($('stageNet').children[0].children[1].children.some(c=>c.style.backgroundImage),'map shows live active fill');
+assert.equal($('stageNet').style['--map-boundary'],'50%','map shows live turn progress');
 context.renderers[0].setState(mapBefore);
 $('viewMode').onclick();flush();assert(!$('stageFaceMap').checked);
 assert.equal(context.renderers[0].combined,$('combined').checked);

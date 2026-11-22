@@ -15,6 +15,24 @@ export const moveLabels = [
   "r",
   "l",
 ];
+export const explorerMoveLabels = [
+  'U','D','B','F','L','R','M','E','S','u','d','b','f','l','r',
+];
+// Game and Explorer world frames differ by half a turn about Y.
+// Post-multiply a column-major camera matrix by that rotation (its own inverse).
+export function flipCameraFrame(matrix) {
+  return matrix.map((v,i) => i >= 3 && i < 6 ? v : -v);
+}
+// Numeric moves are also stored in replays. Translate at the notation boundary:
+// the internal M rotates like face 4, which Explorer labels L and Game labels R.
+export function notationMove(move, labels = moveLabels) {
+  const base = move % 15;
+  const reversed = (base === 6 && labels[4] === 'R') || (base === 8 && labels[2] === 'B');
+  return reversed ? (move + 15) % 30 : move;
+}
+export function formatMove(move, prime = "'", labels = moveLabels) {
+  return labels[move % 15] + (notationMove(move, labels) >= 15 ? prime : '');
+}
 const faces = [
   ["U", 1, 2],
   ["D", 1, 0],

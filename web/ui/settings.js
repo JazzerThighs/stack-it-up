@@ -96,7 +96,7 @@ export function initializeSettings(value) {
       openSettingsPage(id);
     };
   }
-  initializeDisplayControls(document,key=>{if(key==='activePieces'||key==='stackPieces')for(const r of context.renderers){if(r.sourceMesh)r.setMesh(r.sourceMesh);if(r.state)r.setState(r.state,r.animation);}refreshSettings();context.invalidate();});
+  initializeDisplayControls(document,key=>{if(key==='overlapThickness')for(const r of context.renderers)r.updateOverlapMarks();if(key==='activePieces'||key==='stackPieces')for(const r of context.renderers){if(r.sourceMesh)r.setMesh(r.sourceMesh);if(r.state)r.setState(r.state,r.animation);}refreshSettings();context.invalidate();});
   initializePaletteControls();
   let cornerO=jellyStyleKey();
   initializeVisualControls(document,()=>{

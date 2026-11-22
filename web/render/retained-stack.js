@@ -1,6 +1,6 @@
 import {capturePieceFragments,retainedPieceFragments} from '../explorer/retained-pieces.js';
 import {exposedFragment,joinMeshes,mergeFragments,neighborCell} from './cell-fragments.js';
-import {compositeParts} from './piece-mesh.js';
+import {compositeParts,pieceIdentitySlots} from './piece-mesh.js';
 import {identifyMask} from '../explorer/family-exploration.js';
 import {assemblyKind} from './assembly.js';
 import {colors} from './geometry.js';
@@ -33,7 +33,8 @@ export function retainedStack(state,generate,modelShape,composition='retained',p
  }
  if(typeof composition==='object'){
   const board=Array.from(state.slice(0,27),(c,i)=>owners[i]?0:c);
-  const regular=mergeFragments(compositeParts(board,state.slice(27,54),palette,generate,modelShape,false,0,composition));
+  const ids=state.slice(27,54);
+  const regular=mergeFragments(compositeParts(board,ids,palette,generate,modelShape,false,0,composition,pieceIdentitySlots(state,ids)));
   for(let i=0;i<27;i++)if(!owners[i])fragments[i]=regular[i];
  }
  const joined=(i,axis,side)=>{

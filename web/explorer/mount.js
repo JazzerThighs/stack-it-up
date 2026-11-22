@@ -16,7 +16,9 @@ export async function mountExplorer(host, onProgress) {
     layout.rel = "stylesheet"; layout.href = new URL("./workspace.css", import.meta.url).href;
     const settings = document.createElement('link');
     settings.rel = 'stylesheet'; settings.href = new URL('../ui/settings-components.css', import.meta.url).href;
-    root.replaceChildren(css, layout, settings, app);
+    const maps = document.createElement('link');
+    maps.rel = 'stylesheet'; maps.href = new URL('../ui/sticker-grid.css', import.meta.url).href;
+    root.replaceChildren(css, layout, settings, maps, app);
     host.textContent = '';
     const { initializeExplorer } = await import('./script.js');
     const scope=settingsScope(root);

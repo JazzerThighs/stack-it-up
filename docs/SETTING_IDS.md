@@ -86,6 +86,7 @@ Legacy IDs identify defaults with no effect on modern configured gameplay, or an
 | 5010 | `display.practiceStartSize` | Live default |
 | 5011 | `display.practiceTargetSize` | Live default |
 | 5012 | `display.uiTheme` | Live default |
+| 5013 | `display.overlapThickness` | Live default |
 | 6001 | `controls.turnAnimationSpeed` | Live default |
 | 6002 | `controls.bluetoothSliceWindow` | Live default |
 | 6003 | `controls.bluetoothGyroSmoothing` | Live default |

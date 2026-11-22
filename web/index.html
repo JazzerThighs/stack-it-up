@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="./style.css" />
   <link rel="stylesheet" href="./ui/settings-components.css" />
     <link rel="stylesheet" href="./ui/topbar.css" />
+  <link rel="stylesheet" href="./ui/sticker-grid.css" />
   </head>
   <body>
     <section id="startupScreen" class="startup-screen" aria-label="Startup checks">
@@ -73,7 +74,10 @@
 <p id="bluetoothWideHelp" class="muted">Move two layers together: a face-turn event plus the matching quarter-turn gyro motion becomes one wide game move, including its centers. This window limits gesture completion time. Set to 0 to disable. Longer windows allow slower gestures but delay ordinary face turns.</p>
 <label><input id="bluetoothShowAll" type="checkbox"> Show all Bluetooth devices (if your cube is missing)</label>
 <label for="bluetoothMac">Cube MAC address (optional)</label>
-<input id="bluetoothMac" type="text" value="9C:7F:64:8A:A2:73" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" spellcheck="false" aria-describedby="bluetoothHelp">
+<div id="bluetoothMacField">
+<input id="bluetoothMac" type="text" aria-controls="bluetoothMacHistory" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" spellcheck="false" aria-describedby="bluetoothHelp">
+<div id="bluetoothMacHistory" role="group" aria-label="Previously used MAC addresses" hidden></div>
+</div>
 <p id="bluetoothHelp" class="muted">Disconnect your smartcube from other apps, wake it, then select Connect. If your cube is missing, try Show all Bluetooth devices and select your cube. The optional MAC address helps decode data after selection; it does not find a missing device. U/D/F/B/R/L turns play the matching regular game moves; inverse turns stay inverse. Rotation controls both game views. Close this page to calibrate your grip and face mapping. Manual buttons remain available for hold, choices and undo.</p>
 <button id="bluetoothConnect" type="button" disabled>Connect</button>
 <button id="bluetoothDisconnect" type="button" disabled>Disconnect</button>
@@ -192,7 +196,7 @@
                   aria-hidden="true"
                 ></canvas>
               </div>
-              <div class="viewport stack-viewport"><div id="stageFaceMapPanel"><h3>Face map</h3><div class="net" id="stageNet"></div><p>Fill: active turn progress · background: stack · pink: overlap</p></div>
+              <div class="viewport stack-viewport"><div id="stageFaceMapPanel"><h3>Face map</h3><div class="net" id="stageNet"></div><p>Pink outlines mark active pieces overlapping the stack.</p></div>
                 <div class="view-title">
                   <span class="dot stack-dot"></span> Your stack
                   <span class="view-caption">Stays fixed</span>
@@ -1034,6 +1038,10 @@
               ><input id="activeOutlines" type="checkbox" /> Active cubie
               outlines</label
             >
+<div class="setting-row">
+  <label for="overlapThickness">3D overlap line thickness <output id="overlapThicknessValue" for="overlapThickness">1</output></label>
+  <input id="overlapThickness" type="range" min="0" max="10" step="1" value="1">
+</div>
 </fieldset>
 <fieldset>
 <legend>Depth ordering</legend>
@@ -1083,8 +1091,7 @@
             <label><input id="stageFaceMap" type="checkbox" /> Show combined cube beside face map</label><p class="muted">One cube shows the active pieces and stack; the other panel shows live face maps. Drag a turn to fill and drain the cells.</p><div class="setting-row"><label for="faceMapSize">Face map size <output id="faceMapSizeValue" for="faceMapSize">104px</output></label><input id="faceMapSize" type="range" min="64" max="200" step="1" value="104" aria-describedby="faceMapSizeHelp"><p class="muted" id="faceMapSizeHelp">Size of each face and slice grid in both map panels. M, E and S look inward from L, D and F; each includes the core.</p></div><div class="net" id="net">
 </div>
             <p class="map-note">
-              Filled = stack · ring = active<br />Pink ring = overlap; keep
-              turning
+              Pink outlines mark active pieces overlapping the stack.
             </p>
           </details>
           <details class="help">

@@ -21,13 +21,17 @@ import {
 } from "./model.js";
 
 
+import {createFamilyFacemaps} from './family-facemaps.js';
+
 export function createExplorerViews({
   root = document,
   meshGenerator,
+  mapCoordinates,
   data,
 }) {
   const $ = id => root.getElementById(id);
   const cubes = new Map();
+  const familyMaps = createFamilyFacemaps($, mapCoordinates, () => cubes.get('familyExploreCube'));
   function display(view,id){const [pieces,size]=viewPreferences[id]||['practiceTargetPieces','practiceTargetSize'];view.displayId=id;view.assembly=view.lockedAssembly||displaySettings[pieces];view.individualPieces=view.assembly==='cubies';view.explorationSolids=assemblyUsesSolids(view.assembly);view.connected=true;view.detectionFilters=data.filters?.()||{};view.zoomScale=displaySettings[size]/100;}
   initializeDisplayControls(root,key=>{for(const [id,cube]of cubes){display(cube,id);if(key.endsWith('Pieces'))cube.setState(cube.cells,cube.currentAnimation);cube.invalidate();}});
   data.refreshDetection=()=>{for(const cube of cubes.values()){cube.detectionFilters=data.filters?.()||{};cube.setState(cube.cells,cube.currentAnimation);cube.onChange?.(cube);}};
@@ -73,6 +77,7 @@ export function createExplorerViews({
       view.opacity=1-Number($("targetTransparency").value)/100;
       view.connected = (id === "solvedCube" || id === "practiceRight") && $("targetComposite").checked;
       display(view,id);
+      if (id === 'familyExploreCube') view.onFrame = (...frame) => familyMaps(view, ...frame);
       cubes.set(id, view);
     }
     return cubes.get(id);
@@ -222,7 +227,7 @@ export function createExplorerViews({
   }
   $('practiceScramble').onclick=async()=>{
     const cube=cubes.get('practiceLeft');if(!cube||cube.busy||cubes.get('practiceRight')?.busy||!matchesTarget(cube.cells,targetCells))return;
-    cancelPractice();cube.setCells(targetCells);cube.playbackMs=55;
+    cancelPractice();cube.setCells(targetCells,{resetView:false});cube.playbackMs=55;
     return practicePlayback.run({
       plan:()=>{let last=-1;return Array.from({length:20},()=>{let move;do{move=Math.floor(Math.random()*30);}while(move%15===last);last=move%15;return move;});},
       play:move=>playPracticeMove(cube,move),

@@ -275,7 +275,7 @@ console.log('PASS: guided inverse validation, canonical view and independent UFR
   assert.deepEqual(played, [0]);
   gate.resolve(true);
   await tick();
-  assert.deepEqual(played, [0,16,2,2]);
+  assert.deepEqual(played, [0,16,3,3]);
   assert.deepEqual(pack.moves, []);
   assert.equal(pack.rotations.length, 1);
   assert.notDeepEqual(pack.rotations[0],pack.view);
@@ -288,7 +288,7 @@ console.log('PASS: guided inverse validation, canonical view and independent UFR
   pack.emit({type:'MOVE',move:'D'});
   pending.resolve(true);
   await tick();
-  assert.deepEqual(played,[0,16,2,2,4]);
+  assert.deepEqual(played,[0,16,3,3,5]);
   console.log('PASS: calibrated Explorer face turns, independent opposite turns, doubles and screen switches.');
 }
 

@@ -17,7 +17,7 @@ import {solidStyleKey} from '../render/identity-solids.js';
 import {visualSettings} from '../render/visual-settings.js';
 import {mergeFragments,joinMeshes,exposedFragment,neighborCell} from '../render/cell-fragments.js';
 import {turnTransform,composeRotation,movedCell} from '../render/transforms.js';
-import {CubeStack} from '../engine/coordinates.js';
+import {CubeStack,notationMove,formatMove} from '../engine/coordinates.js';
 import {explorationMeshes} from "./exploration-mesh.js";
 import {CAMERA_DISTANCE} from "../render/camera.js";
 import {compositeParts,jellyCell} from "../render/piece-mesh.js";
@@ -97,7 +97,7 @@ export class PackingCube extends Renderer {
       for (let m = 0; m < 30; m++) {
         const o = document.createElement("option");
         o.value = m;
-        o.textContent = NOTATION[m % 15] + (m >= 15 ? "'" : "");
+        o.textContent = formatMove(m,"'",NOTATION);
         this.moveSelect.append(o);
       }
       toolbar.append(this.moveSelect);
@@ -106,7 +106,7 @@ export class PackingCube extends Renderer {
       button("Reset", () => this.reset());
     }
     button("Reset view", () => {
-      this.resetOrientation();
+      this.resetView();
       this.invalidate();
     });
     const orbitToggle=button('XYZ Orbit',()=>{});orbitToggle.className='touch-orbit-toggle';this.stopOrbitToggle=bindOrbitToggle(orbitToggle);
@@ -116,11 +116,11 @@ export class PackingCube extends Renderer {
     this.classicGrid=document.createElement('div');this.classicGrid.className='packing-classic-controls';host.append(this.classicGrid);
     this.attachedNodes=[];
     if(!readOnly){
-      const arrows=createMoveButtons({renderers:[this],get state(){return null;},get busy(){return view.busy;},play:m=>this.play(m),invalidate:()=>this.invalidate(),
+      const arrows=createMoveButtons({moveLabels:NOTATION,renderers:[this],get state(){return null;},get busy(){return view.busy;},play:m=>this.play(m),invalidate:()=>this.invalidate(),
         getElementById:id=>id==='cubeMoves'?this.arrowHost:{checked:controlSettings[id]}});
       this.attachedNodes=arrows.attachedNodes;this.layoutArrows=arrows.layoutCubeControls;
       for(let m=0;m<30;m++){
-        const b=document.createElement('button');b.type='button';b.textContent=NOTATION[m%15]+(m>=15?"'":'');
+        const b=document.createElement('button');b.type='button';b.textContent=formatMove(m,"'",NOTATION);
         b.onclick=()=>this.play(m);this.classicGrid.append(b);
       }
       this.widthButton=button('Regular turns',()=>setControlSetting('wideTurns',!controlSettings.wideTurns));
@@ -130,14 +130,14 @@ export class PackingCube extends Renderer {
     this.observer.observe(host);
     canvas.addEventListener("keydown", (e) => {
       if (e.key === "Home") {
-        this.resetOrientation();
+        this.resetView();
         this.invalidate();
         e.preventDefault();
       }
       const m = NOTATION.indexOf(e.key.toUpperCase());
       if (!readOnly && m >= 0 && m < 9 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        this.play(m + (e.shiftKey ? 15 : 0));
+        this.play(notationMove(m + (e.shiftKey ? 15 : 0), NOTATION));
       }
     });
 
@@ -156,7 +156,11 @@ export class PackingCube extends Renderer {
     else (this.modelShape==='text'?bracketCell:this.modelShape==='gameboy'?gameboyCell:scaledBalloon)(out,xyz(i),.465,[1,1,1],this.cells[i]?.piece<0?'bomb':'loose');
     return out;
   }
-  setCells(cells) {
+  resetView() {
+    super.resetView(true);
+  }
+  setCells(cells, {resetView = true} = {}) {
+    if (resetView) this.resetView();
     this.generation++;
     this.busy = false;
     this.session.load(cells);
@@ -187,7 +191,7 @@ export class PackingCube extends Renderer {
         if(!this.geometry)this.geometry=new WorkerGeometry(this,()=>new Worker(new URL('../workers/geometry-worker.js',import.meta.url),{type:'module'}));
         const workerKey=signature+':'+(this.assembly==='retained'||this.assembly?.fragments==='whole'?JSON.stringify(this.initial):'');
         this.geometry.sync(cells,animation,workerKey);
-        this.invalidate();this.onFrame?.(cells,animation);return;
+        this.invalidate();this.onFrame?.(cells,animation,workerKey);return;
       }
       if(signature!==this.explorationSignature) {
         this.explorationSignature=signature;
@@ -214,7 +218,7 @@ export class PackingCube extends Renderer {
         this.upload(this.solid,joinMeshes(turningGeometry));
       }
       if(animation?.kind==='turn')this.prepareMotion(animation.move);
-      this.invalidate();this.onFrame?.(cells,animation);return;
+      this.invalidate();this.onFrame?.(cells,animation,signature);return;
     }
     if (this.connected && this.meshGenerator && !animation) {
       const parts=compositeParts(cells.map(c=>c?.color || 0), cells.map((c,i)=>c?.piece>=0 ? c.piece+1 : i+100), PALETTE, this.meshGenerator, this.modelShape,false,cells.reduce((mask,c,i)=>c && c.piece<0?mask|(1<<i):mask,0));
@@ -375,7 +379,7 @@ export class PackingCube extends Renderer {
     const feedback=new Uint32Array(300);
     for(let i=0;i<27;i++)if(this.cells[i])feedback[S.ACTIVE]|=1<<i;
     if(!this.busy && !this.geometry?.pending && !this.geometry?.error && !this.orbitOnly && !this.currentAnimation && !this.orbitDragging && (this.hover || controlSettings.showArrows))sceneDecorations.call(this,(id,target,type,opacity,unlit)=>packets.push({id,target,type,opacity,unlit,breathe:1}),this.unit,{
-      hideLabels:true,state:feedback,busy:this.busy || this.orbitOnly,attachedNodes:this.orbitOnly?[]:this.attachedNodes,
+      moveLabels:NOTATION,hideLabels:true,state:feedback,busy:this.busy || this.orbitOnly,attachedNodes:this.orbitOnly?[]:this.attachedNodes,
       getControl:id=>({checked:id==='placementGlow'?false:!!controlSettings[id]}),
     });
     renderPackets.call(

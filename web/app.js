@@ -12,7 +12,7 @@ import {createGameController} from './game/controller.js';
 import {createGameEffects} from './ui/game-effects.js';
 import {orbitSettings,bindOrbitToggle} from './input/orbit-settings.js';
 import {bindControlSettings,controlSettings,setControlSetting} from './input/control-settings.js';
-import {createFaceMap} from './ui/face-map.js';
+import {createGameFacemaps} from './ui/face-map.js';
 import {groupRequirementsText} from './ui/group-requirements.js';
 import {openSettingsPage} from './ui/settings-pages.js';
 import {startupCheck,startupError,packingProgress} from './ui/startup.js';
@@ -35,7 +35,7 @@ import {
   configureRenderer,
 } from "./render/renderer.js";
 import { createEngine } from "./engine/wasm.js";
-import { moveLabels } from "./engine/coordinates.js";
+import { moveLabels, notationMove, formatMove, flipCameraFrame } from "./engine/coordinates.js";
 import {
   initializeSettings,
   refreshSettings,
@@ -74,7 +74,6 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveL
 const animations = $("animations");
 animations.checked &&= !matchMedia("(prefers-reduced-motion: reduce)").matches;
 const moveButtons = [],
-  faceCells = [],stageFaceCells=[],
   queueShapes = [];
 function shape(el) {
   const cells = Array.from({ length: 9 }, () => {
@@ -127,29 +126,11 @@ const forecastReplay = createReplay({engine:()=>engine, refresh:()=>update(), is
 const queueForecast = createForecast({enabled:$("queueForecast"), status:$("forecastStatus"),
   onWitness:forecastReplay.setWitness, targets:[$("target"), ...queueShapes.map(q=>q.item)]});
 $("queueForecast").onchange = () => { if (engine) queueForecast.update(engine); };
-const mapLabels=[...faceLabels,'M','E','S'];
-for(const [host,list] of [["net",faceCells],["stageNet",stageFaceCells]]) for (let f = 0; f < mapLabels.length; f++) {
-  const el = document.createElement("div"),
-    label = document.createElement("span"),
-    grid = document.createElement("div");
-  label.className = "face-label";
-  label.textContent = mapLabels[f];
-  if(f>=6)label.title=['Middle slice viewed from L','Equatorial slice viewed from D','Standing slice viewed from F'][f-6];
-  grid.className = "face-grid";
-  const cells = Array.from({ length: 9 }, () => {
-    const c = document.createElement("i");
-    grid.append(c);
-    return c;
-  });
-  el.append(label, grid);
-  $(host).append(el);
-  list.push(cells);
-}
-const updateFaceMaps=createFaceMap([faceCells,stageFaceCells],colors,names,faceLabels);
+const updateFaceMaps=createGameFacemaps([$('net'),$('stageNet')]);
 for (let m = 0; m < 30; m++) {
   const b = document.createElement("button");
-  b.className = "move" + (m >= 15 ? " prime" : "");
-  b.textContent = moveLabels[m % 15] + (m >= 15 ? "′" : "");
+  b.className = "move" + (notationMove(m) >= 15 ? " prime" : "");
+  b.textContent = formatMove(m, "′");
   b.dataset.move = m;
   b.addEventListener("click", () => play(m));
   moveButtons.push(b);
@@ -166,7 +147,7 @@ function selectMode(next) {
     ...groups[mode].map((m) => {
       const pair = document.createElement("div");
       pair.className = "move-pair";
-      pair.append(moveButtons[m], moveButtons[m + 15]);
+      pair.append(moveButtons[notationMove(m)], moveButtons[notationMove(m + 15)]);
       return pair;
     }),
   );
@@ -279,7 +260,7 @@ function update(message) {
     wins += win;
     b.classList.toggle("winning", win);
     b.disabled = busy || !!state[S.OVER] || !!state[S.PENDING_FACES];
-    const label = `${moveLabels[m % 15]}${m >= 15 ? " prime" : ""}${win ? " — places the current piece" : ""}`;
+    const label = `${formatMove(m, " prime")}${win ? " — places the current piece" : ""}`;
     b.setAttribute("aria-label", label);
     b.title = label;
   });
@@ -412,6 +393,7 @@ async function newGame() {
   renderers[0].preview = 0;
   const config=readGameSetup($,crypto.getRandomValues(new Uint32Array(1))[0]);
   if(!gameSession.start(config))return;
+  for (const renderer of renderers) renderer.resetView();
   setLockMode(false);
   update();
   setBusy(true);
@@ -461,11 +443,7 @@ $("turnWidth").onclick = () => {
 };
 bindOrbitToggle($("orbitDragToggle"));
 $("resetView").onclick = () => {
-  renderers.forEach((r) => {
-    r.yaw = Math.PI - 0.55;
-    r.pitch = 0.4;
-    r.resetOrientation();
-  });
+  for (const renderer of renderers) renderer.resetView();
   invalidate();
 };
 $("xray").onchange = () => {
@@ -506,7 +484,7 @@ document.addEventListener("keydown", (e) => {
   let m = moveLabels.indexOf(label);
   if (m >= 0) {
     e.preventDefault();
-    play(m + (e.shiftKey ? 15 : 0));
+    play(notationMove(m + (e.shiftKey ? 15 : 0)));
   }
 });
 bindGameViewSwitching({$,getRenderers:()=>renderers,animations,refreshSettings,invalidate,syncFaceMapLayout});
@@ -582,7 +560,7 @@ function syncOverlayControls() {
     b.classList.toggle("winning", false);
     b.setAttribute(
       "aria-label",
-      `${moveLabels[m % 15]}${m >= 15 ? " prime" : ""}${win ? " — places the current piece" : ""}`,
+      `${formatMove(m, " prime")}${win ? " — places the current piece" : ""}`,
     );
   }
   const canUndo = !busy && !!state[S.UNDO_COUNT] && state.canUndo;
@@ -700,7 +678,10 @@ bluetoothCube = bindBluetoothControls({
   active: () => !!engine && !!state && !!renderers.length && !document.hidden &&
     !$('gamePage').hidden && !$('bluetoothDialog').open && !$('qrDialog').open && !$('settingsDialog').open && !$('newDialog').open &&
     !session?.starting,
-  orientation: () => selectedPackingCube()?.orientation ?? renderers[0].orientation,
+  orientation: () => {
+    const cube = selectedPackingCube();
+    return cube ? flipCameraFrame(cube.orientation) : renderers[0].orientation;
+  },
   rotate: orientation => {
     if ($('explorerPage').hidden) {
       stopOrbitMotion();
@@ -709,8 +690,9 @@ bluetoothCube = bindBluetoothControls({
     }
     const start = packingBluetoothTarget(false);
     const target = packingBluetoothTarget(true);
-    if (start) { start.orientation = orientation; start.invalidate(); }
-    if (target && target !== start) { target.orientation = orientation.slice(); target.invalidate(); }
+    const packingPose = flipCameraFrame(orientation);
+    if (start) { start.orientation = packingPose; start.invalidate(); }
+    if (target && target !== start) { target.orientation = packingPose.slice(); target.invalidate(); }
   },
 });
 $("freeOrbit").addEventListener("change", () => {

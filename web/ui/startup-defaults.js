@@ -136,6 +136,7 @@ export function createStartupDefaults() {
       "gameStackSize": 100, // SID 5007: display.gameStackSize
       "familySize": 100, // SID 5008: display.familySize
       // Width and height of each face/slice grid, in pixels (64 through 200).
+      "overlapThickness": 1, // SID 5013: display.overlapThickness
       "faceMapSize": 104, // SID 5009: display.faceMapSize
       "practiceStartSize": 100, // SID 5010: display.practiceStartSize
       "practiceTargetSize": 100, // SID 5011: display.practiceTargetSize
@@ -204,6 +205,7 @@ export function createStartupDefaults() {
       "orbitSmoothing": 70, // SID 7018: orbit.orbitSmoothing
       "orbitSettleTime": 150, // SID 7019: orbit.orbitSettleTime
       "orbitSettleDelay": 20, // SID 7020: orbit.orbitSettleDelay
+      // Degrees from F-forward, U-up for startup, Reset View and XYZ Orbit snap.
       "orbitHorizontal": -35, // SID 7021: orbit.orbitHorizontal
       "orbitVertical": -20, // SID 7022: orbit.orbitVertical
       "orbitRoll": -15 // SID 7023: orbit.orbitRoll

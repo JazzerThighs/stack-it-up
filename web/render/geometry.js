@@ -186,7 +186,7 @@ function rotateCell(out, start, i, move, t) {
       out[j + offset + b] = x * sn + y * c;
     }
 }
-function overlapMarks(out, p) {
+function overlapLines(out, p) {
   const color = [1, 0.39, 0.56];
   wire(out, p, 0.49, color);
   for (let axis = 0; axis < 3; axis++)
@@ -199,6 +199,44 @@ function overlapMarks(out, p) {
           q[(axis + 2) % 3] += end * diagonal * 0.25;
           out.push(...q, 0, 0, 1, ...color);
         }
+}
+
+const overlapSegments = [];
+overlapLines(overlapSegments, [0, 0, 0]);
+const unitBox = [];
+box(unitBox, [0, 0, 0], 1, [1, 0.39, 0.56]);
+
+function thickOverlapMesh(thickness) {
+  const out = [];
+  const radius = (thickness - 1) * 0.014;
+  // Stretch a box along each edge or diagonal. The other two axes span its cross section.
+  for (let i = 0; i < overlapSegments.length; i += 18) {
+    const start = overlapSegments.slice(i, i + 3);
+    const half = start.map((v, k) => (overlapSegments[i + 9 + k] - v) / 2);
+    const center = start.map((v, k) => v + half[k]);
+    const length = Math.hypot(...half);
+    const along = half.map(v => v / length);
+    const side = [0, 0, 0];
+    side[along.indexOf(0)] = 1;
+    const up = along.map((_, k) => along[(k+1)%3]*side[(k+2)%3] - along[(k+2)%3]*side[(k+1)%3]);
+    for (let j = 0; j < unitBox.length; j += 9) {
+      for (let k = 0; k < 3; k++) out.push(center[k] + half[k]*unitBox[j] +
+        radius*(side[k]*unitBox[j+1] + up[k]*unitBox[j+2]));
+      out.push(0, 0, 1, 1, 0.39, 0.56);
+    }
+  }
+  return out;
+}
+
+const overlapMeshes = new Map();
+function overlapMarks(out, p, thickness = 1) {
+  if (!thickness) return;
+  if (thickness === 1) return overlapLines(out, p);
+  if (!overlapMeshes.has(thickness)) overlapMeshes.set(thickness, thickOverlapMesh(thickness));
+  const mesh = overlapMeshes.get(thickness);
+  for (let i = 0; i < mesh.length; i += 9) {
+    out.push(p[0]+mesh[i], p[1]+mesh[i+1], p[2]+mesh[i+2], 0, 0, 1, 1, 0.39, 0.56);
+  }
 }
 
 export {
