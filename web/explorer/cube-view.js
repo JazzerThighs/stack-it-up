@@ -165,10 +165,18 @@ export class PackingCube extends Renderer {
     this.setState(this.cells);
     this.changed();
   }
+  applyAppearance(config) {
+    this.assembly = this.lockedAssembly || {whole:config.whole, fragments:config.fragments, extras:config.extras};
+    this.individualPieces = false;
+    this.explorationGray = !!config.solidGray;
+    this.explorationSolids = !this.lockedAssembly && Object.values(this.assembly).includes('solids');
+    this.opacity = config.opacity / 100;
+    this.zoomScale = config.size / 100;
+  }
   setState(cells, animation = null) {
     const viewId=appearanceViewFor(this.displayId);
     if(viewId&&!this._appearanceScope)getViewAppearance(viewId,this);
-    if(viewId&&!this._appearanceScope&&hasViewAppearance(viewId))return withViewAppearance(viewId,this,config=>{this._appearanceScope=true;try{this.assembly={whole:config.whole,fragments:config.fragments,extras:config.extras};this.individualPieces=false;this.explorationGray=!!config.solidGray;this.explorationSolids=Object.values(this.assembly).includes('solids');this.opacity=config.opacity/100;this.zoomScale=config.size/100;return this.setState(cells,animation);}finally{this._appearanceScope=false;}});
+    if(viewId&&!this._appearanceScope&&hasViewAppearance(viewId))return withViewAppearance(viewId,this,config=>{this._appearanceScope=true;try{this.applyAppearance(config);return this.setState(cells,animation);}finally{this._appearanceScope=false;}});
     if(this.destroyed)return;
     if(this.geometry&&!(this.familyExploration||this.connected)){this.geometry.dispose();this.geometry=null;}
     this.currentAnimation = animation;
@@ -324,7 +332,7 @@ export class PackingCube extends Renderer {
   }
   draw() {
     const viewId=appearanceViewFor(this.displayId);
-    if(viewId&&!this._appearanceScope&&hasViewAppearance(viewId))return withViewAppearance(viewId,this,config=>{this._appearanceScope=true;try{this.assembly={whole:config.whole,fragments:config.fragments,extras:config.extras};this.individualPieces=false;this.explorationGray=!!config.solidGray;this.explorationSolids=Object.values(this.assembly).includes('solids');this.opacity=config.opacity/100;this.zoomScale=config.size/100;return this.draw();}finally{this._appearanceScope=false;}});
+    if(viewId&&!this._appearanceScope&&hasViewAppearance(viewId))return withViewAppearance(viewId,this,config=>{this._appearanceScope=true;try{this.applyAppearance(config);return this.draw();}finally{this._appearanceScope=false;}});
     if (this.contextLost || this.gl.isContextLost?.()) return;
     if (!this.isVisible()) return;
     const rect = this.canvas.getBoundingClientRect();

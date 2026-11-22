@@ -16,7 +16,7 @@
 .topbar-dialog h2{margin:0;font-size:24px}
 .qr-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
 .qr-links section{text-align:center;min-width:0}
-.qr-links img{display:block;max-width:100%;height:auto;margin:12px auto;background:white}
+.qr-links img{display:block;max-width:100%;height:auto;margin:12px auto;box-sizing:border-box;border:16px solid white;background:white}
 .qr-links a{display:block;overflow-wrap:anywhere;color:var(--mint,#9ce5cc);user-select:text}
 .bluetooth-page label{display:block;margin:16px 0 6px}
 .bluetooth-page input[type=range]{width:100%}

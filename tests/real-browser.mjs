@@ -126,6 +126,18 @@ try{
  await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open && !document.querySelector('#setupDialog').open"));
  await checkPaletteNavigation("document.querySelector('#settingsDialog')");
+ assert(await evaluate(`(() => {
+   const select=document.getElementById('viewAppearanceactive-palettePreset');
+   select.value='sega-tetris';select.dispatchEvent(new Event('change',{bubbles:true}));
+   const palette=JSON.parse(localStorage.getItem('stack-it-up.view-appearance')).views.active.palette;
+   const color=document.createElement('span');
+   return [...document.querySelectorAll('#queue .queue-item')].every(item=>{
+     const id='OTLJSZBDF'.indexOf(item.querySelector('small').textContent);
+     color.style.color=palette[id+1];
+     return id>=0 && item.querySelector('.shape').style.color===color.style.color;
+   });
+ })()`), 'Queue previews must immediately follow Active (Game) palette changes');
+
  await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  assert(await evaluate(`(async()=>{
    const root=document.querySelector('#settingsDialog');
@@ -188,6 +200,27 @@ try{
    ['familyLockShapes','familyLockColors']);
 
  await waitFor(()=>evaluate("document.querySelector('#explorer').shadowRoot.querySelector('#familyExploreCube canvas')?.dataset.geometrySource==='worker' && document.querySelector('#explorer').shadowRoot.querySelector('#familyExploreCube canvas').getAttribute('aria-busy')==='false'"),'worker geometry ready');
+ const familyRoot = "document.querySelector('#explorer').shadowRoot";
+ await evaluate(`(async () => {
+   const module = await import(new URL('ui/view-appearance.js', document.querySelector('script[type=module][src]').src));
+   module.setViewAppearance('family','whole','cubies');
+ })()`);
+ for (const [id, assembly] of [['familyLockShapes','retained'],['familyLockColors','retained'],['familyLockShapes','whole'],['familyLockColors','cubies']]) {
+   const button = `${familyRoot}.getElementById('${id}')`;
+   await waitFor(()=>evaluate(`!${button}.disabled`), id+' available');
+   const point = await evaluate(`(() => {
+     const el = ${button}, bounds = el.getBoundingClientRect();
+     const x = bounds.left + bounds.width / 2, y = bounds.top + bounds.height / 2;
+     if (${familyRoot}.elementFromPoint(x,y) !== el) throw Error('Obstructed '+el.id);
+     return {x,y};
+   })()`);
+   await call('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});
+   await call('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
+   const view = "document.querySelector('#explorer').physicalTurnTarget('explorer')";
+   await waitFor(()=>evaluate(`(${view}?.lockedAssembly || 'cubies') === '${assembly}' && !${view}?.geometry.pending`), id+' toggled');
+   assert(await evaluate(`(() => {const a=${view}.geometry.base.assembly;return (a?.whole || a) === '${assembly}';})()`), 'Family worker geometry must honor '+assembly);
+ }
+
  await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open && document.querySelector('#settingsDialog').dataset.settingsScope==='explorer'"));
  assert(await evaluate("!!document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape') && !document.querySelector('#explorer').shadowRoot.querySelector('.settings-content')"));

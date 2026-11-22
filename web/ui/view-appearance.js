@@ -113,6 +113,12 @@ export function createViewAppearancePage(id){
   presetSelect.value=viewPalettePreset(id);
   presetSelect.addEventListener('change',()=>setViewPalettePreset(id,presetSelect.value));
   presetRow.append(presetLabel,presetSelect);section.append(presetRow);
+  if (id === 'active') {
+    const help=document.createElement('p');
+    help.className='muted';
+    help.textContent='This palette also colors the current piece, hold pocket, and upcoming queue.';
+    presetRow.append(help);
+  }
   subscribeViewAppearance(changed=>{if(changed===id)presetSelect.value=viewPalettePreset(id);});
   const palette=document.createElement('div'),paletteLegend=document.createElement('h3');palette.className='piece-color-swatches';paletteLegend.textContent='Piece colors';palette.append(paletteLegend);
   section.append(palette);

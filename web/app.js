@@ -1,3 +1,4 @@
+import {getViewAppearance,subscribeViewAppearance} from './ui/view-appearance.js';
 import {initializeTopbar} from './ui/topbar.js';
 import {initializeSharedSettings,openSharedSettings} from './ui/shared-settings.js';
 import {bindBluetoothControls} from './ui/bluetooth-controls.js';
@@ -81,11 +82,11 @@ function shape(el) {
     el.append(i);
     return i;
   });
-  return (piece) => {
-    el.style.color = colors[choices(piece)[0]];
+  return (piece, palette) => {
+    el.style.color = palette[choices(piece)[0]];
     const spatial=isSpatial(piece) || piece>=10;
     el.classList.toggle('spatial-shape',spatial);
-    el.style.backgroundImage=piece>=10?freePreview(piece,colors):spatial?spatialPreview(pieces[piece===8?8:piece-1].cells,colors[piece],piece===8):'';
+    el.style.backgroundImage=piece>=10?freePreview(piece,palette):spatial?spatialPreview(pieces[piece===8?8:piece-1].cells,palette[piece],piece===8):'';
     el.title=pieces[piece-1]?.name || 'Empty';
     cells.forEach((c, i) =>
       c.classList.toggle("filled", piece>0 && piece<=6 && !!(state[134 + piece - 1] & (1 << i))),
@@ -105,6 +106,21 @@ for (let j = 0; j < 5; j++) {
   $("queue").append(item);
   queueShapes.push({ update: shape(s), label, item });
 }
+function refreshPiecePreviews() {
+  if (!state) return;
+  const palette = getViewAppearance('active').palette;
+  const piece = state[S.PIECE];
+  target(piece, palette);
+  heldShape(state[S.HELD], palette);
+  $("pieceName").style.color = palette[choices(piece)[0]];
+  queueShapes.forEach((q, i) => {
+    q.update(state[56 + i], palette);
+    q.label.textContent = names[state[56 + i]];
+  });
+}
+subscribeViewAppearance((id, field) => {
+  if (id === 'active' && (!field || field === 'palette')) refreshPiecePreviews();
+});
 const forecastReplay = createReplay({engine:()=>engine, refresh:()=>update(), isBusy:()=>busy || session?.starting,
   closeSettings:()=>$("settingsDialog").close(),
   act:step=>commands.replay(step)});
@@ -226,8 +242,7 @@ function update(message) {
     ? `Freed cubies lock with the current piece. ${state[S.FLOATING_OVERLAPS] ? "Move them off the stack first. " : ""}${state.slice(S.BAND_IDS,S.BAND_IDS+27).some(Boolean) ? "White connections cannot be split by a turn. " : ""}${state[S.FRAGMENT_TURNS] ? `${state[S.FRAGMENT_TURNS]} broken-fragment perk turns remain.` : ""}`
     : "";
   const p = state[S.PIECE];
-  target(p);
-  heldShape(state[S.HELD]);
+  refreshPiecePreviews();
   $("holdStatus").textContent = state[S.HOLD_USED]
     ? "After placement"
     : state[S.HELD]
@@ -238,16 +253,12 @@ function update(message) {
     `Hold / swap: ${names[state[S.HELD]] || "empty"}${state[S.HOLD_USED] ? ", available after placement" : ""}`,
   );
   $("pieceName").textContent = names[p];
-  $("pieceName").style.color = colors[choices(p)[0]];
   $("target").setAttribute("aria-label", `${names[p]} tetromino`);
   const edges = pieces[p-1].surfaceInventory[1],
     corners = pieces[p-1].surfaceInventory[2];
   $("inventory").textContent =
     `${p<=6 ? 1 : pieces[p-1].surfaceInventory[0]} center(s), ${edges} edge(s), ${corners} corner(s)`;
-  queueShapes.forEach((q, i) => {
-    q.update(state[56 + i]);
-    q.label.textContent = names[state[56 + i]];
-  });
+
   if (!forecastReplay.suppress()) queueForecast.update(engine);
   $("score").textContent = state[S.SCORE].toLocaleString();
   $("pieces").textContent = state[S.PIECES];
