@@ -1,3 +1,4 @@
+import {initializeTopbar} from './ui/topbar.js';
 import {initializeSharedSettings,openSharedSettings} from './ui/shared-settings.js';
 import {bindBluetoothControls} from './ui/bluetooth-controls.js';
 import {catchUpRate} from './input/animation-timing.js';
@@ -466,7 +467,7 @@ document.addEventListener("keydown", (e) => {
     busy || session?.starting || $("stateDialog").open ||
     $("gamePage").hidden ||
     $("newDialog").open ||
-    $("settingsDialog").open ||
+    $("settingsDialog").open || $("bluetoothDialog").open || $("qrDialog").open ||
     e.target.matches("input,textarea,select,[contenteditable]")
   )
     return;
@@ -643,7 +644,7 @@ $("gravityMode").onchange = () => {
   engine.game_set_gravity(+$("gravityMode").value);
   update();
 };
-$("settingsOpen").onclick = () => openSharedSettings();
+$("settingsOpen").onclick = () => openSharedSettings($("gamePage").hidden?'explorer':'game');
 $("settingsClose").onclick = () => $("settingsDialog").close();
 const requestNew = $("new").onclick;
 $("new").onclick = () => {
@@ -675,13 +676,31 @@ function orbitCamera(dx, dy, orientation) {
   }
   invalidate();
 }
+function packingBluetoothTarget(useTarget) {
+    if (document.hidden || $('explorerPage').hidden || !$('startupScreen').hidden ||
+        $('settingsDialog').open || $('bluetoothDialog').open || $('qrDialog').open) return null;
+    const screen = $('solverTab').getAttribute('aria-current') === 'page' ? 'solver' : 'explorer';
+    return $('explorer').physicalTurnTarget?.(screen, useTarget);
+}
+const selectedPackingCube = () => packingBluetoothTarget($('solverTurnTarget').getAttribute('aria-pressed') === 'true');
 bluetoothCube = bindBluetoothControls({
   play: move => commands.play(move),
+  explorerTurnTarget: selectedPackingCube,
   active: () => !!engine && !!state && !!renderers.length && !document.hidden &&
-    !$('gamePage').hidden && !$('settingsDialog').open && !$('newDialog').open &&
+    !$('gamePage').hidden && !$('bluetoothDialog').open && !$('qrDialog').open && !$('settingsDialog').open && !$('newDialog').open &&
     !session?.starting,
-  orientation: () => renderers[0].orientation,
-  rotate: orientation => { stopOrbitMotion(); orbitCamera(0, 0, orientation); },
+  orientation: () => selectedPackingCube()?.orientation ?? renderers[0].orientation,
+  rotate: orientation => {
+    if ($('explorerPage').hidden) {
+      stopOrbitMotion();
+      orbitCamera(0, 0, orientation);
+      return;
+    }
+    const start = packingBluetoothTarget(false);
+    const target = packingBluetoothTarget(true);
+    if (start) { start.orientation = orientation; start.invalidate(); }
+    if (target && target !== start) { target.orientation = orientation.slice(); target.invalidate(); }
+  },
 });
 $("freeOrbit").addEventListener("change", () => {
   if (!$("freeOrbit").checked)
@@ -694,6 +713,7 @@ $("freeOrbit").addEventListener("change", () => {
 configureRenderer(context);
 initializeSettings(context);
 initializeSharedSettings({loadExplorer:()=>mountExplorer($('explorer'),packingProgress)});
+initializeTopbar();
 initializeGameplay(context);
 selectMode("face");
 async function start() {
@@ -763,7 +783,7 @@ const selectApplication=bindApplicationTabs({$,mountExplorer,packingProgress,sta
 
 if (globalThis.location?.hash === '#game') startupCheck('explorer','Packing explorer loads when opened',true);
 else startupCheck('explorer','Loading packing data, controls and cube views');
-selectApplication(globalThis.location?.hash !== "#game");
+selectApplication(globalThis.location?.hash==='#game'?'game':globalThis.location?.hash==='#solver'?'solver':'explorer');
 
 function syncFaceMapLayout() {
   const enabled=$("stageFaceMap").checked,combined=$("combined").checked;
@@ -772,12 +792,26 @@ function syncFaceMapLayout() {
   views.classList.toggle('combined',!enabled && combined);
   const control=renderers[0];
   if(control){control.combined=enabled || combined;if(control.state)control.setState(control.state,control.animation);}
-  $("viewMode").textContent=enabled?'Hide face map':combined?'Split cubes':'Combine cubes';
+  $("toggleFacemaps").setAttribute('aria-pressed',String(enabled));
+  $("viewMode").textContent=enabled?'Hide face map':combined?'Split Stack':'Combine cubes';
   $("viewMode").setAttribute('aria-label',enabled?'Hide face map':combined?'Separate active cube and stack':'Combine active cube and stack');
   $("viewMode").setAttribute('aria-pressed',String(enabled || !combined));
   invalidate();
 }
 $("stageFaceMap").onchange=syncFaceMapLayout;
+$("toggleFacemaps").onclick = () => {
+  $("stageFaceMap").checked = !$("stageFaceMap").checked;
+  syncFaceMapLayout();
+};
+
+// The control pool can occupy several rows when space is tight or debug controls appear.
+const stageTools = document.querySelector('.views > .stage-tools');
+new ResizeObserver(() => {
+  if (stageTools.offsetHeight) {
+    const bottom = parseFloat(getComputedStyle(stageTools).bottom);
+    stageTools.parentElement.style.setProperty('--tools-space', (stageTools.offsetHeight + bottom + 4) + 'px');
+  }
+}).observe(stageTools);
 
 bindControlSettings(document,()=>{
   for(const r of renderers){

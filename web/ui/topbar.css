@@ -1,0 +1,51 @@
+/* Shared application navigation; loaded after the legacy workspace styles. */
+.topbar,.explorer-active>.topbar{height:64px;min-height:64px;display:flex;align-items:center;gap:10px;flex-wrap:nowrap;position:relative;z-index:30;padding:0 14px;box-sizing:border-box}
+.topbar .brand{display:flex;align-items:center;gap:10px;font-size:26px;letter-spacing:-.6px;white-space:nowrap}
+.topbar .topbar-icon{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;width:44px;min-width:44px;height:44px;min-height:44px;margin:0!important;padding:9px;font-size:20px}
+.topbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.views > .score-hud{padding-top:0}
+.screen-picker{position:relative;margin-left:auto}
+#screenSelect{min-height:44px;min-width:110px;font-size:16px}
+#screenMenu{position:absolute;top:calc(100% + 8px);right:0;width:min(320px,calc(100vw - 28px));padding:6px;background:var(--panel,#192b31);border:1px solid var(--line,#385158);border-radius:10px;box-shadow:0 12px 30px #0008;z-index:40}
+#screenMenu[hidden]{display:none}
+#screenMenu button{display:block;width:100%;min-height:44px;text-align:left;font-size:15px;margin:0;border:0}
+#screenMenu button[aria-current=page]{background:#9ce5cc25;box-shadow:inset 3px 0 #9ce5cc}
+.topbar-dialog{width:min(720px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);box-sizing:border-box;overflow:auto;padding:20px;color:var(--ink,#edf6f2);background:var(--panel,#192b31);border:1px solid var(--line,#385158);border-radius:14px}
+.topbar-dialog::backdrop{background:#0009}
+.topbar-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.topbar-dialog h2{margin:0;font-size:24px}
+.qr-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.qr-links section{text-align:center;min-width:0}
+.qr-links img{display:block;max-width:100%;height:auto;margin:12px auto;background:white}
+.qr-links a{display:block;overflow-wrap:anywhere;color:var(--mint,#9ce5cc);user-select:text}
+.bluetooth-page label{display:block;margin:16px 0 6px}
+.bluetooth-page input[type=range]{width:100%}
+.bluetooth-page input[type=text]{max-width:100%;box-sizing:border-box}
+.bluetooth-page output{float:right}
+.bluetooth-page p{font-size:14px;line-height:1.5}
+#bluetoothOptions[hidden]{display:none}
+@media (max-width:760px) {
+  .topbar, main.explorer-active > .topbar {
+    height:54px;
+    min-height:54px;
+    gap:4px;
+    padding:0 4px;
+  }
+  .topbar .brand {font-size:clamp(15px,4vw,22px);gap:4px}
+  #screenSelect {min-width:0;padding:0 6px;font-size:14px;white-space:nowrap}
+  .screen-picker {position:static}
+  #screenMenu {top:100%;right:4px}
+  #explorerPage {height:calc(100dvh - 54px)}
+  #gamePage .workspace {height:calc(100dvh - 62px - env(safe-area-inset-bottom))}
+}
+@media (max-width:400px) {
+  .topbar button.topbar-icon {width:32px;min-width:32px;padding:4px}
+}
+@media (max-width:620px) {
+  .qr-links {grid-template-columns:1fr}
+}
+
+#explorerPage:not([hidden]) {display:flex;flex-direction:column}
+#explorerPage > #explorer {flex:1;min-height:0}
+#packingBluetoothControls {display:flex;flex-wrap:wrap;gap:4px;padding:2px 6px}
+#packingBluetoothControls[hidden], #explorerPage[aria-labelledby="explorerTab"] #solverTurnTarget {display:none}

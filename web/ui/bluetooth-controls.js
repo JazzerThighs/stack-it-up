@@ -23,7 +23,8 @@ export function bindBluetoothControls({root = document, ...options}) {
     $('bluetoothOptions').hidden = mode !== 'bluetooth';
     $('bluetoothConnect').disabled = mode !== 'bluetooth' || !supported || !library || connecting || connected;
     $('bluetoothDisconnect').disabled = !connecting && !connected;
-    for(const id of ['bluetoothUfrReset','bluetoothGyroReset'])$(id).disabled=!connected||current.calibration!=='ready';
+    $('packingBluetoothControls').hidden = !connected;
+    for(const id of ['packingUfrReset','packingGyroReset','bluetoothUfrReset','bluetoothGyroReset'])$(id).disabled=!connected||current.calibration!=='ready';
     $('bluetoothCalibrate').disabled = !connected;
     $('bluetoothStatus').textContent = message;
     $('cubeCalibration').hidden = current.calibration !== 'calibrating';
@@ -38,6 +39,7 @@ export function bindBluetoothControls({root = document, ...options}) {
   };
   const controller = createBluetoothCube({...options,
     sliceWindow: () => controlSettings.bluetoothSliceWindow,
+    packingNeutral: () => controlSettings.bluetoothPackingNeutral,
     smoothing: () => controlSettings.bluetoothGyroSmoothing,
     smoothingResponse: () => controlSettings.bluetoothGyroResponse,
     smoothingSpeed: () => controlSettings.bluetoothGyroSpeed,
@@ -65,18 +67,21 @@ export function bindBluetoothControls({root = document, ...options}) {
   });
   // Capture calibration drags before normal turn/orbit handlers. No snapping or
   // inertia is applied, and both game views receive exactly the same pose.
+  const boardActive = () => options.active() || !!options.explorerTurnTarget();
   let drag;
   const consume = e => { e.preventDefault(); e.stopImmediatePropagation(); };
   root.addEventListener('pointerdown', e => {
-    if (!controller.calibrating || !options.active() || !e.target.closest?.('#gamePage canvas')) return;
+    if (!controller.calibrating || !boardActive()) return;
+    const canvas = e.composedPath().find(node => node.matches?.('#gamePage canvas, canvas.packing-canvas'));
+    if (!canvas) return;
     consume(e);
-    if(!controller.adjustingNeutral)return; drag = {id:e.pointerId,x:e.clientX,y:e.clientY,target:e.target};
-    e.target.setPointerCapture?.(e.pointerId);
+    if(!controller.adjustingNeutral)return; drag = {id:e.pointerId,x:e.clientX,y:e.clientY,target:canvas};
+    canvas.setPointerCapture?.(e.pointerId);
   }, true);
   root.addEventListener('pointermove', e => {
     if (!drag || drag.id !== e.pointerId) return;
     consume(e);
-    if (!controller.calibrating || !options.active()) { drag = null; return; }
+    if (!controller.calibrating || !boardActive()) { drag = null; return; }
     const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
     drag.x=e.clientX; drag.y=e.clientY;
     if (!dx && !dy) return;
@@ -90,7 +95,7 @@ export function bindBluetoothControls({root = document, ...options}) {
   }, true);
   const resume = () => { controller.suspend(); controller.beginCalibration(); };
   // Dialog close events and page switches reveal the board after connection.
-  for (const id of ['settingsDialog','newDialog']) $(id).addEventListener('close', resume);
+  for (const id of ['settingsDialog','newDialog','bluetoothDialog','qrDialog']) $(id).addEventListener('close', resume);
   if (globalThis.MutationObserver) {
     const observer = new MutationObserver(resume);
     observer.observe($('gamePage'), {attributes:true,attributeFilter:['hidden']});
@@ -113,11 +118,20 @@ export function bindBluetoothControls({root = document, ...options}) {
   });
   $('bluetoothDisconnect').addEventListener('click', () => void controller.disconnect());
   $('bluetoothCalibrate').addEventListener('click', () => controller.recalibrate());
+  $('solverTurnTarget').addEventListener('click', () => {
+    controller.suspend();
+    const button = $('solverTurnTarget');
+    const target = button.getAttribute('aria-pressed') !== 'true';
+    button.setAttribute('aria-pressed', String(target));
+    button.textContent = target ? 'Turns: Target Cube' : 'Turns: Start Cube';
+  });
+  $('packingUfrReset').addEventListener('click', () => controller.resetUfr());
+  $('packingGyroReset').addEventListener('click', () => controller.resetGyro());
   $('bluetoothUfrReset').addEventListener('click', () => controller.resetUfr());
   $('bluetoothGyroReset').addEventListener('click', () => controller.resetGyro());
   globalThis.addEventListener?.('pagehide', () => void controller.disconnect());
-  for (const id of ['settingsDialog','newDialog']) $(id).addEventListener('toggle', resume);
-  for (const id of ['gameTab','explorerTab']) $(id).addEventListener('click', () => controller.suspend());
+  for (const id of ['settingsDialog','newDialog','bluetoothDialog','qrDialog']) $(id).addEventListener('toggle', resume);
+  for (const id of ['gameTab','explorerTab','solverTab']) $(id).addEventListener('click', () => controller.suspend());
   root.addEventListener('visibilitychange', resume);
   controller.setMode('manual');
   return controller;

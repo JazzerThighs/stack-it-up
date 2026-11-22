@@ -8,7 +8,7 @@ $("viewMode").onclick = () => {
     control = getRenderers()[0],
     split = $("combined").checked;
   $("combined").checked = !split;
-  $("viewMode").textContent = split ? "Combine cubes" : "Split cubes";
+  $("viewMode").textContent = split ? "Combine cubes" : "Split Stack";
   $("viewMode").setAttribute("aria-pressed", String(split));
   $("viewMode").setAttribute(
     "aria-label",
@@ -50,37 +50,37 @@ $("viewMode").onclick = () => {
 };
 }
 export function bindApplicationTabs({$,mountExplorer,packingProgress,startupCheck,startupError,invalidate,setupGame}) {
-function selectApplication(explorer) {
-  document.querySelector("main").classList.toggle("explorer-active", explorer);
-  $("gamePage").hidden = explorer;
-  $("explorerPage").hidden = !explorer;
-  for (const [id, selected] of [
-    ["gameTab", !explorer],
-    ["explorerTab", explorer],
-  ]) {
-    $(id).setAttribute("aria-selected", String(selected));
-    $(id).tabIndex = selected ? 0 : -1;
+  let revision=0;
+  const screens=[['gameTab','game','Game'],['explorerTab','explorer','Explorer'],['solverTab','solver','Solver']];
+  async function selectApplication(value) {
+    const screen=typeof value==='boolean'?(value?'explorer':'game'):value;
+    const token=++revision,explorer=screen!=='game';
+    document.querySelector('main').classList.toggle('explorer-active',explorer);
+    $('gamePage').hidden=explorer;$('explorerPage').hidden=!explorer;
+    $('explorerPage').setAttribute('aria-labelledby',screen==='solver'?'solverTab':'explorerTab');
+    for(const [id,name]of screens){const button=$(id);button.setAttribute('aria-current',name===screen?'page':'false');button.setAttribute('aria-selected',String(name===screen));button.tabIndex=0;}
+    $('screenSelect').textContent=screens.find(s=>s[1]===screen)[2]+' ▾';
+    $('screenMenu').hidden=true;$('screenSelect').setAttribute('aria-expanded','false');
+    if(!explorer){invalidate();setupGame();return;}
+    try {
+      await ($('explorer').explorerReady||mountExplorer($('explorer'),packingProgress));
+      if(token!==revision)return;
+      await $('explorer').selectScreen?.(screen);
+      if(token===revision)startupCheck('explorer','Packing data, controls and cube views ready',true);
+    }catch(error){if(token===revision)startupError(error);}
   }
-  if (explorer && !$("explorer").explorerReady)
-    mountExplorer($("explorer"),packingProgress).then(() => startupCheck('explorer','Packing data, controls and cube views ready',true)).catch(startupError);
-  if (!explorer) {
-    invalidate();
-    setupGame();
+  for(const [id,screen]of screens){
+    $(id).onclick=()=>selectApplication(screen);
+    $(id).addEventListener('keydown',event=>{
+      if(event.key==='Escape'){$('screenMenu').hidden=true;$('screenSelect').setAttribute('aria-expanded','false');$('screenSelect').focus();return;}
+      if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+      event.preventDefault();const i=screens.findIndex(s=>s[0]===id),next=event.key==='Home'?0:event.key==='End'?2:(i+(event.key==='ArrowDown'?1:2))%3;
+      $(screens[next][0]).focus();
+    });
   }
-}
-$("gameTab").onclick = () => selectApplication(false);
-$("explorerTab").onclick = () => selectApplication(true);
-for (const id of ["gameTab", "explorerTab"]) {
-  $(id).addEventListener("keydown", (event) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    const explorer =
-      event.key === "End" || (event.key !== "Home" && id === "gameTab");
-    selectApplication(explorer);
-    $(explorer ? "explorerTab" : "gameTab").focus();
-  });
-}
-
-
-return selectApplication;
+  $('screenSelect').onclick=()=>{const open=$('screenMenu').hidden;$('screenMenu').hidden=!open;$('screenSelect').setAttribute('aria-expanded',String(open));};
+  $('screenSelect').addEventListener('keydown',event=>{if(event.key==='Escape'){$('screenMenu').hidden=true;$('screenSelect').setAttribute('aria-expanded','false');}
+    if(event.key==='ArrowDown'){event.preventDefault();$('screenMenu').hidden=false;$('screenSelect').setAttribute('aria-expanded','true');$('gameTab').focus();}});
+  document.addEventListener('click',event=>{if(!event.target.closest?.('.screen-picker')){$('screenMenu').hidden=true;$('screenSelect').setAttribute('aria-expanded','false');}});
+  return selectApplication;
 }

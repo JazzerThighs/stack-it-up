@@ -20,7 +20,15 @@ export async function mountExplorer(host, onProgress) {
     host.textContent = '';
     const { initializeExplorer } = await import('./script.js');
     const scope=settingsScope(root);
-    await initializeExplorer(scope,{onProgress,dataset:new URLSearchParams(globalThis.location?.search || "").get("packings")==="classic"?"classic":undefined});
+    const explorer = await initializeExplorer(scope,{onProgress,dataset:new URLSearchParams(globalThis.location?.search || "").get("packings")==="classic"?"classic":undefined});
+    host.physicalTurnTarget = (screen, useTarget) => explorer.views.physicalTurnTarget(screen, useTarget);
+    host.selectScreen=async screen=>{
+      const family=scope.getElementById('familyExploreMode'),practice=scope.getElementById('practiceMode');
+      const next=screen==='solver';
+      if(family.checked===!next&&practice.checked===next)return;
+      family.checked=!next;practice.checked=next;
+      await (next?practice:family).onchange();
+    };
     attachExplorerSettings(root,scope);
   })().catch(error => {
     host.explorerReady = null;

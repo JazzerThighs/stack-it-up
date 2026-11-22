@@ -1,103 +1,157 @@
-# Smartcube issues and implementation plan
+# Implementation plan: navigation, cube controls, and facemaps
 
-Status: reported issues awaiting implementation and physical-cube validation.
+Milestones 1 through 3 are implemented. Physical Bluetooth hardware verification remains open.
 
-## 1. Guided calibration and independent HUD resets
+## 1. Shared top bar
 
-### Found issues
+- [x] Keep the QR icon, title, screen selector, Settings, Bluetooth, and Reset Graphics inline on one row on mobile and larger screens.
 
-- The HUD's Recenter gyro button appears to do nothing.
-- Dragging the displayed cube into alignment with the smartcube is not reliably available.
-- Connection calibration is useful, but requires too much manual interaction.
+### Website title and QR code logo
 
-### Required behavior
+- [x] Keep **Stack It Up** as the website title.
+- [x] Always show an icon to the left of the title, including on mobile.
+- [x] Replace the current 2D cube logo with a **QR Code icon**.
+- [x] Tapping or clicking the icon opens a panel with both QR codes, their destination labels, and clickable website links:
+  - App: https://jazzerthighs.github.io/stack-it-up/
+  - GitHub repository: https://github.com/JazzerThighs/stack-it-up
+- [x] Remove the cube icon from the Explorer's **Choose Packing** button entirely.
 
-- [x] Replace the current calibration interaction with four mandatory steps, in order:
-  1. Perform U, then U'.
-  2. Perform F, then F'.
-  3. Perform R, then R'.
-  4. Edit the neutral orientation by dragging, then confirm and save it.
-- [x] Automatically advance through the face-recording steps as each turn and its inverse are completed. Keep calibration turns out of gameplay.
-- [x] Before the dragging step, automatically orient the displayed cube with F facing the camera directly and U facing the ceiling directly.
-- [x] Let the player drag from that initial orientation to their desired natural holding angle, then confirm it as the saved neutral position. Ensure gyro updates do not prevent this editing.
-- [x] Replace Recenter gyro in the main HUD with two separate buttons:
-  - **UFR Reset:** redo face-identity calibration independently of the saved neutral gyro alignment.
-  - **Gyro Reset:** redo the neutral gyro alignment independently of the established U/F/R face identities.
-- [x] Keep the two calibration aspects separate so the player can repair either without unnecessarily repeating the other.
+### Screen selector
 
-Implemented: clockwise/inverse validation advances U, F and R automatically; inconsistent face assignments are rejected. Full calibration then rotates F toward the camera and U up, suspends gyro following, and requires a manual drag plus fresh gyro data before confirmation. UFR Reset omits the angle editor and keeps the saved neutral angle. Gyro Reset opens only the angle editor, retaining the face mapping and slice/wide correction. Calibration consumes physical turns without sending game commands. Reset requests during an active turn wait for the player to retry after it finishes.
+- [x] Add a button that expands downward into a list of screens:
 
-Validation: automated controller coverage includes all 24 face frames, inverse validation, canonical orientation and both independent resets. Physical-cube verification remains pending.
+| Screen in the dropdown | Button label when selected |
+| --- | --- |
+| Stack It Up Game | Game |
+| Tetracube Packing Family Explorer | Explorer |
+| A to B Solver | Solver |
 
-Acceptance: complete the four-step connection flow on desktop and mobile; verify that dragging is usable, confirmation saves the chosen neutral angle, and each HUD reset changes only its intended calibration aspect.
+- [x] **Explorer is the default screen.**
+- [x] **A to B Solver** is the existing two-packing practice view.
 
-## 2. Make turn-animation speed controls visible on mobile
+### Settings button
 
-### Found issue
+- [x] Use the gear emoji (⚙️) for the Settings button in the shared top bar.
+- [x] This is the only location where a Settings button appears.
+- [x] Remove duplicate Settings buttons and their reserved space from every individual view.
+- [x] Adjust the game applet layout so it no longer encompasses a separate settings bar.
 
-The expected turning-animation speed sliders cannot be found in the mobile app. They may be hidden, inaccessible, or absent from the visible settings routes.
+### Bluetooth button and connection page
 
-### Required behavior
+- [x] Add a **Bluetooth logo button** to the shared top bar.
+- [x] Open a dedicated Bluetooth connection page from this button.
+- [x] Keep connection and calibration concerns separate from the Settings menu.
+- [x] A connected physical cube must be able to control all applicable views, as specified in section 2.
 
-- [x] Locate the existing animation-speed controls and determine why they are not discoverable on mobile.
-- [x] Make the turning-animation speed sliders visible and reachable in mobile settings, with clear labels and readable current values.
-- [x] Distinguish animation playback speed from slice-pairing and wide-turn recognition timing.
-- [x] Verify that adjustments actually affect turning animations and retain the intended saved-preference and reset behavior.
+### Graphics Reset button
 
-Acceptance: find and operate the animation-speed controls on a mobile viewport without relying on desktop-only navigation or hidden controls.
+- [x] Keep **Graphics Reset** in the shared top bar.
+- [x] Preserve its current behavior.
 
-Implementation: the turn-speed slider was nested inside Rendering style. It and the animation toggle now live on the dedicated Controls and camera > Turn animations page, independent of visual style and Bluetooth mode. Playback speed remains distinct from gyro smoothing and gesture timing. Mobile browser coverage checks visibility, live values, persistence and reset; physical-device validation remains pending.
+### Milestone 1 implementation and validation
 
-## 3. Correct gyro drift near the player's saved neutral pose
+The QR panel uses the two PNGs supplied in `docs/`. Each shipped copy in `web/images/` matches its source byte for byte. Both PNGs decoded to the exact URLs above.
 
-### Found issue
+A headless Chrome layout check measured all six header elements in both Game and Explorer layouts at nine viewport widths from 320 to 1440 CSS pixels. All elements stayed on one row, in order, within the viewport. This check exercised the header HTML and styles independently of WebGL.
 
-Slice and wide-turn recognition can commit the game's move before the player has aligned the physical layers exactly. When the player subsequently straightens those layers, the gyro linkage may interpret that correction as whole-cube rotation. This can misalign the displayed active cubies and stack with the intended physical orientation. Small discrepancies can accumulate across multiple moves.
+The settings suite, navigation and Bluetooth controller tests, and Game and Explorer smoke tests passed. The smoke tests cover preserving the puzzle during Graphics Reset. Physical-cube routing to Explorer and Solver belongs to milestone 2.
 
-### Proposed behavior
+- [x] Run the full WebGL browser suite successfully. Headless Chrome passed the suite in an isolated local test profile with its browser sandbox disabled. The standard launch still encounters a GPU process failure on this machine.
 
-Use the player's saved neutral pose and their tendency to return to a natural grip to gradually correct the gyro linkage.
+## 2. Bluetooth control across views
 
-- [x] Define a configurable leniency zone around the player's saved neutral pose, with a default angular tolerance of **10 degrees** and a slider to adjust it.
-- [x] Detect moments of low gyro angular velocity while the player is within that neutral zone.
-- [x] During those moments, smoothly correct the linkage between physical gyro orientation and the displayed game cube, guiding the view back toward the saved neutral angle.
-- [x] Make this correction cooperate with the player's natural tendency to hold their cube so that it matches the on-screen view.
-- [x] After a slice or wide turn, let the player align the physical layers and hold the cube near neutral briefly to settle the gyro discrepancy.
-- [x] Do not require a neutral pause after every move. Allow the player to continue turning, then correct accumulated drift when they return to a steady neutral grip.
-- [x] Allow the same compensation during ordinary face-turn play, rather than limiting it to slices and wide turns.
-- [x] Keep intentional whole-cube motion responsive; compensation should not pull the view toward neutral while the player is deliberately rotating outside the zone or moving too quickly.
-- [x] Preserve actual game state and move semantics: correction adjusts orientation linkage, not the logical slice, wide turn, center positions, or placed stack.
+- [x] Route calibrated physical face turns to Family Explorer and Solver Start through their normal turn and history handling. Opposite-face turns remain separate, and double turns apply two quarter turns.
+- [x] Keep Game slice and wide-turn recognition available in Game. Discard pending Explorer turns when their destination changes.
+- [x] Route gyro orientation to the Explorer and Solver cubes. Both Solver cubes follow the calibrated grip. The Bluetooth panel has an optional gyro autocompensation setting for Explorer and Solver, off by default.
 
-### Implemented design
+| View | Physical face turns | Gyroscope behavior |
+| --- | --- | --- |
+| Game | Preserve the current game control behavior | Preserve the current game behavior |
+| Family Explorer | Support face turns; do not interpret input as slice or wide turns | Gyroscopic autocompensation is off by default |
+| Solver: Start Cube | Same turn behavior as Family Explorer; no slice or wide turns | Same behavior as Family Explorer |
+| Solver: Target Cube | Gyroscope-only by default; face turns become available when selected using the Solver toggle | Support gyro control |
 
-- The confirmed calibration view defines the session's natural holding angle. Correction accepts all 24 rigid cube orientations at that angle, choosing the nearest target without changing U/F/R mapping. Only explicit gyro calibration requires the reference face arrangement. The Bluetooth settings slider accepts 0-30 degrees (0 disables further correction while preserving the current alignment).
-- Neutral proximity is measured after discrete slice/wide compensation and accumulated drift alignment. An error outside the configured zone of every one of the 24 targets is not automatically pulled back; bring the view into the zone or explicitly recenter.
-- Raw sensor angular velocity must remain at or below the configurable motion cutoff (default 6 degrees/second, range 1-90, authored in `startup-defaults.js`) for a configurable delay (default 125 ms). Correction speed is configurable (default 2.5x): both the base 450 ms convergence time and 8 degrees/second cap scale together, giving a default 180 ms time constant and 20 degrees/second cap. The tolerance, delay and speed sliders all have authored values in `web/ui/startup-defaults.js`. Gaps above 250 ms restart settling.
-- A separate presentation offset preserves the discrete frame used for move mapping. Raw gyro samples still drive wide recognition. Ordinary turns do not inhibit compensation.
-- Suspension and recognized slice/wide frame changes restart settling without discarding the alignment. Calibration, disconnect, and explicit recenter clear compensation. Recenter establishes a fresh neutral using the current view and next sensor sample. UFR Reset remaps faces while retaining the saved neutral angle; Gyro Reset edits only the gyro alignment and preserves the current logical face correction.
-- Automated checks cover settling, convergence, motion and zone gates, sample-rate variation, saved settings, reset/suspension, and post-slice game-command isolation. Physical-cube feel and both-view hardware validation remain pending.
+### Solver turn destination
 
-Acceptance: test incomplete physical alignment followed by correction for slices and wide turns, repeated drift accumulation, ordinary turns near neutral, deliberate whole-cube rotations, and return to neutral. Verify both game views and check the feel on the actual smartcube.
+- [x] When Start and Target are both visible, provide a button to toggle which cube receives physical face turns.
+- [x] This applies on desktop and in split views.
+- [x] Clearly indicate whether turns currently control **Start Cube** or **Target Cube**.
+- [x] Route a physical face turn to the selected cube only.
 
-## 4. Smooth incoming gyro orientation updates
+### Calibration reset controls
 
-### Found issue
+- [x] Every view must have **UFR Reset** and **Gyro Reset** buttons.
+- [x] Keep these as separate actions: face-identity recalibration and gyro-alignment recalibration, respectively.
+- [x] Keep the connection workflow on the dedicated Bluetooth page while making these reset actions available in each view.
 
-The displayed cube currently jumps directly to each newly reported gyro orientation. The lack of interpolation makes rotation visibly jerky.
+Desktop and 390-pixel mobile Chrome runs with a simulated Bluetooth device verified calibration by dragging the cube, exclusive Start/Target turns, gyro motion on both Solver cubes, separate resets, and switching the same connection to Family Explorer. Verification on physical hardware remains open in section 7.
 
-### Required behavior
+## 3. Game controls and facemap layout
 
-- [x] Interpolate displayed orientation between gyro updates instead of rendering each message as an immediate jump.
-- [x] Enable gyro interpolation by default.
-- [x] Expose the interpolation control in the same Bluetooth settings page as Connect.
-- [x] Coordinate interpolation with neutral-pose compensation so both remain smooth and do not fight each other or introduce excessive lag.
-- [x] Handle connection, calibration, resets, and input suspension without blending from a stale orientation.
+- [x] Add a **Facemaps** button to the game's bottom pool of buttons.
+- [x] Make the facemaps wrap to fit within their reserved portion of the screen, including on small screens.
+- [x] Rename **Split Cubes** to **Split Stack**.
+- [x] Preserve the existing split behavior behind the renamed button.
 
-Acceptance: compare interpolation on and off using slow rotation, fast rotation, and uneven gyro update intervals. Verify smoothness, acceptable responsiveness, and clean behavior across both HUD resets.
+The Game toolbar and Settings checkbox control the same facemap layout. Closing it restores the previous combined or split view. Chrome verified all nine map grids stay inside the panel and above the toolbar at 320, 390, 621, and 1280 CSS pixels.
 
+## 4. Family Explorer controls and facemaps
 
-Implemented: `web/input/gyro-smoothing.js` runs a critically damped angular spring with continuous velocity and bounded acceleration on animation frames. It follows the latest compensated target without replaying a backlog of sensor packets. This provides eased starts/stops/reversals beyond simple frame interpolation; it does not use literal Bezier segments that restart on every sample.
+- [x] Move **Lock Shapes** and **Lock Colors** into the Family Explorer's bottom pool of buttons.
+- [x] They must be the **first** and **second** buttons, respectively.
+- [ ] Add facemaps for the Family Explorer cube.
+- [ ] Use the shared facemap appearance and motion rules below.
 
-Bluetooth settings include Smooth gyro motion (default on), Gyro easing time (180 ms), Maximum gyro rotation speed (180 degrees/s), and Maximum gyro acceleration (1200 degrees/s squared). All values are authored in `startup-defaults.js` and saved as preferences. Higher limits reduce lag; lower limits favor readability. Raw samples still feed gesture recognition and neutral compensation. Suspension, disconnect, calibration and recenter discard stale animation state. Independent HUD resets now use the guided calibration flow in issue #1.
+## 5. Shared facemap appearance
 
-Automated checks cover frame continuation without packets, speed/acceleration bounds, frame rates, direction reversals, exact rest, quaternion sign equivalence, lifecycle cancellation and direct-follow mode. Physical-cube feel/latency validation remains pending.
+Apply these rules wherever facemaps are available. Determine the appearance from the piece occupying the cell and the representation selected for that cube view.
+
+| Cell representation | Facemap sticker appearance |
+| --- | --- |
+| Whole tetracube / retained piece | Fill with the occupying piece's color |
+| Individual cubie | Fill with the occupying piece's color |
+| Extra cubie | No fill; dotted outline, creating a ghostlike piece |
+| Platonic solid | Show the number of faces of the displayed solid inside the sticker; color the number to match the solid |
+| Ball | Replace the square sticker with a circle, slightly smaller in diameter than a normal sticker's width; color the circle to match the ball |
+| Empty cell | Do not render a sticker |
+
+- [ ] Extra cubies shown as cubies use the ghostlike outline treatment. When represented as balls or solids, use the corresponding ball or solid treatment.
+- [ ] Solid numbers must describe the shape actually being displayed.
+- [ ] Empty stickers disappear visually without collapsing the facemap's spatial cell positions.
+- [ ] Use the owning view's colors and composition settings so that its facemaps match its 3D cube.
+
+### Dragged-move animation
+
+- [ ] Preserve the existing meter-filling transition used while the player drags a move.
+- [ ] Apply the transition to the **entire sticker representation**, including its contents and outline.
+- [ ] The meter level must control replacement of the old sticker with the new sticker as one coordinated transition.
+- [ ] Filled squares, ghost outlines, numbers, circles, and empty cells must all follow the same motion-transition behavior.
+- [ ] Do not update just the background color while leaving a number, outline, or circle unchanged.
+
+## 6. Implementation sequence
+
+- [x] 1. Refactor the shared top bar: QR panel, screen selector, sole Settings entry, Bluetooth entry, and Graphics Reset.
+- [x] 2. Separate the Bluetooth page and route physical-cube input across Game, Explorer, and Solver, including the Start/Target toggle and per-view resets.
+- [x] 3. Update bottom control pools: Game Facemaps, Split Stack, and Explorer's ordered Lock Shapes / Lock Colors buttons.
+- [ ] 4. Share facemap rendering between Game and Explorer, including wrapping and view-specific composition/color interpretation.
+- [ ] 5. Apply the complete-sticker meter transition to every facemap representation.
+- [ ] 6. Validate desktop and mobile layouts, application navigation, rendering, and physical-cube behavior.
+
+## 7. Acceptance checks
+
+- [x] The QR icon remains left of the title on mobile and desktop; both QR codes decode to the specified URLs, and both anchors use those destinations.
+- [x] Choose Packing has no cube icon.
+- [x] The selector opens downward, lists all three screens, shows the correct short label, and defaults to Explorer.
+- [x] Settings appears only in the top bar, with no redundant settings bar or reserved space inside a view.
+- [x] Bluetooth opens its own connection page; Graphics Reset retains its current behavior.
+- [x] Physical face turns control the game as before and the Explorer/Start cube without slice or wide-turn interpretation.
+- [x] Explorer and Start default to gyroscopic autocompensation off.
+- [x] Target defaults to gyro-only control; the Solver toggle sends face turns exclusively to the selected Start or Target cube.
+- [x] Every view exposes working UFR Reset and Gyro Reset actions.
+- [x] The game's bottom controls include Facemaps and use the label Split Stack.
+- [x] Facemaps wrap within their reserved area on small screens.
+- [x] Explorer's first two bottom controls are Lock Shapes and Lock Colors.
+- [ ] Explorer facemaps reflect its current cube.
+- [ ] Whole pieces, individual cubies, extras, solids, balls, and empty cells follow the shared appearance rules.
+- [ ] Dragging forward, reversing, cancelling, and completing a move transitions the entire sticker representation consistently with the meter level.
+- [ ] Test physical-cube routing and calibration resets with a real connected cube, in addition to automated checks.

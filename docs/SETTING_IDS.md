@@ -107,6 +107,7 @@ Legacy IDs identify defaults with no effect on modern configured gameplay, or an
 | 6019 | `controls.freeOrbit` | Live default |
 | 6020 | `controls.perspectiveCamera` | Live default |
 | 6021 | `controls.wideTurns` | Live default |
+| 6022 | `controls.bluetoothPackingNeutral` | Live default |
 | 7001 | `orbit.mouseLeft` | Live default |
 | 7002 | `orbit.mouseRight` | Live default |
 | 7003 | `orbit.mouseBoth` | Live default |

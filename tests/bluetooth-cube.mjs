@@ -257,3 +257,58 @@ console.log('PASS: frame-driven gyro continuation, suspension, reset and direct-
  }
 }
 console.log('PASS: guided inverse validation, canonical view and independent UFR/gyro reset across all 24 frames.');
+
+// Calibrate in Game, then send device events to the visible packing cube.
+{
+  let target;
+  const pack = fixture({explorerTurnTarget: () => target, sliceWindow: () => 100, wideWindow: () => 150});
+  pack.cube.setMode('bluetooth');
+  await pack.cube.connect();
+  calibrate(pack, {U:'R', F:'F', R:'D'});
+  pack.enable(false);
+  const played = [], gate = deferred();
+  target = {performTurn: async move => { played.push(move); return gate.promise; }};
+  pack.emit({type:'MOVE', move:'R', localTimestamp:10});
+  pack.emit({type:'MOVE', move:"L'", localTimestamp:15});
+  pack.emit({type:'GYRO', quaternion:{x:0,y:1,z:0,w:0}});
+  pack.emit({type:'MOVE', move:'F2', localTimestamp:20});
+  assert.deepEqual(played, [0]);
+  gate.resolve(true);
+  await tick();
+  assert.deepEqual(played, [0,16,2,2]);
+  assert.deepEqual(pack.moves, []);
+  assert.equal(pack.rotations.length, 1);
+  assert.notDeepEqual(pack.rotations[0],pack.view);
+
+  const pending = deferred();
+  target = {performTurn: () => pending.promise};
+  pack.emit({type:'MOVE',move:'R'});
+  pack.emit({type:'MOVE',move:'F'});
+  target = {performTurn: async move => { played.push(move); return true; }};
+  pack.emit({type:'MOVE',move:'D'});
+  pending.resolve(true);
+  await tick();
+  assert.deepEqual(played,[0,16,2,2,4]);
+  console.log('PASS: calibrated Explorer face turns, independent opposite turns, doubles and screen switches.');
+}
+
+{
+  const target = {performTurn: async () => assert.fail('Calibration consumed a puzzle turn')};
+  const packing = fixture({explorerTurnTarget: () => target});
+  packing.enable(false);
+  packing.cube.setMode('bluetooth');
+  await packing.cube.connect();
+  calibrate(packing);
+  assert(packing.cube.resetUfr());
+  for (const face of ['U','F','R']) {
+    packing.emit({type:'MOVE',move:face});
+    packing.emit({type:'MOVE',move:face+"'"});
+  }
+  assert.equal(packing.statuses.at(-1).calibration,'ready');
+  resetGyro(packing);
+  const before = packing.rotations.length;
+  packing.emit({type:'GYRO',quaternion:{x:0,y:0,z:0,w:1}});
+  assert.equal(packing.rotations.length,before+1);
+  assert.deepEqual(packing.moves,[]);
+  console.log('PASS: full calibration and independent UFR and gyro resets on the packing board.');
+}

@@ -149,6 +149,7 @@ export function createStartupDefaults() {
     "controls": {
       "turnAnimationSpeed": 1, // SID 6001: controls.turnAnimationSpeed
       "bluetoothSliceWindow": 40, // SID 6002: controls.bluetoothSliceWindow
+      "bluetoothPackingNeutral": false, // SID 6022: controls.bluetoothPackingNeutral
       "bluetoothGyroSmoothing": true, // SID 6003: controls.bluetoothGyroSmoothing
       "bluetoothGyroResponse": 180, // SID 6004: controls.bluetoothGyroResponse
       "bluetoothGyroSpeed": 180, // SID 6005: controls.bluetoothGyroSpeed

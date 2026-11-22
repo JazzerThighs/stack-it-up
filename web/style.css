@@ -2673,8 +2673,13 @@ main.explorer-active > .topbar { padding:0 14px; }
  .views.show-face-map .stack-viewport > .empty-stack { display:none!important; }
  .views.show-face-map #stageFaceMapPanel { display:flex; position:absolute; inset:8px 16px; flex-direction:column; align-items:center; justify-content:safe center; overflow:auto; }
  #net, #stageNet { width:100%; grid-template-columns:repeat(auto-fit,var(--face-map-size,104px)); justify-content:center; margin:0; gap:12px; }
- #stageNet { flex-shrink:0; }
- #stageNet .face-grid { width:var(--face-map-size,104px); height:var(--face-map-size,104px); }
+ #stageNet {
+   flex-shrink:0;
+   max-width:none;
+   grid-template-columns:repeat(auto-fit,min(100%,var(--face-map-size,104px)));
+ }
+ #stageNet .face-grid { width:100%; height:auto; aspect-ratio:1; }
+ .views > .stage-tools { flex-wrap:wrap; }
  #stageNet .face-label { font-size:16px; }
  #stageFaceMapPanel h3 { margin:0 0 8px; }
  #stageFaceMapPanel p { font-size:12px; text-align:center; }

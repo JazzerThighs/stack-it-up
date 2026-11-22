@@ -195,7 +195,7 @@ export function createExplorerViews({
     $("practiceLeftTitle").textContent = `Start · line ${a.lineNumber}`;
     $("practiceRightTitle").textContent = `Target · line ${b.lineNumber}`;
     get("practiceLeft", { onChange: updatePractice }).setCells(pair.left);
-    get("practiceRight", { readOnly: true }).setCells(pair.right);
+    get("practiceRight", { readOnly: true, onChange: cube => { targetCells = cube.cells; updatePractice(); } }).setCells(pair.right);
     updatePractice();
   }
   $("practiceLoad").onsubmit = async e => {
@@ -221,7 +221,7 @@ export function createExplorerViews({
     return task;
   }
   $('practiceScramble').onclick=async()=>{
-    const cube=cubes.get('practiceLeft');if(!cube||cube.busy||!matchesTarget(cube.cells,targetCells))return;
+    const cube=cubes.get('practiceLeft');if(!cube||cube.busy||cubes.get('practiceRight')?.busy||!matchesTarget(cube.cells,targetCells))return;
     cancelPractice();cube.setCells(targetCells);cube.playbackMs=55;
     return practicePlayback.run({
       plan:()=>{let last=-1;return Array.from({length:20},()=>{let move;do{move=Math.floor(Math.random()*30);}while(move%15===last);last=move%15;return move;});},
@@ -232,6 +232,7 @@ export function createExplorerViews({
   };
   $('practiceDemonstrate').onclick=async()=>{
     if(practicePlayback.busy){cancelPractice();updatePractice();return;}
+    if(cubes.get('practiceRight')?.busy)return;
     const cube=cubes.get('practiceLeft');if(!cube||cube.busy||!pairCompatible)return;
     return practicePlayback.run({
       prepare:()=>{
@@ -302,7 +303,13 @@ export function createExplorerViews({
     if($("practiceMode").checked) $("familyExploreMode").checked=false;
     return updateMode();
   };
-  return { showCube, showPieces, hide, navigate, refreshColors(){
+  function physicalTurnTarget(screen, useTarget = false) {
+    if ($('packingPicker').open || $('settingsPanel').open) return null;
+    if (screen === 'explorer' && viewController.mode === 'family') return cubes.get('familyExploreCube');
+    if (screen === 'solver' && viewController.mode === 'practice' && !practicePlayback.busy) return cubes.get(useTarget ? 'practiceRight' : 'practiceLeft');
+    return null;
+  }
+  return { physicalTurnTarget, showCube, showPieces, hide, navigate, refreshColors(){
     familyExplorer.refreshColors();
     if(sourcePacking&&targetPacking) {
       const pair=practicePair(data.presentation(sourcePacking).packing,data.presentation(targetPacking).packing);

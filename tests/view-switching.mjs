@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createBrowserFixture} from './fixtures/browser.mjs';
 import {bindGameViewSwitching,bindApplicationTabs} from '../web/ui/view-switching.js';
-const ids=['viewMode','stageFaceMap','combined','gamePage','explorerPage','gameTab','explorerTab','explorer'];
+const ids=['viewMode','stageFaceMap','combined','gamePage','explorerPage','gameTab','explorerTab','solverTab','screenSelect','screenMenu','explorer'];
 const f=createBrowserFixture(ids.map(id=>'<div id="'+id+'"></div>').join(''),{globals:{matchMedia:()=>({matches:false})}});
 f.install();
 try {
@@ -16,6 +16,13 @@ try {
  let mounts=0,setups=0;const choose=bindApplicationTabs({$,mountExplorer:async()=>{mounts++;$('explorer').explorerReady=true;},startupCheck(){},startupError:e=>{throw e;},invalidate(){},setupGame:()=>setups++});
  choose(true);await Promise.resolve();assert($('gamePage').hidden);assert(!$('explorerPage').hidden);assert.equal(mounts,1);
  choose(false);choose(true);assert.equal(mounts,1);assert.equal(setups,1);
- $('explorerTab').listeners.keydown({key:'Home',preventDefault(){}});assert(!$('gamePage').hidden);
- console.log('PASS: split transition admission, reduced motion, face-map exit and application tab reuse/keyboard navigation.');
+ $('gameTab').onclick();assert(!$('gamePage').hidden);
+ let mode; $('explorer').selectScreen=async value=>{mode=value;};await choose('solver');assert.equal(mode,'solver');assert.equal($('screenSelect').textContent,'Solver ▾');
+ await choose('explorer');assert.equal(mode,'explorer');assert.equal($('screenSelect').textContent,'Explorer ▾');
+ $('screenSelect').onclick();assert(!$('screenMenu').hidden);$('solverTab').listeners.keydown({key:'Escape'});assert($('screenMenu').hidden);
+ let resolveLoad,calls=[];$('explorer').explorerReady=new Promise(resolve=>resolveLoad=resolve);
+ $('explorer').selectScreen=async value=>calls.push(value);
+ const stale=choose('solver'),latest=choose('explorer');resolveLoad();await Promise.all([stale,latest]);
+ assert.deepEqual(calls,['explorer'],'An obsolete load must not switch back to Solver');
+ console.log('PASS: split transitions, face-map exit, three-screen navigation, dropdown keyboard controls and stale-load protection.');
 } finally {f.restore();}

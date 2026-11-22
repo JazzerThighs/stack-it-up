@@ -27,8 +27,8 @@ export function initializeExplorerSettings(root) {
   const appearances=page('Cube Appearances',home);appearances.collapsedChildren=true;
   for(const [id,title]of appearanceViews)unpack(page(title,appearances),createViewAppearancePage(id));
   unpack(page('Export 3D model',home),find('.family-model-export'));
-  const mode=page('Explorer mode',home);unpack(mode,find('.explorer-modes'));
-  help(mode,'Turn both modes off to browse target and scrambled cubes.');
+  if(root.host){const modes=find('.explorer-modes');if(modes){modes.hidden=true;body.append(modes);}}
+  else {const mode=page('Explorer mode',home);unpack(mode,find('.explorer-modes'));help(mode,'Turn both modes off to browse target and scrambled cubes.');}
   // Retain old controls for saved integrations, but expose only editable counts.
   const legacy=document.createElement('div');legacy.hidden=true;
   for(const node of [$('datasetSelect').closest('label'),$('familyBag').closest('label'),$('spatialFilters'),find('.filter-flags'),$('puzzleShapeFilters'),find('.extra-filters')])if(node)legacy.append(node);

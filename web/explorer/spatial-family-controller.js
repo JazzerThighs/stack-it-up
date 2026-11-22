@@ -40,7 +40,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
   const path=(source,target)=>session.path(source,target);
   const button=$('familyLockShapes'),colorButton=$('familyLockColors');
   function syncButton(){
-    for(const [control,mode,label] of [[button,'shapes','shapes'],[colorButton,'colors','colors']]){
+    for(const [control,mode,label] of [[button,'shapes','Shapes'],[colorButton,'colors','Colors']]){
       const active=!!locked?.[mode];
       control.disabled=!active&&(busy||!!view?.busy||!!view?.geometry?.pending||!!view?.geometry?.error||(!matched&&(!locked||mode==='shapes')));
       control.textContent=active?`Unlock ${label}`:`Lock ${label}`;
@@ -81,7 +81,7 @@ export function createSpatialFamilyExplorer({$,get,getSelected,data}) {
     if(locked&&p.familyId!==family)throw Error(`Unlock ${[locked.shapes?'shapes':null,locked.colors?'colors':null].filter(Boolean).join(' and ')} to leave family ${family}.`);
     cancel();++lookupGeneration;source=p;family=p.familyId;remember([p]);
     $('familyExploreTitle').textContent=`Family ${family} · Line ${p.lineNumber}`;
-    view=get('familyExploreCube',{onChange:changed,onAvailabilityChange:syncButton});view.familyExploration=true;
+    view=get('familyExploreCube',{onChange:changed,onAvailabilityChange:syncButton,leadingControls:[button,colorButton]});view.familyExploration=true;
     const shown=data.presentation(p);
     if(!locked){view.fixedPieceColors=shown.fixed;view.setCells(shown.cells);return;}
     const token=run;

@@ -268,7 +268,9 @@ $('planeGravity').checked=false;$('planeGravity').onchange();assert(!(context.en
 $('planeGravity').checked=true;$('planeGravity').onchange();assert(context.engine.game_rules()&(1<<24));
 console.log('PASS: free J/L and S/Z setup/hold/current pieces, dual previews, mixed sphere colors and plane-gravity toggle.');
 
-$('stageFaceMap').checked=true;$('stageFaceMap').onchange();flush();
+$('stageFaceMap').checked=false;
+$('toggleFacemaps').onclick();flush();
+assert($('stageFaceMap').checked);
 assert(context.renderers[0].combined,'face-map layout keeps active field and stack together');
 assert.equal($('viewMode').textContent,'Hide face map');
 const mapBefore=context.state;

@@ -90,6 +90,39 @@ try{
  await waitFor(()=>evaluate("document.querySelector('#startupScreen').hidden && document.querySelector('#setupDialog').open"),'initial game setup ready');
  await evaluate("document.querySelector('#setupStart').click()");
  await waitFor(()=>evaluate("!document.querySelector('#setupDialog').open && !document.querySelector('#new').disabled"),'initial game setup complete');
+ for (const width of [320, 390, 621, 1280]) {
+   await call('Emulation.setDeviceMetricsOverride', {width, height:844, deviceScaleFactor:1, mobile:width < 621});
+   assert(await evaluate(`(() => {
+     const rects = ['#qrOpen', '.brand span', '#screenSelect', '#settingsOpen', '#bluetoothOpen', '#resetGraphics']
+       .map(selector => document.querySelector(selector).getBoundingClientRect());
+     const center = rect => rect.top + rect.height / 2;
+     return rects.every((rect, i) => rect.width > 0 && rect.left >= 0 && rect.right <= innerWidth
+       && Math.abs(center(rect) - center(rects[0])) <= 1 && (!i || rect.left >= rects[i - 1].right));
+   })()`), `Shared header must fit on one row at ${width}px`);
+   await evaluate(`(async () => {
+     const button = document.getElementById('toggleFacemaps');
+     const split = document.getElementById('viewMode');
+     const previousLabel = split.textContent;
+     button.click();
+     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+     const panel = document.getElementById('stageFaceMapPanel');
+     const bounds = panel.getBoundingClientRect();
+     const toolbar = document.querySelector('.stage-tools').getBoundingClientRect();
+     if (button.getAttribute('aria-pressed') !== 'true' || !panel.checkVisibility() ||
+         panel.clientHeight <= 0 || panel.scrollWidth > panel.clientWidth + 1 || bounds.bottom > toolbar.top + 1)
+       throw Error('Facemaps overflow or overlap bottom controls at ' + innerWidth);
+     const grids = [...panel.querySelectorAll('.face-grid')];
+     if (grids.length !== 9 || grids.some(grid => {
+       const rect = grid.getBoundingClientRect();
+       return rect.left < bounds.left - 1 || rect.right > bounds.right + 1 || rect.width <= 0;
+     })) throw Error('Face grids exceed the map panel at ' + innerWidth);
+     button.click();
+     if (button.getAttribute('aria-pressed') !== 'false' || split.textContent !== previousLabel ||
+         document.getElementById('stageFaceMap').checked) throw Error('Facemaps toggle did not restore the layout');
+   })()`);
+
+ }
+ await call('Emulation.clearDeviceMetricsOverride');
  await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open && !document.querySelector('#setupDialog').open"));
  await checkPaletteNavigation("document.querySelector('#settingsDialog')");
@@ -97,7 +130,7 @@ try{
  assert(await evaluate(`(async()=>{
    const root=document.querySelector('#settingsDialog');
    [...root.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent==='Controls and camera').click();
-   [...root.querySelectorAll('#controlSettings .settings-page-link')].find(b=>b.textContent.startsWith('Input ')).click();
+   document.querySelector('#settingsClose').click();document.querySelector('#bluetoothOpen').click();
    const source=document.querySelector('#gameInputSource');
    source.value='bluetooth';source.dispatchEvent(new Event('change'));
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
@@ -118,6 +151,7 @@ try{
    }
 
    source.value='manual';source.dispatchEvent(new Event('change'));
+   document.querySelector('#bluetoothClose').click();document.querySelector('#settingsOpen').click();
    [...root.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent==='Turn animations').click();
    const speed=document.querySelector('#turnAnimationSpeed'),animations=document.querySelector('#animations');
    if(!speed.checkVisibility()||!animations.checkVisibility())throw Error('Turn animation controls hidden on mobile');
@@ -149,12 +183,16 @@ try{
  await evaluate("document.querySelector('#explorerTab').click()");
  await waitFor(()=>evaluate("!!document.querySelector('#explorer').shadowRoot?.querySelector('#familyExploreCube canvas')"),'explorer startup');
  await evaluate("document.querySelector('#explorer').explorerReady");
+ assert.deepEqual(await evaluate(`[...document.querySelector('#explorer').shadowRoot
+   .querySelector('#familyExploreCube .packing-actions').children].slice(0,2).map(button => button.id)`),
+   ['familyLockShapes','familyLockColors']);
+
  await waitFor(()=>evaluate("document.querySelector('#explorer').shadowRoot.querySelector('#familyExploreCube canvas')?.dataset.geometrySource==='worker' && document.querySelector('#explorer').shadowRoot.querySelector('#familyExploreCube canvas').getAttribute('aria-busy')==='false'"),'worker geometry ready');
- await evaluate("document.querySelector('#explorer').shadowRoot.querySelector('#settingsPanel summary').click()");
+ await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open && document.querySelector('#settingsDialog').dataset.settingsScope==='explorer'"));
  assert(await evaluate("!!document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape') && !document.querySelector('#explorer').shadowRoot.querySelector('.settings-content')"));
  await checkPaletteNavigation("document.querySelector('#explorerSettingsHost').shadowRoot");
- await evaluate("window.__model=document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape');__model.value='gameboy';__model.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('#settingsClose').click();document.querySelector('#explorer').shadowRoot.querySelector('#settingsPanel summary').click()");
+ await evaluate("window.__model=document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape');__model.value='gameboy';__model.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('#settingsClose').click();document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape')===window.__model && __model.value==='gameboy'"));
  await evaluate("document.querySelector('#settingsClose').click()");
  console.log('PASS: one settings dialog, live explorer controls and retained choices on reopen');

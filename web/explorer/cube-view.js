@@ -31,7 +31,7 @@ import { PALETTE, NOTATION, turn } from "./model.js";
 export class PackingCube extends Renderer {
   constructor(
     host,
-    { readOnly = false, onChange = () => {}, onAvailabilityChange = () => {}, controls = true } = {},
+    { readOnly = false, onChange = () => {}, onAvailabilityChange = () => {}, controls = true, leadingControls = [] } = {},
   ) {
     const canvas = document.createElement("canvas"),
       labels = document.createElement("canvas");
@@ -82,6 +82,7 @@ export class PackingCube extends Renderer {
     this.status.setAttribute("role", "status");
     const toolbar = document.createElement("div");
     toolbar.className = "packing-actions";
+    toolbar.append(...leadingControls);
     const button = (text, fn) => {
       const b = document.createElement("button");
       b.type = "button";
@@ -274,8 +275,12 @@ export class PackingCube extends Renderer {
       requestAnimationFrame(frame);
     });
   }
-  async play(move, start = 0) {
-    if (this.busy || this.orbitOnly || !this.cells.length) return;
+  play(move, start = 0) {
+    if (this.orbitOnly) return;
+    return this.performTurn(move, start);
+  }
+  async performTurn(move, start = 0) {
+    if (this.busy || !this.cells.length) return;
     this.busy = true;
     this.onAvailabilityChange(this);
     const generation = this.generation, from = this.cells;
@@ -292,6 +297,7 @@ export class PackingCube extends Renderer {
       if(generation!==this.generation)return;
       this.busy=false;
       this.changed();
+      return true;
     } finally {if(generation===this.generation){this.busy=false;this.onAvailabilityChange(this);}}
   }
   undo() {

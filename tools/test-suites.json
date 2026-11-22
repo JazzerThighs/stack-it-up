@@ -91,7 +91,8 @@
     "node tests/forecast.mjs",
     "node tests/view-appearance.mjs",
     "node tests/composition-categories.mjs",
-    "node tests/view-effects.mjs"
+    "node tests/view-effects.mjs",
+    "node tests/topbar.mjs"
   ],
   "core": [
     "node tools/generate-game-contract.mjs --check",
@@ -169,7 +170,8 @@
     "node tests/settings-pages.mjs",
     "node tests/explorer-settings-pages.mjs",
     "node tests/appearance.mjs",
-    "node tests/view-appearance.mjs"
+    "node tests/view-appearance.mjs",
+    "node tests/topbar.mjs"
   ],
   "input": [
     "node tests/animation-timing.mjs",

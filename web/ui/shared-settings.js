@@ -55,7 +55,7 @@ export function attachExplorerSettings(root,scope) {
     .settings-heading{padding:0!important}.settings-eyebrow,#closeSettings{display:none!important}`;
   scope.attachSettings(menu.portal);
   menu.portal.replaceChildren(...links,style,content);
-  const panel=root.getElementById('settingsPanel');panel.open=false;
+  const panel=root.getElementById('settingsPanel');panel.open=false;panel.hidden=true;
   panel.querySelector('summary').addEventListener('click',event=>{event.preventDefault();root.getElementById('packingPicker').open=false;menu.open('explorer');});
   // Retain programmatic close integrations, but the shared dialog owns closing.
   scope.getElementById('closeSettings').onclick=()=>menu.dialog.close();

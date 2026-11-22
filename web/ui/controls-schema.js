@@ -161,6 +161,16 @@ export const controlsSchema = {
         "game": null
       }
     },
+    "bluetoothPackingNeutral": {
+      "value": false,
+      "label": "Gyro autocompensation in Explorer and Solver",
+      "commit": "change",
+      "checkbox": true,
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
     "bluetoothGyroSmoothing": {
       "value": true,
       "label": "Smooth gyro motion",

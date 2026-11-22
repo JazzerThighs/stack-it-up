@@ -411,7 +411,7 @@ button.primary { background:var(--accent);color:#142724; }
 
 .packing-picker>summary{list-style:none;display:flex;align-items:center;gap:.65rem;padding:.7rem 1rem;border:1px solid var(--accent);border-radius:12px;background:var(--panel);color:var(--ink);font-weight:650;box-shadow:0 3px 12px #0003;cursor:pointer}
 .packing-picker>summary::-webkit-details-marker{display:none}
-.packing-picker>summary::before{content:'\25A6';font-size:1.4em;color:var(--accent)}
+.packing-picker>summary::before{content:none}
 .packing-picker>summary::after{content:'\2304';margin-left:.3rem;color:var(--accent)}
 .packing-picker[open]>summary{background:var(--accent);color:var(--bg)}
 .packing-picker[open]>summary::before,.packing-picker[open]>summary::after{color:inherit}
@@ -435,9 +435,7 @@ input, textarea, [contenteditable="true"], [contenteditable="true"] * {
   user-select: text;
 }
 
-.family-lock-controls { position:absolute; top:10px; right:12px; z-index:6; display:flex; gap:6px; }
-.family-lock-controls button { min-height:36px; padding:6px 9px; font-size:13px; }
-.family-lock-controls button[aria-pressed="true"] { background:var(--accent,var(--mint)); color:var(--bg); }
+#familyExploreCube .packing-actions button[aria-pressed="true"] { background:var(--accent,var(--mint)); color:var(--bg); }
 #familyExplorePanel h2 { right:220px; max-width:none; padding-right:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* Model export stays with the family cube, outside the shared settings menu. */
