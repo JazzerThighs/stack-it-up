@@ -2,6 +2,8 @@ import './fixtures/behavior-defaults.mjs';
 import assert from 'node:assert/strict';
 import {gameboyCell,gameboyPiece,gameboyPattern} from '../web/render/gameboy-mesh.js';
 import {compositeParts} from '../web/render/piece-mesh.js';
+import {visualSettings} from '../web/render/visual-settings.js';
+import {rgb} from '../web/render/geometry.js';
 import {appearances} from '../web/render/appearance.js';
 assert(appearances.some(([id])=>id==='gameboy'));
 for(const letter of ['O','T','J','L','S','Z','B','D','F','bomb','loose']) {
@@ -33,13 +35,16 @@ for(const letter of ['J','S']) {
 }
 console.log('PASS: distinct white J / colored S centers.');
 
-const bomb=[];gameboyCell(bomb,[0,0,0],.487,[.2,.5,.8],'bomb');
 assert.notDeepEqual(gameboyPattern('bomb'),gameboyPattern('O'));
 const extraBoard=Array(27).fill(0),extraIds=Array(27).fill(0);extraBoard[0]=1;
-const extra=compositeParts(extraBoard,extraIds,palette,()=>{},'gameboy',false,1)[0];
-const expected=gameboyPiece(1,[1,128/255,0],'bomb');
-assert.deepEqual(Array.from(extra),Array.from(new Float32Array(expected)));
-console.log('PASS: bomb relief replaces extra cubies without changing their palette.');
+// Cell 0 is a corner. Recolor the same cached piece to exercise palette updates.
+for(const cornerColor of ['#2384c1','#ad416d']) {
+ visualSettings.extraCornerColor=cornerColor;
+ const extra=compositeParts(extraBoard,extraIds,palette,()=>{},'gameboy',false,1)[0];
+ const expected=new Float32Array(gameboyPiece(1,rgb(cornerColor),'bomb'));
+ assert.deepEqual(Array.from(extra),Array.from(expected),`bomb relief uses the configured corner color ${cornerColor}`);
+}
+console.log('PASS: bomb relief uses the corner extra color and follows palette edits.');
 
 // View every face from outside with local right/up axes whose cross points out.
 for(const letter of ['D','F']) {

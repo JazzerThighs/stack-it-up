@@ -9,6 +9,8 @@ function scan(directory) {
     if(ignored.has(entry.name)||entry.isSymbolicLink())continue;
     const file=path.join(directory,entry.name);
     if(entry.isDirectory()){scan(file);continue;}
+    // The offline clue enumerator writes a gitignored, multi-gigabyte result.
+    if(directory===root&&entry.name==='packing-clues-free.jsonl')continue;
     if(!entry.isFile())continue;
     const data=readFileSync(file);
     if(data.includes(0))continue;

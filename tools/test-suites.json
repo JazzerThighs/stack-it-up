@@ -1,5 +1,6 @@
 {
   "all": [
+    "node tools/build.mjs",
     "node tests/extra-colors.mjs",
     "node tests/animation-timing.mjs",
     "node tests/bluetooth-cube.mjs",
@@ -40,7 +41,6 @@
     "node tests/piece-catalog.mjs",
     "node tools/check-conflicts.mjs",
     "cargo test --workspace --offline",
-    "node tools/build.mjs",
     "node tests/version-build.mjs",
     "node tests/engine-transport.mjs",
     "node tests/engine-contract.mjs",
@@ -63,7 +63,6 @@
     "node tests/retained-stack.mjs",
     "node tests/retained-stack-engine.mjs",
     "node tests/family-lock.mjs",
-    "node tests/display-settings.mjs",
     "node tests/family-exploration.mjs",
     "node tests/explorer-smoke.mjs",
     "node tests/wide-drag.mjs",

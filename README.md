@@ -2,7 +2,7 @@
 
 This repository contains the Stack It Up game and packing explorer.
 
-See [the implementation plan](docs/IMPLEMENTATION_PLAN.md) for upcoming smartcube controls and appearance improvements, and [the architecture](docs/ARCHITECTURE.md) for the current code map.
+See the [development workflow](docs/DEVELOPMENT.md) for owner modules and tests, the [architecture](docs/ARCHITECTURE.md) for the code map, and the [implementation plan](docs/IMPLEMENTATION_PLAN.md) for milestone status.
 
 ## Run the included build
 
