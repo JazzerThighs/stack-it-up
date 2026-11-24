@@ -456,7 +456,7 @@ document.addEventListener("keydown", (e) => {
     busy || session?.starting || $("stateDialog").open ||
     $("gamePage").hidden ||
     $("newDialog").open ||
-    $("settingsDialog").open || $("bluetoothDialog").open || $("qrDialog").open ||
+    $("settingsDialog").open || $("qrDialog").open ||
     e.target.matches("input,textarea,select,[contenteditable]")
   )
     return;
@@ -667,7 +667,7 @@ function orbitCamera(dx, dy, orientation) {
 }
 function packingBluetoothTarget(useTarget) {
     if (document.hidden || $('explorerPage').hidden || !$('startupScreen').hidden ||
-        $('settingsDialog').open || $('bluetoothDialog').open || $('qrDialog').open) return null;
+        $('settingsDialog').open || $('qrDialog').open) return null;
     const screen = $('solverTab').getAttribute('aria-current') === 'page' ? 'solver' : 'explorer';
     return $('explorer').physicalTurnTarget?.(screen, useTarget);
 }
@@ -676,7 +676,7 @@ bluetoothCube = bindBluetoothControls({
   play: move => commands.play(move),
   explorerTurnTarget: selectedPackingCube,
   active: () => !!engine && !!state && !!renderers.length && !document.hidden &&
-    !$('gamePage').hidden && !$('bluetoothDialog').open && !$('qrDialog').open && !$('settingsDialog').open && !$('newDialog').open &&
+    !$('gamePage').hidden && !$('qrDialog').open && !$('settingsDialog').open && !$('newDialog').open &&
     !session?.starting,
   orientation: () => {
     const cube = selectedPackingCube();
@@ -707,6 +707,14 @@ configureRenderer(context);
 initializeSettings(context);
 initializeSharedSettings({loadExplorer:()=>mountExplorer($('explorer'),packingProgress)});
 initializeTopbar();
+$('bluetoothOpen').onclick = () => {
+  const source = $('gameInputSource');
+  if (source.value !== 'bluetooth') {
+    source.value = 'bluetooth';
+    source.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+  openSharedSettings('game', 'cubeInputSettings');
+};
 initializeGameplay(context);
 selectMode("face");
 async function start() {

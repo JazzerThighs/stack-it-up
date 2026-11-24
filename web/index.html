@@ -39,52 +39,7 @@
       <section><h3>Open the app</h3><img src="./images/stackitupappqrcode.png" width="232" height="232" alt="QR code for the Stack It Up app"><a href="https://jazzerthighs.github.io/stack-it-up/">https://jazzerthighs.github.io/stack-it-up/</a></section>
       <section><h3>GitHub repository</h3><img src="./images/stackituprepoqrcode.png" width="232" height="232" alt="QR code for the Stack It Up GitHub repository"><a href="https://github.com/JazzerThighs/stack-it-up">https://github.com/JazzerThighs/stack-it-up</a></section>
     </div></dialog>
-    <dialog id="bluetoothDialog" class="topbar-dialog" aria-labelledby="bluetoothTitle"><header><h2 id="bluetoothTitle">Bluetooth connection</h2><button id="bluetoothClose" type="button">Return to cube</button></header><p>Connect your smartcube here. Calibrate in the current view. In Solver, both cubes follow your grip. Use the turn selector to choose which cube receives physical turns.</p><div class="bluetooth-page"><label for="gameInputSource">Cube input</label>
-<select id="gameInputSource"><option value="manual">Manual</option><option value="bluetooth">Bluetooth</option></select>
-<div id="bluetoothOptions" hidden>
-<label for="bluetoothSliceWindow">Slice pairing window <output id="bluetoothSliceWindowValue" for="bluetoothSliceWindow">40 ms</output></label>
-<input id="bluetoothSliceWindow" type="range" min="0" max="150" step="5" value="40" aria-describedby="bluetoothSliceHelp">
-<button id="bluetoothSliceReset" type="button">Reset slice timing</button>
-<p id="bluetoothSliceHelp" class="muted">Opposite-face turns in opposite directions within this window become one slice turn. Set to 0 to disable. Larger windows add input delay and may combine intentional outer turns. Slice recognition also adjusts the face frame and gyro orientation.</p>
-<label><input id="bluetoothPackingNeutral" type="checkbox"> Gyro autocompensation in Explorer and Solver</label>
-<label><input id="bluetoothGyroSmoothing" type="checkbox" checked> Smooth gyro motion</label>
-<p class="muted">Ease rotation between sensor updates and soften sudden direction changes. Lower speed and acceleration improve readability; higher values follow your hand more closely.</p>
-<label for="bluetoothGyroResponse">Gyro easing time <output id="bluetoothGyroResponseValue" for="bluetoothGyroResponse">180 ms</output></label>
-<input id="bluetoothGyroResponse" type="range" min="40" max="600" step="10" value="180">
-<label for="bluetoothGyroSpeed">Maximum gyro rotation speed <output id="bluetoothGyroSpeedValue" for="bluetoothGyroSpeed">180 degrees/s</output></label>
-<input id="bluetoothGyroSpeed" type="range" min="30" max="720" step="10" value="180">
-<label for="bluetoothGyroAcceleration">Maximum gyro acceleration <output id="bluetoothGyroAccelerationValue" for="bluetoothGyroAcceleration">1200 degrees/s²</output></label>
-<input id="bluetoothGyroAcceleration" type="range" min="100" max="6000" step="100" value="1200">
-<p class="muted">Longer easing times make the final approach gentler. Speed limits large rotations; acceleration softens starts, stops and reversals. These settings affect the view only.</p>
-<label for="bluetoothNeutralTolerance">Neutral gyro correction zone <output id="bluetoothNeutralToleranceValue" for="bluetoothNeutralTolerance">10 degrees</output></label>
-<input id="bluetoothNeutralTolerance" type="range" min="0" max="30" step="1" value="10" aria-describedby="bluetoothNeutralHelp">
-<p id="bluetoothNeutralHelp" class="muted">Hold your cube steadily near your calibrated natural angle to gently correct gyro drift. Any of the 24 face orientations works; you do not need to restore the original U/F/R faces. This also works after slice and wide turns. Set to 0 to disable correction; the existing alignment is retained.</p>
-<label for="bluetoothNeutralCutoff">Neutral correction motion cutoff <output id="bluetoothNeutralCutoffValue" for="bluetoothNeutralCutoff">6 degrees/s</output></label>
-<input id="bluetoothNeutralCutoff" type="range" min="1" max="90" step="1" value="6" aria-describedby="bluetoothNeutralCutoffHelp">
-<p id="bluetoothNeutralCutoffHelp" class="muted">Correction stops and its delay resets whenever physical gyro motion exceeds this speed. Higher values allow correction during more movement; lower values require a steadier hold.</p>
-<label for="bluetoothNeutralDelay">Neutral correction delay <output id="bluetoothNeutralDelayValue" for="bluetoothNeutralDelay">125 ms</output></label>
-<input id="bluetoothNeutralDelay" type="range" min="0" max="1000" step="25" value="125" aria-describedby="bluetoothNeutralDelayHelp">
-<p id="bluetoothNeutralDelayHelp" class="muted">How long to hold steadily near neutral before correction starts. Set to 0 to start as soon as steady motion is detected.</p>
-<label for="bluetoothNeutralSpeed">Neutral correction speed <output id="bluetoothNeutralSpeedValue" for="bluetoothNeutralSpeed">2.5x</output></label>
-<input id="bluetoothNeutralSpeed" type="range" min="0.25" max="10" step="0.25" value="2.5" aria-describedby="bluetoothNeutralSpeedHelp">
-<p id="bluetoothNeutralSpeedHelp" class="muted">How quickly the view settles into its neutral angle once correction starts. Higher values settle faster.</p>
-<label for="bluetoothWideWindow">Wide turn completion window <output id="bluetoothWideWindowValue" for="bluetoothWideWindow">150 ms</output></label>
-<input id="bluetoothWideWindow" type="range" min="0" max="500" step="10" value="150" aria-describedby="bluetoothWideHelp">
-<button id="bluetoothWideReset" type="button">Reset wide timing</button>
-<p id="bluetoothWideHelp" class="muted">Move two layers together: a face-turn event plus the matching quarter-turn gyro motion becomes one wide game move, including its centers. This window limits gesture completion time. Set to 0 to disable. Longer windows allow slower gestures but delay ordinary face turns.</p>
-<label><input id="bluetoothShowAll" type="checkbox"> Show all Bluetooth devices (if your cube is missing)</label>
-<label for="bluetoothMac">Cube MAC address (optional)</label>
-<div id="bluetoothMacField">
-<input id="bluetoothMac" type="text" aria-controls="bluetoothMacHistory" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" spellcheck="false" aria-describedby="bluetoothHelp">
-<div id="bluetoothMacHistory" role="group" aria-label="Previously used MAC addresses" hidden></div>
-</div>
-<p id="bluetoothHelp" class="muted">Disconnect your smartcube from other apps, wake it, then select Connect. If your cube is missing, try Show all Bluetooth devices and select your cube. The optional MAC address helps decode data after selection; it does not find a missing device. U/D/F/B/R/L turns play the matching regular game moves; inverse turns stay inverse. Rotation controls both game views. Close this page to calibrate your grip and face mapping. Manual buttons remain available for hold, choices and undo.</p>
-<button id="bluetoothConnect" type="button" disabled>Connect</button>
-<button id="bluetoothDisconnect" type="button" disabled>Disconnect</button>
 
-<button id="bluetoothCalibrate" type="button" disabled>Calibrate cube</button>
-</div>
-<p id="bluetoothStatus" role="status" aria-live="polite">Manual controls active.</p></div></dialog>
     <main class="explorer-active">
       <header class="topbar">
         <div class="brand"><button id="qrOpen" class="topbar-icon brand-icon" type="button" aria-label="App and repository QR codes" aria-haspopup="dialog" title="App and repository QR codes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h-3zM18 18h3v3h-3zM12 3v9H3m9 3v6m3-9h6m0 3v2"/></svg></button><span>Stack It Up</span></div>
@@ -633,8 +588,54 @@
 <summary>Controls and camera<small>Input, orbit and projection</small>
 </summary>
 <div class="settings-section-body">
-<fieldset>
+<fieldset id="cubeInputSettings">
 <legend>Input</legend>
+<div class="bluetooth-page">
+<label for="gameInputSource">Cube input</label>
+<select id="gameInputSource"><option value="manual">Manual</option><option value="bluetooth">Bluetooth</option></select>
+<div id="bluetoothOptions" hidden>
+<button id="bluetoothConnect" type="button" disabled>Connect</button>
+<button id="bluetoothDisconnect" type="button" disabled>Disconnect</button>
+<button id="bluetoothCalibrate" type="button" disabled>Calibrate cube</button>
+<label><input id="bluetoothShowAll" type="checkbox"> Show all Bluetooth devices (if your cube is missing)</label>
+<label for="bluetoothMac">Cube MAC address (optional)</label>
+<div id="bluetoothMacField">
+<input id="bluetoothMac" type="text" aria-controls="bluetoothMacHistory" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" spellcheck="false" aria-describedby="bluetoothHelp">
+<div id="bluetoothMacHistory" role="group" aria-label="Previously used MAC addresses" hidden></div>
+</div>
+<p id="bluetoothHelp" class="muted">Disconnect your smartcube from other apps, wake it, then select Connect. If your cube is missing, try Show all Bluetooth devices and select your cube. The optional MAC address helps decode data after selection; it does not find a missing device. U/D/F/B/R/L turns play the matching regular game moves; inverse turns stay inverse. Rotation controls both game views. Close this page to calibrate your grip and face mapping. Manual buttons remain available for hold, choices and undo.</p>
+<label for="bluetoothWideWindow">Wide turn completion window <output id="bluetoothWideWindowValue" for="bluetoothWideWindow">150 ms</output></label>
+<input id="bluetoothWideWindow" type="range" min="0" max="500" step="10" value="150" aria-describedby="bluetoothWideHelp">
+<button id="bluetoothWideReset" type="button">Reset wide timing</button>
+<p id="bluetoothWideHelp" class="muted">Move two layers together: a face-turn event plus the matching quarter-turn gyro motion becomes one wide game move, including its centers. This window limits gesture completion time. Set to 0 to disable. Longer windows allow slower gestures but delay ordinary face turns.</p>
+<label for="bluetoothSliceWindow">Slice pairing window <output id="bluetoothSliceWindowValue" for="bluetoothSliceWindow">40 ms</output></label>
+<input id="bluetoothSliceWindow" type="range" min="0" max="150" step="5" value="40" aria-describedby="bluetoothSliceHelp">
+<button id="bluetoothSliceReset" type="button">Reset slice timing</button>
+<p id="bluetoothSliceHelp" class="muted">Opposite-face turns in opposite directions become one slice turn when the gyro also detects the matching quarter turn within this window. Set to 0 to disable. Larger windows add input delay and may combine intentional outer turns. Slice recognition also adjusts the face frame and gyro orientation.</p>
+<label><input id="bluetoothPackingNeutral" type="checkbox"> Gyro autocompensation in Explorer and Solver</label>
+<label><input id="bluetoothGyroSmoothing" type="checkbox" checked> Smooth gyro motion</label>
+<p class="muted">Ease rotation between sensor updates and soften sudden direction changes. Lower speed and acceleration improve readability; higher values follow your hand more closely.</p>
+<label for="bluetoothGyroResponse">Gyro easing time <output id="bluetoothGyroResponseValue" for="bluetoothGyroResponse">180 ms</output></label>
+<input id="bluetoothGyroResponse" type="range" min="40" max="600" step="10" value="180">
+<label for="bluetoothGyroSpeed">Maximum gyro rotation speed <output id="bluetoothGyroSpeedValue" for="bluetoothGyroSpeed">180 degrees/s</output></label>
+<input id="bluetoothGyroSpeed" type="range" min="30" max="720" step="10" value="180">
+<label for="bluetoothGyroAcceleration">Maximum gyro acceleration <output id="bluetoothGyroAccelerationValue" for="bluetoothGyroAcceleration">1200 degrees/s²</output></label>
+<input id="bluetoothGyroAcceleration" type="range" min="100" max="6000" step="100" value="1200">
+<p class="muted">Longer easing times make the final approach gentler. Speed limits large rotations; acceleration softens starts, stops and reversals. These settings affect the view only.</p>
+<label for="bluetoothNeutralTolerance">Neutral gyro correction zone <output id="bluetoothNeutralToleranceValue" for="bluetoothNeutralTolerance">10 degrees</output></label>
+<input id="bluetoothNeutralTolerance" type="range" min="0" max="30" step="1" value="10" aria-describedby="bluetoothNeutralHelp">
+<p id="bluetoothNeutralHelp" class="muted">Hold your cube steadily near your calibrated natural angle to gently correct gyro drift. Any of the 24 face orientations works; you do not need to restore the original U/F/R faces. This also works after slice and wide turns. Set to 0 to disable correction; the existing alignment is retained.</p>
+<label for="bluetoothNeutralCutoff">Neutral correction motion cutoff <output id="bluetoothNeutralCutoffValue" for="bluetoothNeutralCutoff">6 degrees/s</output></label>
+<input id="bluetoothNeutralCutoff" type="range" min="1" max="90" step="1" value="6" aria-describedby="bluetoothNeutralCutoffHelp">
+<p id="bluetoothNeutralCutoffHelp" class="muted">Correction stops and its delay resets whenever physical gyro motion exceeds this speed. Higher values allow correction during more movement; lower values require a steadier hold.</p>
+<label for="bluetoothNeutralDelay">Neutral correction delay <output id="bluetoothNeutralDelayValue" for="bluetoothNeutralDelay">125 ms</output></label>
+<input id="bluetoothNeutralDelay" type="range" min="0" max="1000" step="25" value="125" aria-describedby="bluetoothNeutralDelayHelp">
+<p id="bluetoothNeutralDelayHelp" class="muted">How long to hold steadily near neutral before correction starts. Set to 0 to start as soon as steady motion is detected.</p>
+<label for="bluetoothNeutralSpeed">Neutral correction speed <output id="bluetoothNeutralSpeedValue" for="bluetoothNeutralSpeed">2.5x</output></label>
+<input id="bluetoothNeutralSpeed" type="range" min="0.25" max="10" step="0.25" value="2.5" aria-describedby="bluetoothNeutralSpeedHelp">
+<p id="bluetoothNeutralSpeedHelp" class="muted">How quickly the view settles into its neutral angle once correction starts. Higher values settle faster.</p>
+</div>
+<p id="bluetoothStatus" role="status" aria-live="polite">Manual controls active.</p></div>
 
 <label
               ><input id="classicControls" type="checkbox" /> Show classic

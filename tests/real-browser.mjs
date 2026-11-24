@@ -152,7 +152,7 @@ try{
    [...root.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent==='Controls and camera').click();
    document.querySelector('#settingsClose').click();document.querySelector('#bluetoothOpen').click();
    const source=document.querySelector('#gameInputSource');
-   source.value='bluetooth';source.dispatchEvent(new Event('change'));
+   if(source.value!=='bluetooth'||!root.open||!source.checkVisibility()||!['bluetoothConnect','bluetoothDisconnect','bluetoothCalibrate','bluetoothMac'].every(id=>document.getElementById(id).checkVisibility()))throw Error('Bluetooth shortcut must show the Input page and connection controls');
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
    const slider=document.querySelector('#bluetoothNeutralTolerance');
    if(!slider.checkVisibility())throw Error('Neutral correction slider hidden on mobile');
@@ -171,7 +171,7 @@ try{
    }
 
    source.value='manual';source.dispatchEvent(new Event('change'));
-   document.querySelector('#bluetoothClose').click();document.querySelector('#settingsOpen').click();
+   document.querySelector('#settingsClose').click();document.querySelector('#settingsOpen').click();
    [...root.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent==='Turn animations').click();
    const speed=document.querySelector('#turnAnimationSpeed'),animations=document.querySelector('#animations');
    if(!speed.checkVisibility()||!animations.checkVisibility())throw Error('Turn animation controls hidden on mobile');

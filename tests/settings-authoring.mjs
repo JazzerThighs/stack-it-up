@@ -25,6 +25,12 @@ try{
   assert(html.includes('for="fixtureGain"'));assert(html.includes('aria-describedby="fixtureGainHelp"'));
  }
  const html=await readFile(path.join(fixture,'web/index.html'),'utf8');
+ const gameHtml=path.join(fixture,'web/index.html');
+ await writeFile(gameHtml,html.replace(/\r?\n/g,'\r\n'));
+ assert.equal(run('--check').status,0,'A Windows checkout must pass with CRLF line endings');
+ await writeFile(gameHtml,(await readFile(gameHtml,'utf8')).replace('id="fixtureGain"','id="staleGain"'));
+ assert.notEqual(run('--check').status,0,'Changed controls must still fail in a Windows checkout');
+ assert.equal(run().status,0);
  const nodes=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,{value:'',checked:false,hidden:false,events:{},addEventListener(type,fn){this.events[type]=fn;}}]));
  const root={getElementById:id=>nodes.get(id)||null},el=id=>root.getElementById(id);
  const saved=new Map();Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v)}});

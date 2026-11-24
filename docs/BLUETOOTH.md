@@ -101,8 +101,16 @@ flush. No device time is subtracted from the local monotonic clock.
 Disconnect, input suspension and recalibration discard any waiting partner.
 Physical testing should check both directions of M/E/S, later ordinary face
 turns, gyro alignment, fast independent outer turns, and the smallest usable
-window for the cube. Recognition is a timing-based gesture convention; it
-cannot infer whether an eligible pair was intentionally two outer turns.
+window for the cube. Slice recognition also requires a gyro transition within the slice window.
+The core must rotate a quarter turn about the matching axis and direction,
+within the same 20-degree tolerance as wide turns. Without that evidence the
+two face reports play as separate outer turns.
+
+For either gesture the game samples the grip before the first face report.
+On recognition it discards the smoothing velocity from the physical turn and
+eases toward that earlier grip while the puzzle animates. Brief motion inside
+the arrival zone stays centered for up to one gesture window. Leaving the
+zone resumes normal gyro tracking immediately.
 
 ## Wide turns and center movement
 

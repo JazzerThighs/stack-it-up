@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createBluetoothCube,faceMoves,ganQuaternion} from '../web/input/bluetooth-cube.js';
-import {matrix,axisAngle} from '../web/input/orbit-math.js';
+import {matrix,axisAngle,quaternion,distance,slerp} from '../web/input/orbit-math.js';
 import {calibrationFrame} from '../web/input/cube-calibration.js';
 import {pairedSlice,correctedFace} from '../web/input/slice-pairing.js';
 
@@ -143,6 +143,10 @@ c.cube.beginCalibration();c.cube.setMode('manual');assert.equal(c.cube.calibrati
 assert.equal(c.cube.resetGyro(),false,'Disconnected recenter is ignored');
 console.log('Bluetooth mapping, calibration, queue, connection lifecycle and failure diagnostics passed');
 
+function rightSliceGyro(f) {
+  const [x,y,z,w]=pairedSlice(4,20).rotation;
+  f.emit({type:'GYRO',quaternion:{x,y:-z,z:-y,w}});
+}
 // Pairing goes through one ordinary command, and only accepted pairs change
 // the logical frame. Timers cannot replay suspended/disconnected gestures.
 {
@@ -153,7 +157,7 @@ console.log('Bluetooth mapping, calibration, queue, connection lifecycle and fai
   f.cube.setMode('bluetooth');await f.cube.connect();calibrate(f);
   f.emit({type:'MOVE',move:'R',cubeTimestamp:100});
   assert.deepEqual(f.moves,[]);
-  clock+=10;f.emit({type:'MOVE',move:"L'",cubeTimestamp:110});await tick();
+  clock+=10;rightSliceGyro(f);f.emit({type:'MOVE',move:"L'",cubeTimestamp:110});await tick();
   const pair=pairedSlice(4,20);assert.deepEqual(f.moves,[pair.move]);
   f.emit({type:'MOVE',move:'U'});flush();await tick();
   assert.equal(f.moves.at(-1),correctedFace(0,pair.rotation));
@@ -167,7 +171,7 @@ console.log('Bluetooth mapping, calibration, queue, connection lifecycle and fai
   // Use the fixture's deferred gate shape, as for rule/bandage rejection above.
   f.gate({promise:Promise.resolve(false)});
   f.emit({type:'MOVE',move:'R',cubeTimestamp:200});
-  clock+=10;f.emit({type:'MOVE',move:"L'",cubeTimestamp:210});
+  clock+=10;rightSliceGyro(f);f.emit({type:'MOVE',move:"L'",cubeTimestamp:210});
   f.emit({type:'MOVE',move:'U'});await tick();flush();await tick();
   assert.equal(f.moves.length,count+1,'Rejected slice clears even the held unmatched turn');
   f.gate(null);f.emit({type:'MOVE',move:'U'});flush();await tick();assert.equal(f.moves.at(-1),0);
@@ -181,7 +185,7 @@ console.log('Bluetooth paired command, frame correction, rejection, recenter and
   const f=fixture({sliceWindow:()=>40});
   f.cube.setMode('bluetooth');await f.cube.connect();calibrate(f);
   f.emit({type:'MOVE',move:'R',cubeTimestamp:100});
-  f.advance(10);f.emit({type:'MOVE',move:"L'",cubeTimestamp:110});await tick();
+  f.advance(10);rightSliceGyro(f);f.emit({type:'MOVE',move:"L'",cubeTimestamp:110});await tick();
   const pair=pairedSlice(4,20);
   const {multiply,quaternion,distance}=await import('../web/input/orbit-math.js');
   const inv=q=>[-q[0],-q[1],-q[2],q[3]];
@@ -197,6 +201,37 @@ console.log('Bluetooth paired command, frame correction, rejection, recenter and
   await f.cube.disconnect();
 }
 console.log('PASS: post-slice neutral convergence preserves game commands and calibrated face mapping.');
+
+// A late MOVE may arrive after the spring has started chasing the turning
+// core. Landing must cancel that momentum before the engine animation resolves.
+for(const kind of ['slice','wide']){
+  let clock=0, callback, view=matrix([0,0,0,1]);
+  const f=fixture({now:()=>clock,sliceWindow:()=>kind==='slice'?80:0,wideWindow:()=>120,
+    requestFrame:fn=>{callback=fn;return 1;},cancelFrame:()=>{callback=null;},
+    orientation:()=>view,rotate:m=>{view=m;}});
+  f.cube.setMode('bluetooth');await f.cube.connect();calibrate(f);
+  const grip=quaternion(view), gate=deferred();f.gate(gate);
+  const emitGyro=q=>f.emit({type:'GYRO',quaternion:{x:-q[0],y:q[2],z:q[1],w:q[3]}});
+  const end=pairedSlice(4,20).rotation.map((v,i)=>i<3?-v:v);
+  function step(ms){clock+=ms;const fn=callback;callback=null;fn?.(clock);}
+  emitGyro([0,0,0,1]);step(1);
+  emitGyro(slerp([0,0,0,1],end,.5));step(12);step(12);
+  assert(distance(grip,quaternion(view))>0,'physical motion starts before the face report');
+  f.emit({type:'MOVE',move:'R',cubeTimestamp:100});
+  if(kind==='slice'){step(5);f.emit({type:'MOVE',move:"L'",cubeTimestamp:105});}
+  step(5);emitGyro(end);
+  assert.equal(f.moves.length,1);
+  let previous=distance(grip,quaternion(view));
+  for(let i=0;i<75;i++){
+    step(16);emitGyro(end);
+    const error=distance(grip,quaternion(view));
+    assert(error<=previous+1e-7,kind+' must return without swinging outward');previous=error;
+  }
+  assert(previous<.001,kind+' returns to the pre-gesture grip while play is pending');
+  gate.resolve(true);await tick();step(16);
+  assert(distance(grip,quaternion(view))<.001,'engine completion cannot apply a second visual turn');
+  await f.cube.disconnect();
+}
 
 // Real scheduler path: one packet continues moving between frames; suspending
 // cancels old motion and disabling smoothing restores direct sensor following.

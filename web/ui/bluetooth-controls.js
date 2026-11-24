@@ -163,7 +163,7 @@ export function bindBluetoothControls({root = document, ...options}) {
   }, true);
   const resume = () => { controller.suspend(); controller.beginCalibration(); };
   // Dialog close events and page switches reveal the board after connection.
-  for (const id of ['settingsDialog','newDialog','bluetoothDialog','qrDialog']) $(id).addEventListener('close', resume);
+  for (const id of ['settingsDialog','newDialog','qrDialog']) $(id).addEventListener('close', resume);
   if (globalThis.MutationObserver) {
     const observer = new MutationObserver(resume);
     observer.observe($('gamePage'), {attributes:true,attributeFilter:['hidden']});
@@ -198,7 +198,7 @@ export function bindBluetoothControls({root = document, ...options}) {
   $('bluetoothUfrReset').addEventListener('click', () => controller.resetUfr());
   $('bluetoothGyroReset').addEventListener('click', () => controller.resetGyro());
   globalThis.addEventListener?.('pagehide', () => void controller.disconnect());
-  for (const id of ['settingsDialog','newDialog','bluetoothDialog','qrDialog']) $(id).addEventListener('toggle', resume);
+  for (const id of ['settingsDialog','newDialog','qrDialog']) $(id).addEventListener('toggle', resume);
   for (const id of ['gameTab','explorerTab','solverTab']) $(id).addEventListener('click', () => controller.suspend());
   root.addEventListener('visibilitychange', resume);
   controller.setMode('manual');

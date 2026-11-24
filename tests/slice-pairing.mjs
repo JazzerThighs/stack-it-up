@@ -42,15 +42,19 @@ const pairing=createSlicePairing({emit:c=>emitted.push(c),windowMs:()=>window,no
   setTimer:(f,ms)=>{tasks.set(++id,{f,due:clock+ms});return id;},cancelTimer:id=>tasks.delete(id)});
 const push=(m,event={})=>pairing.push(m,event);
 const advance=ms=>{clock+=ms;for(const [id,t] of [...tasks])if(t.due<=clock){tasks.delete(id);t.f();}};
-push([4],{cubeTimestamp:100}); clock+=40;push([20],{cubeTimestamp:140});
+const rightQuarter=pairedSlice(4,20).rotation.map((v,i)=>i<3?-v:v);
+pairing.gyro([0,0,0,1]);push([4],{cubeTimestamp:100}); clock+=39;pairing.gyro(rightQuarter);clock++;push([20],{cubeTimestamp:140});
 assert.deepEqual(emitted.pop().moves,[4,20],'Inclusive boundary before timeout fires');
 push([4]);advance(40);assert.deepEqual(emitted.pop().moves,[4]);
 push([0]);clock++;push([2]);assert.deepEqual(emitted.pop().moves,[0]);advance(40);assert.deepEqual(emitted.pop().moves,[2]);
 // Batched device timestamps distinguish truly adjacent turns from recovered gaps.
 for(const [first,second,paired] of [[100,110,true],[100,180,false],[100,90,false]]) {
+  pairing.clear();pairing.gyro([0,0,0,1]);clock++;pairing.gyro(rightQuarter);
   push([4],{cubeTimestamp:first,localTimestamp:null});push([20],{cubeTimestamp:second,localTimestamp:null});advance(40);
   assert.equal(emitted.some(c=>c.moves.length===2),paired);emitted.length=0;
 }
+pairing.clear(); push([4],{cubeTimestamp:10});clock++;push([20],{cubeTimestamp:11});advance(40);
+assert.deepEqual(emitted.splice(0).map(c=>c.moves),[[4],[20]],'Without the axis transition both outer turns are preserved');
 push([4],{localTimestamp:null});push([20],{localTimestamp:null});
 assert.equal(emitted.length,2);emitted.length=0;
 push([4]);push([20]);advance(40);assert.equal(emitted.length,2,'Unstamped same-tick delivery does not pair');emitted.length=0;

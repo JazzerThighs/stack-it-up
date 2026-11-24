@@ -12,13 +12,13 @@ export function initializeSharedSettings({loadExplorer}) {
   const host=document.createElement('div');host.id='explorerSettingsHost';host.className='shared-explorer-settings';host.hidden=true;dialog.append(host);
   const portal=host.attachShadow({mode:'open'});
   let scope='game',loading;
-  function select(next) {
+  function select(next,page) {
     scope=next;dialog.dataset.settingsScope=next;host.hidden=next!=='explorer';
     game.setAttribute('aria-pressed',String(next==='game'));explorer.setAttribute('aria-pressed',String(next==='explorer'));
-    if(next==='game')openSettingsPage();
+    if(next==='game')openSettingsPage(page);
   }
-  async function open(next='game') {
-    if(!dialog.open)dialog.showModal();select(next);
+  async function open(next='game',page) {
+    if(!dialog.open)dialog.showModal();select(next,page);
     if(next!=='explorer')return;
     if(!portal.querySelector('.settings-content')) {
       host.setAttribute('aria-busy','true');
@@ -62,4 +62,4 @@ export function attachExplorerSettings(root,scope) {
   const copyTheme=()=>{menu.host.style.cssText=root.host.style.cssText;const theme=root.host.getAttribute('data-ui-theme');if(theme)menu.host.setAttribute('data-ui-theme',theme);};
   copyTheme();new MutationObserver(copyTheme).observe(root.host,{attributes:true,attributeFilter:['style','data-ui-theme']});
 }
-export function openSharedSettings(scope='game'){return menu?.open(scope);}
+export function openSharedSettings(scope='game',page){return menu?.open(scope,page);}

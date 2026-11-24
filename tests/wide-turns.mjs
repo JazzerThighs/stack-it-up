@@ -121,7 +121,10 @@ for(const face of faces)for(const kind of ['slice','wide']) {
   observer.next(asEvent(identity));cube.markDragged();assert(cube.confirmCalibration());
   const event=m=>({type:'MOVE',move:Object.keys(frame.mapping).find(key=>frame.mapping[key]===moveLabels[m%15])+(m>=15?"'":'')});
   f.advance(10);observer.next(event(face));
-  if(kind==='slice'){f.advance(10);observer.next(event(second));}
+  if(kind==='slice'){
+    f.advance(10);observer.next(event(second));f.advance(5);
+    observer.next(asEvent(multiply(frame.rotation,multiply(inverse(logical.rotation),inverse(frame.rotation)))));
+  }
   else {f.advance(50);observer.next(asEvent(multiply(frame.rotation,multiply(inverse(logical.rotation),inverse(frame.rotation)))));}
   await tick();
   assert.equal(engine.snapshot()[S.ACTIVE],expected[S.ACTIVE],`${kind}: Bluetooth moves the same center as manual`);

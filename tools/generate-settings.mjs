@@ -61,5 +61,5 @@ for(const [name,file]of [['game','web/style.css'],['explorer','web/explorer/work
  if(a<0||b<0||original.indexOf(start,a+1)>=0)throw Error('Missing/duplicate CSS slot '+file);
  outputs.set(file,original.slice(0,a)+start+'\n'+css+'\n'+original.slice(b));
 }
-let stale=false;for(const [file,content]of outputs){let previous;try{previous=readFileSync(new URL(file,root),'utf8');}catch{}if(previous===content)continue;if(check){console.error('Stale generated settings: '+file);stale=true;}else writeFileSync(new URL(file,root),content);}
+let stale=false;for(const [file,content]of outputs){let previous;try{previous=readFileSync(new URL(file,root),'utf8');}catch{}if(previous?.replaceAll('\r\n','\n')===content.replaceAll('\r\n','\n'))continue;if(check){console.error('Stale generated settings: '+file);stale=true;}else writeFileSync(new URL(file,root),content);}
 if(stale)process.exitCode=1;else console.log('Verified shared settings schemas and generated controls');

@@ -30,26 +30,40 @@ export function createSlicePairing({emit,windowMs,wideWindowMs=()=>0,now,setTime
   const resetPending = () => { cancelTimer(timer); timer=undefined; pending=undefined; };
   const clear = () => { resetPending(); samples=[]; };
   const consumeGyro = () => { samples=samples.slice(-1); };
-  function wideMatch() {
-    if(pending?.detectedWide)return true;
-    if(!pending?.wide || now()-pending.received>pending.wide)return false;
+  // Both gestures rotate the physical core opposite the reported face. Keep
+  // samples from before MOVE delivery and use one clock for the whole gesture.
+  function match(window) {
     const end=samples.at(-1);
-    if(!end)return false;
-    return pending.detectedWide=samples.some(start=>start.time<=pending.received &&
-      now()-start.time<=pending.wide && end.time>start.time &&
-      wideGyroMatch(pending.move,start.q,end.q));
+    if(!window || !end || now()-pending.received>window)return;
+    return samples.find(start=>start.time<=pending.received && end.time>start.time &&
+      now()-start.time<=window && wideGyroMatch(pending.move,start.q,end.q));
   }
-  const flush = () => {
-    const old=pending, wide=wideMatch(); resetPending(); consumeGyro();
-    if(old)emit({moves:[old.move],received:old.received,...(wide?{wide:true}:{})});
-  };
+  function observe() {
+    pending.sliceStart ??= match(pending.slice);
+    pending.wideStart ??= match(pending.wide);
+  }
+  function flush() {
+    const old=pending;
+    resetPending(); consumeGyro();
+    if(!old)return;
+    if(old.second!==undefined) {
+      if(old.sliceStart)emit({moves:[old.move,old.second],received:old.received,start:old.sliceStart.q,window:old.slice});
+      else {
+        emit({moves:[old.move],received:old.received});
+        emit({moves:[old.second],received:old.secondTime});
+      }
+    } else if(old.wideStart)emit({moves:[old.move],received:old.received,wide:true,start:old.wideStart.q,window:old.wide});
+    else emit({moves:[old.move],received:old.received});
+  }
   function check() {
     if(!pending)return;
+    observe();
     const age=now()-pending.received;
-    const wide=wideMatch();
-    if(age>=pending.slice && (wide || age>=pending.wait)) { flush(); return; }
+    const paired=pending.second!==undefined;
+    const deadline=paired || pending.wideStart ? pending.slice : pending.wait;
+    if((paired && pending.sliceStart) || age>=deadline){flush();return;}
     cancelTimer(timer);
-    timer=setTimer(check,Math.max(1,(age<pending.slice?pending.slice:pending.wait)-age));
+    timer=setTimer(check,Math.max(1,deadline-age));
   }
   function gyro(q) {
     const time=now();
@@ -63,7 +77,7 @@ export function createSlicePairing({emit,windowMs,wideWindowMs=()=>0,now,setTime
     const wide=event.localTimestamp===null?0:Math.max(0,Math.min(500,Number(wideWindowMs())||0));
     const next={move:moves[0],received,cube:event.cubeTimestamp,local:event.localTimestamp,
       slice:window,wide,wait:Math.max(window,wide)};
-    if(pending && moves.length===1 && window) {
+    if(pending && pending.second===undefined && moves.length===1 && window) {
       // Prefer device intervals, including batched delivery. Missing/recovered
       // timestamps never become an apparent simultaneous pair on arrival.
       const device=Number.isFinite(pending.cube)&&Number.isFinite(next.cube);
@@ -71,7 +85,7 @@ export function createSlicePairing({emit,windowMs,wideWindowMs=()=>0,now,setTime
       const dt=device?next.cube-pending.cube:
         local?(Number.isFinite(next.local)&&Number.isFinite(pending.local)?next.local-pending.local:received-pending.received):NaN;
       if(dt>=0 && dt<=window && (device || dt>0) && received-pending.received<=window && pairedSlice(pending.move,next.move)) {
-        const old=pending; resetPending(); consumeGyro(); emit({moves:[old.move,next.move],received:old.received}); return;
+        pending.second=next.move; pending.secondTime=received; check(); return;
       }
     }
     if(pending)flush();

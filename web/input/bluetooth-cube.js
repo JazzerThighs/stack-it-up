@@ -4,7 +4,7 @@ import {calibrationFrame} from './cube-calibration.js';
 import {createSlicePairing, pairedSlice, correctedFace} from './slice-pairing.js';
 import {createGyroNeutral} from './gyro-neutral.js';
 import {createGyroSmoothing} from './gyro-smoothing.js';
-import {wideFromFace} from './wide-turns.js';
+import {wideFromFace,wideGyroMatch} from './wide-turns.js';
 
 export function faceMoves(notation, labels = moveLabels) {
   const match = /^([URFDLB])(['2]?)$/.exec(notation);
@@ -59,9 +59,23 @@ export function createBluetoothCube({connect, availability, play, active, explor
     if(animationFrame===null)animationFrame=requestFrame(animateGyro);
   }
   const recenter = () => { reference = base = null; neutral.reset(); stopSmoothing(); };
-  const clear = () => { queue = []; pairing.clear(); };
+  // Presentation follows recognition immediately, even while the engine is
+  // animating. Logical mapping advances only after the engine accepts a move.
+  let visualCorrection=correction, inFlightCorrection, landing;
+  const clear = () => {
+    queue=[]; pairing.clear(); landing=null;
+    visualCorrection=inFlightCorrection ?? correction;
+  };
   function enqueue(command) {
     if (queue.length >= 64) { clear(); report('Too many pending turns. Queue cleared; turn more slowly.'); return; }
+    if(command.start){
+      const face=command.moves[0];
+      const startDelta=multiply(inverse(calibratedSample(reference)),command.start);
+      landing={face,start:command.start,until:now()+command.window,
+        pose:multiply(multiply(base,startDelta),visualCorrection)};
+      visualCorrection=multiply(wideFromFace(face).rotation,visualCorrection);
+      stopSmoothing(); neutral.pause(); updateGyro();
+    }
     queue.push(command);
     void drain(generation);
   }
@@ -69,18 +83,22 @@ export function createBluetoothCube({connect, availability, play, active, explor
     if (!active() || calibration !== 'ready' || !connection) { clear(); return; }
     enqueue(command);
   }});
-  const calibratedGyro = () => multiply(inverse(frame.rotation),multiply(latestGyro,frame.rotation));
+  const calibratedSample = q => multiply(inverse(frame.rotation),multiply(q,frame.rotation));
   function gyroDelta() {
     return multiply(inverse(frame.rotation), multiply(multiply(inverse(reference), latestGyro), frame.rotation));
   }
   function updateGyro(sample = false) {
     if (!latestGyro || !frame) return;
     if (!reference) { reference = latestGyro; base = multiply(quaternion(orientation()),inverse(correction)); neutral.reset(quaternion(orientation())); }
-    const pose = multiply(multiply(base,gyroDelta()),correction);
+    let pose = multiply(multiply(base,gyroDelta()),visualCorrection);
+    if(landing){
+      if(now()<=landing.until && wideGyroMatch(landing.face,landing.start,calibratedSample(latestGyro)))pose=landing.pose;
+      else landing=null;
+    }
     presentGyro(sample ? neutral.apply(pose,latestGyro,now()) : neutral.orient(pose));
   }
   async function disconnect(message = 'Disconnected. Select Connect to pair again.') {
-    generation++; connecting = false;
+    generation++; inFlightCorrection=null; connecting = false;
     subscription?.unsubscribe(); subscription = null;
     const old = connection; connection = null; clear(); recenter();
     calibrationKind='full';calibrationStep=0;awaitingUndo=false;savedNeutral=null;calibration = 'disconnected'; faces = {}; capture = null; latestGyro = frame = null; report(message);
@@ -108,19 +126,21 @@ export function createBluetoothCube({connect, availability, play, active, explor
         const pair = mapped.length===2 ? pairedSlice(...mapped) : wide ? wideFromFace(mapped[0]) : null;
         const move = pair ? pair.move : mapped[0];
         const commandFrame = frame;
+        inFlightCorrection=pair ? multiply(correction,pair.rotation) : correction;
         let accepted;
         playing = true;
         try { accepted = await play(move); } finally { playing = false; }
         if (token !== generation) break;
-        if (!accepted) { clear(); report('Turn unavailable under the current game rules. Pending turns cleared.'); break; }
+        if (!accepted) { inFlightCorrection=null; clear(); stopSmoothing(); if(active())updateGyro(); report('Turn unavailable under the current game rules. Pending turns cleared.'); break; }
         if (pair && frame === commandFrame && calibration === 'ready') {
-          correction = multiply(correction,pair.rotation); neutral.pause(); if(active())updateGyro();
+          correction = inFlightCorrection;
         }
+        inFlightCorrection=null;
       }
     } catch (error) {
-      if (token === generation) { clear(); report(`Turn failed: ${error.message}`); }
+      if (token === generation) { inFlightCorrection=null; clear(); stopSmoothing(); if(active())updateGyro(); report(`Turn failed: ${error.message}`); }
     } finally {
-      draining = false;
+      inFlightCorrection=null; draining = false;
       if (token !== generation && queue.length) void drain(generation);
       else if (!active()) clear();
     }
@@ -216,7 +236,7 @@ export function createBluetoothCube({connect, availability, play, active, explor
     } else if (e.type === 'GYRO') {
       const q = ganQuaternion(e.quaternion);
       if (!q) return;
-      pairing.gyro(calibratedGyro());
+      pairing.gyro(calibratedSample(latestGyro));
       updateGyro(true);
     }
   }
@@ -233,7 +253,7 @@ export function createBluetoothCube({connect, availability, play, active, explor
       if (!latestGyro) { report('Waiting for fresh orientation data. Gently move the physical cube, then confirm.'); return false; }
       reference = latestGyro; savedNeutral=quaternion(orientation()); explorerBase=savedNeutral;compensating=false;
       if(calibrationKind==='full')correction=[0,0,0,1];
-      base=multiply(savedNeutral,inverse(correction)); neutral.reset(savedNeutral); stopSmoothing(); clear(); pairing.gyro(calibratedGyro());
+      base=multiply(savedNeutral,inverse(correction)); neutral.reset(savedNeutral); stopSmoothing(); clear(); pairing.gyro(calibratedSample(latestGyro));
       capture = null; calibration = 'ready'; report('Cube calibrated. Ready to play.'); return true;
     },
     resetUfr() { const started=startCalibration('ufr');if(started)this.beginCalibration();return started; },
