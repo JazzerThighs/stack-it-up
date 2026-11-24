@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {wideFromFace,wideGyroMatch} from '../web/input/wide-turns.js';
+import {wideFromFace,sliceReturnAligned} from '../web/input/wide-turns.js';
 import {createSlicePairing,pairedSlice,correctedFace} from '../web/input/slice-pairing.js';
 import {createBluetoothCube} from '../web/input/bluetooth-cube.js';
 import {calibrationFrame} from '../web/input/cube-calibration.js';
@@ -23,9 +23,9 @@ function rotate(cells,q) {
 }
 for(const face of faces) {
   const wide=wideFromFace(face), q=inverse(wide.rotation);
-  assert(wideGyroMatch(face,identity,q));
-  assert(!wideGyroMatch(face,identity,wide.rotation),'Wrong direction is not wide');
-  assert(!wideGyroMatch(face,identity,identity),'A face event alone is not wide');
+  assert(sliceReturnAligned(face,identity,q));
+  assert(!sliceReturnAligned(face,identity,wide.rotation),'Opposite rotation is outside the slice landing zone');
+  assert(!sliceReturnAligned(face,identity,identity),'An unchanged grip is outside the slice landing zone');
   assert.deepEqual(rotate(turn(cells,wide.move),wide.rotation),turn(cells,face));
   for(const m of cubeRotations) {
     const correction=quaternion(m), mapped=wideFromFace(correctedFace(face,correction));
@@ -33,21 +33,30 @@ for(const face of faces) {
   }
 }
 
-function detector(slice=40,wide=150,gestureTolerance) {
+function detector(slice=40,wide=150,wideSensitivity) {
   let time=0,id=0;const tasks=new Map(),commands=[];
   const options={now:()=>time,setTimer:(f,ms)=>{tasks.set(++id,{f,due:time+ms});return id;},cancelTimer:id=>tasks.delete(id)};
-  const d=createSlicePairing({...options,windowMs:()=>slice,wideWindowMs:()=>wide,gestureTolerance,emit:c=>commands.push(c)});
+  const d=createSlicePairing({...options,windowMs:()=>slice,wideWindowMs:()=>wide,wideSensitivity,emit:c=>commands.push(c)});
   return {d,commands,options,
     advance(ms){time+=ms;for(const [id,t] of [...tasks])if(t.due<=time){tasks.delete(id);t.f();}},
-    move(m,event={}){d.push([m],event);},gyro:q=>d.gyro(q)};
+    move(m,event={}){d.push([m],event);},gyro:(q,v)=>d.gyro(q,v)};
 }
 const gyro=inverse(wideFromFace(4).rotation);
-// Same sensor trace ends 25 degrees short of the expected quarter turn.
-for(const degrees of [10,20,25,35]){
-  const f=detector(0,150,()=>degrees);f.gyro(identity);f.advance(10);f.move(4);
-  const axis=gyro.slice(0,3);
-  f.advance(20);f.gyro(axisAngle(axis,65*Math.PI/180));f.advance(150);
-  assert.equal(!!f.commands[0].wide,degrees>=25);
+// Sparse samples cover just 24 degrees in 100 ms about an unrelated axis.
+for(const sensitivity of [1,2,3,4,5]){
+  const f=detector(0,150,()=>sensitivity);f.gyro(identity);f.advance(75);f.move(4);
+  f.advance(25);f.gyro(axisAngle([1,2,3],24*Math.PI/180));f.advance(150);
+  assert.equal(!!f.commands[0].wide,sensitivity>=4);
+}
+for(const before of [true,false]){
+  const f=detector(0,150);f.gyro(identity,{x:0,y:0,z:0});f.advance(90);
+  if(!before)f.move(4);
+  f.gyro(identity,{x:0,y:4,z:0});f.advance(30);
+  if(before)f.move(4);
+  assert.equal(f.commands[0].wide,true,'Native speed burst works with unchanged orientation');
+  assert.deepEqual(f.commands[0].start,identity);
+  f.move(4);f.advance(30);f.gyro(identity,{x:0,y:4,z:0});f.advance(130);
+  assert(!f.commands[1].wide,'A sustained speed is not a second burst');
 }
 for(const before of [false,true]) {
   const f=detector();f.gyro(identity);f.advance(10);
@@ -61,9 +70,9 @@ for(const before of [false,true]) {
   const f=detector(40,20);f.gyro(identity);f.advance(5);f.move(4);f.advance(5);f.gyro(gyro);f.advance(35);
   assert.equal(f.commands[0].wide,true,'Preserve timely wide evidence while reserving the longer slice window');
 }
-for(const q of [identity,wideFromFace(4).rotation,axisAngle([0,1,0],Math.PI/2),axisAngle([1,0,0],.2)]) {
+for(const q of [identity,axisAngle([1,0,0],.2)]) {
   const f=detector();f.gyro(identity);f.advance(10);f.move(4);f.advance(50);f.gyro(q);f.advance(100);
-  assert.equal(f.commands[0].wide,undefined,'Reject no motion, inverse motion, wrong axis and small wobble');
+  assert.equal(f.commands[0].wide,undefined,'Reject stillness and slow wrist movement');
 }
 {
   const f=detector();f.gyro(identity);f.advance(10);f.move(4);f.advance(151);f.gyro(gyro);
@@ -134,7 +143,12 @@ for(const face of faces)for(const kind of ['slice','wide']) {
     f.advance(10);observer.next(event(second));f.advance(5);
     observer.next(asEvent(multiply(frame.rotation,multiply(inverse(logical.rotation),inverse(frame.rotation)))));
   }
-  else {f.advance(50);observer.next(asEvent(multiply(frame.rotation,multiply(inverse(logical.rotation),inverse(frame.rotation)))));}
+  else {
+    f.advance(50);
+    // A real MOVE identifies the wide command even if the velocity packet's
+    // pose is unreadable and no subsequent quarter-turn endpoint is sampled.
+    observer.next({type:'GYRO',quaternion:{x:0,y:0,z:0,w:0},velocity:{x:4,y:0,z:0}});
+  }
   await tick();
   assert.equal(engine.snapshot()[S.ACTIVE],expected[S.ACTIVE],`${kind}: Bluetooth moves the same center as manual`);
   assert.deepEqual(engine.snapshot().slice(S.BOARD,S.BOARD+27),expected.slice(S.BOARD,S.BOARD+27));
@@ -151,4 +165,4 @@ for(const face of faces)for(const kind of ['slice','wide']) {
   }
   await cube.disconnect();
 }
-console.log('PASS: wide gyro direction/timing, slice precedence, 24 frames and real-engine center movement relative to the fixed stack.');
+console.log('PASS: wide gyro speed bursts and timing, slice precedence, 24 frames and real-engine center movement relative to the fixed stack.');

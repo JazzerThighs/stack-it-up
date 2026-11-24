@@ -1,7 +1,7 @@
 import {CubeStack} from '../engine/coordinates.js';
 import {turnTransform, transformPoint} from '../render/transforms.js';
-import {matrix, quaternion} from './orbit-math.js';
-import {wideGyroMatch} from './wide-turns.js';
+import {matrix, quaternion, distance} from './orbit-math.js';
+import {sliceReturnAligned} from './wide-turns.js';
 
 // Opposite outer layers rotating in the same spatial direction equal a
 // whole-cube rotation followed by the inverse middle-layer turn.
@@ -25,28 +25,31 @@ export function correctedFace(move,correction) {
   return index+(move>=15?15:0);
 }
 
-export function createSlicePairing({emit,windowMs,wideWindowMs=()=>0,gestureTolerance,now,setTimer=setTimeout,cancelTimer=clearTimeout}) {
+export function createSlicePairing({emit,windowMs,wideWindowMs=()=>0,wideSensitivity=()=>3,gestureTolerance,now,setTimer=setTimeout,cancelTimer=clearTimeout}) {
   let pending, timer, samples=[];
   const resetPending = () => { cancelTimer(timer); timer=undefined; pending=undefined; };
   const clear = () => { resetPending(); samples=[]; };
-  const consumeGyro = () => { samples=samples.slice(-1); };
+  const consumeGyro = () => { samples=samples.slice(-1); if(samples.length)samples[0].burst=null; };
   // Both gestures rotate the physical core opposite the reported face. Keep
   // samples from before MOVE delivery and use one clock for the whole gesture.
   function match(window) {
     const end=samples.at(-1);
     if(!window || !end || now()-pending.received>window)return;
     return samples.find(start=>start.time<=pending.received && end.time>start.time &&
-      now()-start.time<=window && wideGyroMatch(pending.move,start.q,end.q,gestureTolerance?.()));
+      now()-start.time<=window && sliceReturnAligned(pending.move,start.q,end.q,gestureTolerance?.()));
   }
   function observe() {
     pending.sliceStart ??= match(pending.slice);
-    pending.wideStart ??= match(pending.wide);
+    if(pending.wide && now()-pending.received<=pending.wide && !pending.wideStart){
+      const sample=samples.find(s=>s.burst && Math.abs(s.time-pending.received)<=pending.wide);
+      pending.wideStart=sample?.burst;
+    }
   }
   function flush() {
     const old=pending;
     resetPending(); consumeGyro();
     if(!old)return;
-    if(old.wideStart)emit({moves:[old.move],received:old.received,wide:true,start:old.wideStart.q,window:old.wide});
+    if(old.wideStart)emit({moves:[old.move],received:old.received,wide:true,start:old.wideStart,window:old.wide});
     else emit({moves:[old.move],received:old.received});
   }
   function check() {
@@ -58,10 +61,21 @@ export function createSlicePairing({emit,windowMs,wideWindowMs=()=>0,gestureTole
     cancelTimer(timer);
     timer=setTimer(check,Math.max(1,deadline-age));
   }
-  function gyro(q) {
+  function gyro(q,velocity,freshPose=true) {
     const time=now();
     samples=samples.filter(s=>time-s.time<=500);
-    samples.push({q,time});
+    const previous=samples.at(-1);
+    const dt=previous ? time-previous.time : 0;
+    const raw=velocity && [velocity.x,velocity.y,velocity.z].every(Number.isFinite)
+      ? Math.hypot(velocity.x,velocity.y,velocity.z) : null;
+    // GAN encodes coarse velocity levels without a physical unit. Other cubes
+    // only report poses. Compare speeds within each channel, never across units.
+    const rate=freshPose && previous?.freshPose && dt>0 ? distance(previous.q,q)*180/Math.PI*1000/Math.max(16,dt) : null;
+    const level=6-wideSensitivity();
+    const rawChange=raw!==null && raw-(previous?.raw ?? 0)>=level;
+    const poseChange=rate!==null && rate-(previous.rate ?? 0)>=level*100;
+    const burst=rawChange || poseChange ? previous?.q ?? q : null;
+    samples.push({q,time,raw,rate,burst,freshPose});
     if(samples.length>256)samples.shift();
     if(pending)check();
   }

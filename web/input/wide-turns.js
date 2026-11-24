@@ -14,7 +14,8 @@ export function wideFromFace(face) {
   return {move:9+opposite+(face>=15?15:0),rotation:quaternion(turnTransform(face,1))};
 }
 
-export function wideGyroMatch(face,start,end,toleranceDegrees=20) {
+// Endpoint guidance is only used for the visual return following a slice.
+export function sliceReturnAligned(face,start,end,toleranceDegrees=20) {
   const expected=inverse(wideFromFace(face).rotation);
   const actual=multiply(inverse(start),end);
   // Quaternion distance checks both axis and direction, allowing hand wobble.

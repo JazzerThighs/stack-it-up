@@ -105,9 +105,7 @@ window for the cube. An eligible face pair commits a slice as soon as the second
 Gyro evidence helps recover the starting grip even if the wrist began moving
 before the first report. Missing or off-axis gyro samples still allow a slice.
 
-Wide-turn zones are relative to a recent measured grip. The expected endpoint
-is one signed quarter turn from that grip about the reported face axis. The
-**Gesture angle tolerance** slider sets the endpoint tolerance from 1 to 45 degrees (default 20). It is independent of the 24 calibrated autocompensation zones.
+**Slice return angle tolerance** guides the camera return following a slice.
 
 With smoothing enabled, **Slice and wide turn return tightness** controls how
 quickly the view settles after recognition (1x to 8x, default 2x). This return
@@ -131,18 +129,17 @@ Recognized slices call the same engine M/E/S commands as the manual controls.
 They move active centers relative to the fixed placed stack. Wide turns likewise
 call the actual two-layer commands, including their middle-layer centers.
 
-Wide turn completion window is a separate saved preference in Bluetooth
-settings: 0-500 ms, authored default 150 ms, with a reset button. Zero disables
-wide detection. Perform a two-layer quarter turn while holding the opposite
-outer layer still. The sensor reports that opposite outer face relative to
-the moving core; gyro supplies the matching core rotation. Recognition requires
-the inverse spatial quarter rotation about the reported face's axis, within
-the configured gesture angle tolerance of the expected orientation. Wrong direction, unrelated axes and
-small wrist movements do not qualify. Whole-cube motion alone never submits
-a game move.
+**Wide turn pairing window** allows a burst of core motion up to 150 ms before
+or after a live face report by default (adjustable from 0 to 500 ms, zero
+disables it). The face report supplies the opposite wide layer and direction.
+The gyro supplies evidence of a sudden speed increase on any axis. GAN packets
+can supply velocity directly, and consecutive orientations also provide an
+angular speed estimate. The detector uses raw samples before display smoothing.
+A sampled quarter-turn endpoint is unnecessary.
 
-The window bounds gyro gesture completion and its proximity to the face event,
-using monotonic receipt time. Gyro may complete before or after the face report.
+**Wide turn motion sensitivity** ranges from 1 to 5 (default 3). Higher values
+accept smaller speed increases. Each step lowers the threshold by one GAN
+velocity level or 100 degrees/s for the orientation-derived estimate.
 Recovered face events with null local timestamps cannot be matched to current
 gyro samples. Recognized motion is consumed once. An eligible two-face slice
 pair takes precedence, so the slice window is reserved before committing a

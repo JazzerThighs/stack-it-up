@@ -58,7 +58,7 @@ assert.equal(createSettingsStore(controlsSchema,globalThis.localStorage).values.
 assert.equal(setControlSetting('bluetoothNeutralTolerance',NaN),false);
 resetControlSettings('bluetoothNeutralTolerance');
 assert.equal(controlSettings.bluetoothNeutralTolerance,createSettingsStore(controlsSchema).values.bluetoothNeutralTolerance);
-for(const [key,value,unit] of [['bluetoothNeutralDelay',375,' ms'],['bluetoothNeutralSpeed',20,'x'],['bluetoothGyroTightness',6,'x'],['bluetoothNeutralCutoff',18,' degrees/s'],['bluetoothGyroResponse',10,' ms'],['bluetoothGyroResponse',500,' ms'],['bluetoothGyroSpeed',240,' degrees/s'],['bluetoothGyroAcceleration',1500,' degrees/s²']]){
+for(const [key,value,unit] of [['bluetoothNeutralDelay',375,' ms'],['bluetoothWideSensitivity',5,''],['bluetoothNeutralSpeed',20,'x'],['bluetoothGyroTightness',6,'x'],['bluetoothNeutralCutoff',18,' degrees/s'],['bluetoothGyroResponse',10,' ms'],['bluetoothGyroResponse',500,' ms'],['bluetoothGyroSpeed',240,' degrees/s'],['bluetoothGyroAcceleration',1500,' degrees/s²']]){
  game.elements[key+'Value']={textContent:''};
  game.elements[key].value=String(value);game.elements[key].change();
  assert.equal(controlSettings[key],value);

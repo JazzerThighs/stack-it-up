@@ -607,17 +607,20 @@
 <div id="bluetoothMacHistory" role="group" aria-label="Previously used MAC addresses" hidden></div>
 </div>
 <p id="bluetoothHelp" class="muted">Disconnect your smartcube from other apps, wake it, then select Connect. If your cube is missing, try Show all Bluetooth devices and select your cube. The optional MAC address helps decode data after selection; it does not find a missing device. U/D/F/B/R/L turns play the matching regular game moves; inverse turns stay inverse. Rotation controls both game views. Close this page to calibrate your grip and face mapping. Manual buttons remain available for hold, choices and undo.</p>
-<label for="bluetoothWideWindow">Wide turn completion window <output id="bluetoothWideWindowValue" for="bluetoothWideWindow">150 ms</output></label>
+<label for="bluetoothWideWindow">Wide turn pairing window <output id="bluetoothWideWindowValue" for="bluetoothWideWindow">150 ms</output></label>
 <input id="bluetoothWideWindow" type="range" min="0" max="500" step="10" value="150" aria-describedby="bluetoothWideHelp">
 <button id="bluetoothWideReset" type="button">Reset wide timing</button>
-<p id="bluetoothWideHelp" class="muted">Move two layers together: a face-turn event plus the matching quarter-turn gyro motion becomes one wide game move, including its centers. This window limits gesture completion time. Set to 0 to disable. Longer windows allow slower gestures but delay ordinary face turns.</p>
-<label for="bluetoothGestureTolerance">Gesture angle tolerance <output id="bluetoothGestureToleranceValue" for="bluetoothGestureTolerance">20 degrees</output></label>
-<input id="bluetoothGestureTolerance" type="range" min="1" max="45" step="1" value="20" aria-describedby="bluetoothGestureToleranceHelp">
-<p id="bluetoothGestureToleranceHelp" class="muted">How close your grip must come to the expected quarter turn. Higher values allow more hand movement. Slices still register from the timing of opposite face turns.</p>
+<p id="bluetoothWideHelp" class="muted">A sudden increase in core rotation speed before or after a face turn signals a wide turn. The face report supplies its direction. Increase the window for more widely spaced reports, or set it to 0 to disable. Longer windows can delay ordinary turns.</p>
+<label for="bluetoothWideSensitivity">Wide turn motion sensitivity <output id="bluetoothWideSensitivityValue" for="bluetoothWideSensitivity">3</output></label>
+<input id="bluetoothWideSensitivity" type="range" min="1" max="5" step="1" value="3" aria-describedby="bluetoothWideSensitivityHelp">
+<p id="bluetoothWideSensitivityHelp" class="muted">Raise sensitivity if quick two-layer twists register as ordinary turns. Lower it if ordinary turns register as wide.</p>
 <label for="bluetoothSliceWindow">Slice pairing window <output id="bluetoothSliceWindowValue" for="bluetoothSliceWindow">40 ms</output></label>
 <input id="bluetoothSliceWindow" type="range" min="0" max="150" step="5" value="40" aria-describedby="bluetoothSliceHelp">
 <button id="bluetoothSliceReset" type="button">Reset slice timing</button>
 <p id="bluetoothSliceHelp" class="muted">Opposite-face turns in opposite directions become one slice turn when both face reports arrive within this window. Set to 0 to disable. Larger windows add input delay and may combine intentional outer turns. Slice recognition also adjusts the face frame and gyro orientation.</p>
+<label for="bluetoothGestureTolerance">Slice return angle tolerance <output id="bluetoothGestureToleranceValue" for="bluetoothGestureTolerance">20 degrees</output></label>
+<input id="bluetoothGestureTolerance" type="range" min="1" max="45" step="1" value="20" aria-describedby="bluetoothGestureToleranceHelp">
+<p id="bluetoothGestureToleranceHelp" class="muted">Guides the camera return after a slice. Two timely opposing turns still register a slice at any angle.</p>
 <label><input id="bluetoothPackingNeutral" type="checkbox"> Gyro autocompensation in Explorer and Solver</label>
 <label><input id="bluetoothGyroSmoothing" type="checkbox" checked> Smooth gyro motion</label>
 <label for="bluetoothGyroTightness">Regular gyro tightness <output id="bluetoothGyroTightnessValue" for="bluetoothGyroTightness">1x</output></label>

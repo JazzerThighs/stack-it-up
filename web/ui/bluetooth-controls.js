@@ -116,6 +116,7 @@ export function bindBluetoothControls({root = document, ...options}) {
     neutralDelay: () => controlSettings.bluetoothNeutralDelay,
     neutralSpeed: () => controlSettings.bluetoothNeutralSpeed,
     neutralTolerance: () => controlSettings.bluetoothNeutralTolerance,
+    wideSensitivity: () => controlSettings.bluetoothWideSensitivity,
     gestureTolerance: () => controlSettings.bluetoothGestureTolerance,
     wideWindow: () => controlSettings.bluetoothWideWindow,
     availability: () => globalThis.navigator.bluetooth.getAvailability?.(),

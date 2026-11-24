@@ -46,7 +46,7 @@ export const controlsSchema = {
       "min": 0,
       "max": 500,
       "step": 10,
-      "label": "Wide turn completion window",
+      "label": "Wide turn pairing window",
       "commit": "input",
       "group": null,
       "controlIds": {
@@ -190,12 +190,24 @@ export const controlsSchema = {
         "explorer": null
       }
     },
+    "bluetoothWideSensitivity": {
+      "value": 3,
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "label": "Wide turn motion sensitivity",
+      "commit": "input",
+      "group": null,
+      "controlIds": {
+        "explorer": null
+      }
+    },
     "bluetoothGestureTolerance": {
       "value": 20,
       "min": 1,
       "max": 45,
       "step": 1,
-      "label": "Gesture angle tolerance",
+      "label": "Slice return angle tolerance",
       "commit": "input",
       "group": null,
       "controlIds": {
