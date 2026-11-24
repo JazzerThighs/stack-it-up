@@ -152,6 +152,9 @@ export function createStartupDefaults() {
       "bluetoothSliceWindow": 40, // SID 6002: controls.bluetoothSliceWindow
       "bluetoothPackingNeutral": false, // SID 6022: controls.bluetoothPackingNeutral
       "bluetoothGyroSmoothing": true, // SID 6003: controls.bluetoothGyroSmoothing
+      "bluetoothGyroTightness": 1, // SID 6025: controls.bluetoothGyroTightness
+      "bluetoothGestureTolerance": 20, // SID 6024: controls.bluetoothGestureTolerance
+      "bluetoothGestureTightness": 2, // SID 6023: controls.bluetoothGestureTightness
       "bluetoothGyroResponse": 180, // SID 6004: controls.bluetoothGyroResponse
       "bluetoothGyroSpeed": 180, // SID 6005: controls.bluetoothGyroSpeed
       "bluetoothGyroAcceleration": 1200, // SID 6006: controls.bluetoothGyroAcceleration

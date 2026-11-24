@@ -7,7 +7,7 @@ import {calibrationFrame} from '../web/input/cube-calibration.js';
 import {matrix,multiply,quaternion,cubeRotations,axisAngle} from '../web/input/orbit-math.js';
 import {turnTransform,transformPoint} from '../web/render/transforms.js';
 import {turn} from '../web/explorer/model.js';
-import {CubeStack,moveLabels} from '../web/engine/coordinates.js';
+import {CubeStack,moveLabels,explorerMoveLabels} from '../web/engine/coordinates.js';
 import {adaptTransport} from '../web/engine/transport.js';
 import {createGameController} from '../web/game/controller.js';
 import {S} from '../web/engine/snapshot.js';
@@ -33,15 +33,22 @@ for(const face of faces) {
   }
 }
 
-function detector(slice=40,wide=150) {
+function detector(slice=40,wide=150,gestureTolerance) {
   let time=0,id=0;const tasks=new Map(),commands=[];
   const options={now:()=>time,setTimer:(f,ms)=>{tasks.set(++id,{f,due:time+ms});return id;},cancelTimer:id=>tasks.delete(id)};
-  const d=createSlicePairing({...options,windowMs:()=>slice,wideWindowMs:()=>wide,emit:c=>commands.push(c)});
+  const d=createSlicePairing({...options,windowMs:()=>slice,wideWindowMs:()=>wide,gestureTolerance,emit:c=>commands.push(c)});
   return {d,commands,options,
     advance(ms){time+=ms;for(const [id,t] of [...tasks])if(t.due<=time){tasks.delete(id);t.f();}},
     move(m,event={}){d.push([m],event);},gyro:q=>d.gyro(q)};
 }
 const gyro=inverse(wideFromFace(4).rotation);
+// Same sensor trace ends 25 degrees short of the expected quarter turn.
+for(const degrees of [10,20,25,35]){
+  const f=detector(0,150,()=>degrees);f.gyro(identity);f.advance(10);f.move(4);
+  const axis=gyro.slice(0,3);
+  f.advance(20);f.gyro(axisAngle(axis,65*Math.PI/180));f.advance(150);
+  assert.equal(!!f.commands[0].wide,degrees>=25);
+}
 for(const before of [false,true]) {
   const f=detector();f.gyro(identity);f.advance(10);
   if(before)f.gyro(gyro);
@@ -111,10 +118,12 @@ for(const face of faces)for(const kind of ['slice','wide']) {
   assert.notEqual(expected[S.ACTIVE],before[S.ACTIVE]);
   assert.deepEqual(expected.slice(S.BOARD,S.BOARD+27),before.slice(S.BOARD,S.BOARD+27),'Placed stack stays fixed');
   setup(center);
-  let observer;const f=detector();
+  let observer,gameVisible=true,pose=matrix(identity),packingMove;
+  const packing={performTurn:async move=>{packingMove=move;return true;}};
+  const f=detector();
   const cube=createBluetoothCube({...f.options,sliceWindow:()=>40,wideWindow:()=>150,
-    connect:async()=>({events$:{subscribe(o){observer=o;return{unsubscribe(){}};}}}),active:()=>true,
-    play:m=>commands.play(m),orientation:()=>matrix(identity),rotate:()=>{},status:()=>{}});
+    connect:async()=>({events$:{subscribe(o){observer=o;return{unsubscribe(){}};}}}),active:()=>gameVisible,explorerTurnTarget:()=>gameVisible?null:packing,
+    play:m=>commands.play(m),orientation:()=>pose,rotate:value=>{pose=value;},status:()=>{}});
   cube.setMode('bluetooth');await cube.connect();cube.beginCalibration();
   const frame=calibrationFrame(grip);
   for(const face of ['U','F','R']){observer.next({type:'MOVE',move:grip[face]});observer.next({type:'MOVE',move:grip[face]+"'"});}
@@ -129,6 +138,17 @@ for(const face of faces)for(const kind of ['slice','wide']) {
   await tick();
   assert.equal(engine.snapshot()[S.ACTIVE],expected[S.ACTIVE],`${kind}: Bluetooth moves the same center as manual`);
   assert.deepEqual(engine.snapshot().slice(S.BOARD,S.BOARD+27),expected.slice(S.BOARD,S.BOARD+27));
+  // Regrip, then switch views with the physical cube held still.
+  const sample=asEvent(axisAngle([1,2,3],.7));
+  f.advance(200);observer.next(sample);
+  const gamePose=pose;gameVisible=false;cube.suspend();observer.next(sample);
+  assert(pose.every((v,i)=>Math.abs(v-gamePose[i])<1e-8),'calibrated pose survives view switch after '+kind);
+  for(const next of faces){
+    observer.next(event(next));await tick();
+    const gameMove=correctedFace(next,logical.rotation);
+    assert.equal(explorerMoveLabels[packingMove%15],moveLabels[gameMove%15]);
+    assert.equal(packingMove>=15,gameMove>=15);
+  }
   await cube.disconnect();
 }
 console.log('PASS: wide gyro direction/timing, slice precedence, 24 frames and real-engine center movement relative to the fixed stack.');

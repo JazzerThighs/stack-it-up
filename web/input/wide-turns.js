@@ -14,9 +14,9 @@ export function wideFromFace(face) {
   return {move:9+opposite+(face>=15?15:0),rotation:quaternion(turnTransform(face,1))};
 }
 
-export function wideGyroMatch(face,start,end) {
+export function wideGyroMatch(face,start,end,toleranceDegrees=20) {
   const expected=inverse(wideFromFace(face).rotation);
   const actual=multiply(inverse(start),end);
   // Quaternion distance checks both axis and direction, allowing hand wobble.
-  return distance(actual,expected)<=20*Math.PI/180;
+  return distance(actual,expected)<=toleranceDegrees*Math.PI/180 + 1e-12;
 }

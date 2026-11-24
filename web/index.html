@@ -593,10 +593,13 @@
 <div class="bluetooth-page">
 <label for="gameInputSource">Cube input</label>
 <select id="gameInputSource"><option value="manual">Manual</option><option value="bluetooth">Bluetooth</option></select>
-<div id="bluetoothOptions" hidden>
+<div id="bluetoothActions" hidden>
 <button id="bluetoothConnect" type="button" disabled>Connect</button>
 <button id="bluetoothDisconnect" type="button" disabled>Disconnect</button>
 <button id="bluetoothCalibrate" type="button" disabled>Calibrate cube</button>
+</div>
+<p id="bluetoothStatus" role="status" aria-live="polite">Manual controls active.</p>
+<div id="bluetoothOptions" hidden>
 <label><input id="bluetoothShowAll" type="checkbox"> Show all Bluetooth devices (if your cube is missing)</label>
 <label for="bluetoothMac">Cube MAC address (optional)</label>
 <div id="bluetoothMacField">
@@ -608,15 +611,23 @@
 <input id="bluetoothWideWindow" type="range" min="0" max="500" step="10" value="150" aria-describedby="bluetoothWideHelp">
 <button id="bluetoothWideReset" type="button">Reset wide timing</button>
 <p id="bluetoothWideHelp" class="muted">Move two layers together: a face-turn event plus the matching quarter-turn gyro motion becomes one wide game move, including its centers. This window limits gesture completion time. Set to 0 to disable. Longer windows allow slower gestures but delay ordinary face turns.</p>
+<label for="bluetoothGestureTolerance">Gesture angle tolerance <output id="bluetoothGestureToleranceValue" for="bluetoothGestureTolerance">20 degrees</output></label>
+<input id="bluetoothGestureTolerance" type="range" min="1" max="45" step="1" value="20" aria-describedby="bluetoothGestureToleranceHelp">
+<p id="bluetoothGestureToleranceHelp" class="muted">How close your grip must come to the expected quarter turn. Higher values allow more hand movement. Slices still register from the timing of opposite face turns.</p>
 <label for="bluetoothSliceWindow">Slice pairing window <output id="bluetoothSliceWindowValue" for="bluetoothSliceWindow">40 ms</output></label>
 <input id="bluetoothSliceWindow" type="range" min="0" max="150" step="5" value="40" aria-describedby="bluetoothSliceHelp">
 <button id="bluetoothSliceReset" type="button">Reset slice timing</button>
-<p id="bluetoothSliceHelp" class="muted">Opposite-face turns in opposite directions become one slice turn when the gyro also detects the matching quarter turn within this window. Set to 0 to disable. Larger windows add input delay and may combine intentional outer turns. Slice recognition also adjusts the face frame and gyro orientation.</p>
+<p id="bluetoothSliceHelp" class="muted">Opposite-face turns in opposite directions become one slice turn when both face reports arrive within this window. Set to 0 to disable. Larger windows add input delay and may combine intentional outer turns. Slice recognition also adjusts the face frame and gyro orientation.</p>
 <label><input id="bluetoothPackingNeutral" type="checkbox"> Gyro autocompensation in Explorer and Solver</label>
 <label><input id="bluetoothGyroSmoothing" type="checkbox" checked> Smooth gyro motion</label>
-<p class="muted">Ease rotation between sensor updates and soften sudden direction changes. Lower speed and acceleration improve readability; higher values follow your hand more closely.</p>
+<label for="bluetoothGyroTightness">Regular gyro tightness <output id="bluetoothGyroTightnessValue" for="bluetoothGyroTightness">1x</output></label>
+<input id="bluetoothGyroTightness" type="range" min="1" max="8" step="0.5" value="1" aria-describedby="bluetoothGyroTightnessHelp">
+<p id="bluetoothGyroTightnessHelp" class="muted">Higher tightness follows your hand more closely during ordinary rotation. Speed and acceleration limits still apply.</p>
+<label for="bluetoothGestureTightness">Slice and wide turn return tightness <output id="bluetoothGestureTightnessValue" for="bluetoothGestureTightness">2x</output></label>
+<input id="bluetoothGestureTightness" type="range" min="1" max="8" step="0.5" value="2" aria-describedby="bluetoothGestureTightnessHelp">
+<p id="bluetoothGestureTightnessHelp" class="muted">With gyro smoothing enabled, a higher value pulls the view back to your grip faster after a slice or wide turn.</p>
 <label for="bluetoothGyroResponse">Gyro easing time <output id="bluetoothGyroResponseValue" for="bluetoothGyroResponse">180 ms</output></label>
-<input id="bluetoothGyroResponse" type="range" min="40" max="600" step="10" value="180">
+<input id="bluetoothGyroResponse" type="range" min="10" max="500" step="10" value="180">
 <label for="bluetoothGyroSpeed">Maximum gyro rotation speed <output id="bluetoothGyroSpeedValue" for="bluetoothGyroSpeed">180 degrees/s</output></label>
 <input id="bluetoothGyroSpeed" type="range" min="30" max="720" step="10" value="180">
 <label for="bluetoothGyroAcceleration">Maximum gyro acceleration <output id="bluetoothGyroAccelerationValue" for="bluetoothGyroAcceleration">1200 degrees/s²</output></label>
@@ -632,13 +643,14 @@
 <input id="bluetoothNeutralDelay" type="range" min="0" max="1000" step="25" value="125" aria-describedby="bluetoothNeutralDelayHelp">
 <p id="bluetoothNeutralDelayHelp" class="muted">How long to hold steadily near neutral before correction starts. Set to 0 to start as soon as steady motion is detected.</p>
 <label for="bluetoothNeutralSpeed">Neutral correction speed <output id="bluetoothNeutralSpeedValue" for="bluetoothNeutralSpeed">2.5x</output></label>
-<input id="bluetoothNeutralSpeed" type="range" min="0.25" max="10" step="0.25" value="2.5" aria-describedby="bluetoothNeutralSpeedHelp">
+<input id="bluetoothNeutralSpeed" type="range" min="0.25" max="20" step="0.25" value="2.5" aria-describedby="bluetoothNeutralSpeedHelp">
 <p id="bluetoothNeutralSpeedHelp" class="muted">How quickly the view settles into its neutral angle once correction starts. Higher values settle faster.</p>
 </div>
-<p id="bluetoothStatus" role="status" aria-live="polite">Manual controls active.</p></div>
+</div>
 
 <label
-              ><input id="classicControls" type="checkbox" /> Show classic
+              ><input id="wideTurns" type="checkbox" /> Wide turns</label>
+<label><input id="classicControls" type="checkbox" /> Show classic
               button grid</label
             >
 <label

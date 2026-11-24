@@ -54,7 +54,7 @@ for(const [first,second,paired] of [[100,110,true],[100,180,false],[100,90,false
   assert.equal(emitted.some(c=>c.moves.length===2),paired);emitted.length=0;
 }
 pairing.clear(); push([4],{cubeTimestamp:10});clock++;push([20],{cubeTimestamp:11});advance(40);
-assert.deepEqual(emitted.splice(0).map(c=>c.moves),[[4],[20]],'Without the axis transition both outer turns are preserved');
+assert.deepEqual(emitted.splice(0).map(c=>c.moves),[[4,20]],'Two timely opposite turns pair without gyro evidence');
 push([4],{localTimestamp:null});push([20],{localTimestamp:null});
 assert.equal(emitted.length,2);emitted.length=0;
 push([4]);push([20]);advance(40);assert.equal(emitted.length,2,'Unstamped same-tick delivery does not pair');emitted.length=0;

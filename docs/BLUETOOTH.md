@@ -101,16 +101,29 @@ flush. No device time is subtracted from the local monotonic clock.
 Disconnect, input suspension and recalibration discard any waiting partner.
 Physical testing should check both directions of M/E/S, later ordinary face
 turns, gyro alignment, fast independent outer turns, and the smallest usable
-window for the cube. Slice recognition also requires a gyro transition within the slice window.
-The core must rotate a quarter turn about the matching axis and direction,
-within the same 20-degree tolerance as wide turns. Without that evidence the
-two face reports play as separate outer turns.
+window for the cube. An eligible face pair commits a slice as soon as the second report arrives.
+Gyro evidence helps recover the starting grip even if the wrist began moving
+before the first report. Missing or off-axis gyro samples still allow a slice.
 
-For either gesture the game samples the grip before the first face report.
-On recognition it discards the smoothing velocity from the physical turn and
-eases toward that earlier grip while the puzzle animates. Brief motion inside
-the arrival zone stays centered for up to one gesture window. Leaving the
-zone resumes normal gyro tracking immediately.
+Wide-turn zones are relative to a recent measured grip. The expected endpoint
+is one signed quarter turn from that grip about the reported face axis. The
+**Gesture angle tolerance** slider sets the endpoint tolerance from 1 to 45 degrees (default 20). It is independent of the 24 calibrated autocompensation zones.
+
+With smoothing enabled, **Slice and wide turn return tightness** controls how
+quickly the view settles after recognition (1x to 8x, default 2x). This return
+follows the shortest arc and discards momentum from the gesture. Ordinary
+gyro tracking has its own **Regular gyro tightness** (1x to 8x, default 1x).
+It scales the response to your grip within the configured speed and acceleration limits.
+
+## Camera alignment across views
+
+Game, Family Explorer and both Solver cubes use the same calibrated grip and
+carry forward the face mapping from accepted game slices and wide turns.
+Packing geometry uses the opposite local X and Z axes. Its camera applies a
+half turn about Y so each named face appears in the same camera position as
+in Game. The Solver turn selector chooses which cube receives moves while
+both follow the grip. Packing autocompensation controls whether a resting grip
+in those views can refine the shared drift correction.
 
 ## Wide turns and center movement
 
@@ -124,7 +137,7 @@ wide detection. Perform a two-layer quarter turn while holding the opposite
 outer layer still. The sensor reports that opposite outer face relative to
 the moving core; gyro supplies the matching core rotation. Recognition requires
 the inverse spatial quarter rotation about the reported face's axis, within
-20 degrees of the expected orientation. Wrong direction, unrelated axes and
+the configured gesture angle tolerance of the expected orientation. Wrong direction, unrelated axes and
 small wrist movements do not qualify. Whole-cube motion alone never submits
 a game move.
 

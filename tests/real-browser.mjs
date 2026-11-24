@@ -161,7 +161,7 @@ try{
    if(document.querySelector('#bluetoothNeutralToleranceValue').textContent!=='17 degrees')throw Error('Neutral correction label did not update');
    if(JSON.parse(localStorage.getItem('stack-it-up.controls')).values.bluetoothNeutralTolerance!==17)throw Error('Neutral correction was not saved');
    slider.value=original;slider.dispatchEvent(new Event('input'));
-   for(const [id,value,suffix] of [['bluetoothNeutralDelay',375,' ms'],['bluetoothNeutralSpeed',3.5,'x'],['bluetoothNeutralCutoff',18,' degrees/s'],['bluetoothGyroResponse',250,' ms'],['bluetoothGyroSpeed',240,' degrees/s'],['bluetoothGyroAcceleration',1500,' degrees/s²']]){
+   for(const [id,value,suffix] of [['bluetoothNeutralDelay',375,' ms'],['bluetoothNeutralSpeed',20,'x'],['bluetoothGyroTightness',6,'x'],['bluetoothNeutralCutoff',18,' degrees/s'],['bluetoothGyroResponse',10,' ms'],['bluetoothGyroResponse',500,' ms'],['bluetoothGyroSpeed',240,' degrees/s'],['bluetoothGyroAcceleration',1500,' degrees/s²']]){
      const control=document.getElementById(id),saved=control.value;
      if(!control.checkVisibility())throw Error(id+' hidden on mobile');
      control.value=String(value);control.dispatchEvent(new Event('input'));
@@ -216,7 +216,7 @@ try{
      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
      const root=${familyRoot}, panel=root.getElementById('familyMapPanel'), net=root.getElementById('familyNet');
      const rect=panel.getBoundingClientRect(), toolbar=root.querySelector('#familyExploreCube .packing-actions').getBoundingClientRect();
-     return net.querySelectorAll('.face-grid').length===9 && net.querySelectorAll('i').length===81 &&
+     return getComputedStyle(net.querySelector('.face-grid')).outlineStyle==='solid' && net.querySelectorAll('.face-grid').length===9 && net.querySelectorAll('i').length===81 &&
        panel.checkVisibility() && panel.clientHeight>0 && panel.scrollWidth<=panel.clientWidth+1 &&
        rect.bottom<=toolbar.top+1;
    })()`), 'Family maps must wrap above controls at '+width);
@@ -262,6 +262,14 @@ try{
  await evaluate("document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#settingsDialog').open && document.querySelector('#settingsDialog').dataset.settingsScope==='explorer'"));
  assert(await evaluate("!!document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape') && !document.querySelector('#explorer').shadowRoot.querySelector('.settings-content')"));
+ assert(await evaluate(`(() => {
+   const explorer=document.querySelector('#explorerSettingsHost').shadowRoot;
+   [...explorer.querySelectorAll('.settings-sidebar button')].find(b=>b.textContent==='Controls').click();
+   [...explorer.querySelectorAll('.explorer-page-link')].find(b=>b.textContent==='Input >').click();
+   return !explorer.querySelector('#classicControls') && document.querySelector('#gameInputSource').checkVisibility()
+     && document.querySelector('#wideTurns').checkVisibility();
+ })()`),'Explorer Input opens the shared controls');
+ await evaluate("document.querySelector('#settingsClose').click();document.querySelector('#settingsOpen').click()");
  await checkPaletteNavigation("document.querySelector('#explorerSettingsHost').shadowRoot");
  await evaluate("window.__model=document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape');__model.value='gameboy';__model.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('#settingsClose').click();document.querySelector('#settingsOpen').click()");
  assert(await evaluate("document.querySelector('#explorerSettingsHost').shadowRoot.querySelector('#modelShape')===window.__model && __model.value==='gameboy'"));

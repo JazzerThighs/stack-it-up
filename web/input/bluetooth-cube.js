@@ -22,11 +22,10 @@ export function ganQuaternion(q) {
 const inverse = q => [-q[0],-q[1],-q[2],q[3]];
 
 /** Device/session ownership; all game mutations go through the supplied command. */
-export function createBluetoothCube({connect, availability, play, active, explorerTurnTarget = () => null, packingNeutral = () => false, orientation, rotate, status, now = () => performance.now(), sliceWindow = () => 0, wideWindow = () => 0, neutralTolerance = () => 10, neutralDelay = () => 125, neutralSpeed = () => 2.5, neutralCutoff = () => 6, smoothing = () => true, smoothingResponse, smoothingSpeed, smoothingAcceleration, requestFrame = globalThis.requestAnimationFrame?.bind(globalThis), cancelFrame = globalThis.cancelAnimationFrame?.bind(globalThis), setTimer, cancelTimer}) {
+export function createBluetoothCube({connect, availability, play, active, explorerTurnTarget = () => null, packingNeutral = () => false, orientation, rotate, status, now = () => performance.now(), sliceWindow = () => 0, wideWindow = () => 0, gestureTolerance, neutralTolerance = () => 10, neutralDelay = () => 125, neutralSpeed = () => 2.5, neutralCutoff = () => 6, smoothing = () => true, gestureTightness = () => 2, smoothingTightness, smoothingResponse, smoothingSpeed, smoothingAcceleration, requestFrame = globalThis.requestAnimationFrame?.bind(globalThis), cancelFrame = globalThis.cancelAnimationFrame?.bind(globalThis), setTimer, cancelTimer}) {
   let mode = 'manual', connection, subscription, generation = 0, connecting = false;
   let queue = [], draining = false, reference, base;
   const hasBoard = () => active() || !!explorerTurnTarget();
-  let explorerBase, compensating = false;
   let playing = false;
   let correction = [0,0,0,1];
   let calibration = 'disconnected', faces = {}, capture = null, dragged = false, latestGyro, frame;
@@ -35,19 +34,18 @@ export function createBluetoothCube({connect, availability, play, active, explor
     calibration, calibrationKind, calibrationStep, awaitingUndo, faces:{...faces}, capture, dragged});
   const neutralOptions = {tolerance:neutralTolerance, delay:neutralDelay, speed:neutralSpeed, cutoff:neutralCutoff};
   const neutral = createGyroNeutral(neutralOptions);
-  const explorerNeutral = createGyroNeutral(neutralOptions);
-  const smooth = createGyroSmoothing({response:smoothingResponse,speed:smoothingSpeed,acceleration:smoothingAcceleration});
-  let animationFrame=null, lastFrame=null, smoothStarted=false, smoothTarget;
+  const smooth = createGyroSmoothing({tightness:smoothingTightness,response:smoothingResponse,speed:smoothingSpeed,acceleration:smoothingAcceleration});
+  let animationFrame=null, lastFrame=null, smoothStarted=false, smoothTarget, settleUntil=0;
   const stopSmoothing = () => {
     if(animationFrame!==null)cancelFrame?.(animationFrame);
-    animationFrame=lastFrame=null; smoothStarted=false;
+    animationFrame=lastFrame=null; smoothStarted=false; settleUntil=0;
   };
   function animateGyro(time){
     animationFrame=null;
     if(!active()||calibration!=='ready'||!connection){stopSmoothing();return;}
     if(!smoothing()){rotate(matrix(smoothTarget));stopSmoothing();return;}
     const dt=lastFrame===null?0:(time-lastFrame)/1000;lastFrame=time;
-    const result=smooth.step(dt);rotate(matrix(result.pose));
+    const result=now()<settleUntil ? smooth.settle(dt,gestureTightness()) : smooth.step(dt);rotate(matrix(result.pose));
     if(!result.done)animationFrame=requestFrame(animateGyro);
     else lastFrame=null;
   }
@@ -68,18 +66,20 @@ export function createBluetoothCube({connect, availability, play, active, explor
   };
   function enqueue(command) {
     if (queue.length >= 64) { clear(); report('Too many pending turns. Queue cleared; turn more slowly.'); return; }
-    if(command.start){
+    if(command.wide || (!command.target && command.moves.length===2)){
       const face=command.moves[0];
-      const startDelta=multiply(inverse(calibratedSample(reference)),command.start);
-      landing={face,start:command.start,until:now()+command.window,
+      const start=command.start ?? calibratedSample(latestGyro);
+      const startDelta=multiply(inverse(calibratedSample(reference)),start);
+      landing={face,start,waiting:command.confirmed===false,until:now()+command.window,
         pose:multiply(multiply(base,startDelta),visualCorrection)};
       visualCorrection=multiply(wideFromFace(face).rotation,visualCorrection);
-      stopSmoothing(); neutral.pause(); updateGyro();
+      stopSmoothing(); settleUntil=landing.until+600/gestureTightness();
+      neutral.pause(); updateGyro();
     }
     queue.push(command);
     void drain(generation);
   }
-  const pairing = createSlicePairing({windowMs:sliceWindow,wideWindowMs:wideWindow,now,setTimer,cancelTimer,emit:command=>{
+  const pairing = createSlicePairing({windowMs:sliceWindow,wideWindowMs:wideWindow,gestureTolerance,now,setTimer,cancelTimer,emit:command=>{
     if (!active() || calibration !== 'ready' || !connection) { clear(); return; }
     enqueue(command);
   }});
@@ -87,12 +87,17 @@ export function createBluetoothCube({connect, availability, play, active, explor
   function gyroDelta() {
     return multiply(inverse(frame.rotation), multiply(multiply(inverse(reference), latestGyro), frame.rotation));
   }
+  function calibratedPose(faceCorrection) {
+    return multiply(multiply(base,gyroDelta()),faceCorrection);
+  }
   function updateGyro(sample = false) {
     if (!latestGyro || !frame) return;
     if (!reference) { reference = latestGyro; base = multiply(quaternion(orientation()),inverse(correction)); neutral.reset(quaternion(orientation())); }
-    let pose = multiply(multiply(base,gyroDelta()),visualCorrection);
+    let pose = calibratedPose(visualCorrection);
     if(landing){
-      if(now()<=landing.until && wideGyroMatch(landing.face,landing.start,calibratedSample(latestGyro)))pose=landing.pose;
+      const arrived=wideGyroMatch(landing.face,landing.start,calibratedSample(latestGyro),gestureTolerance?.());
+      if(arrived)landing.waiting=false;
+      if(now()<=landing.until && (landing.waiting || arrived))pose=landing.pose;
       else landing=null;
     }
     presentGyro(sample ? neutral.apply(pose,latestGyro,now()) : neutral.orient(pose));
@@ -114,7 +119,9 @@ export function createBluetoothCube({connect, availability, play, active, explor
           if (target !== explorerTurnTarget()) continue;
           playing = true;
           try {
-            if (!await target.performTurn(moves[0]) && target === explorerTurnTarget()) {
+            const logical=correctedFace(moves[0],correction);
+            const packingMove=explorerMoveLabels.indexOf(moveLabels[logical%15])+(logical>=15?15:0);
+            if (!await target.performTurn(packingMove) && target === explorerTurnTarget()) {
               clear();
               report('Explorer turn unavailable. Pending turns cleared.');
             }
@@ -163,7 +170,7 @@ export function createBluetoothCube({connect, availability, play, active, explor
     if(calibrationKind==='ufr') {
       // Rebase at the visible pose when the face basis changes. Retain the
       // previously saved neutral angle; no gyro pose-edit step is required.
-      frame=selected;reference=latestGyro;base=quaternion(orientation());explorerBase=base;compensating=false;
+      frame=selected;reference=latestGyro;base=quaternion(orientation());
       correction=[0,0,0,1];neutral.reset(savedNeutral);stopSmoothing();clear();
       calibration='ready';capture=null;
       report('UFR mapping reset. Your saved neutral angle is unchanged.');
@@ -216,17 +223,16 @@ export function createBluetoothCube({connect, availability, play, active, explor
       const target = explorerTurnTarget();
       if (!target) clear();
       else if (e.type === 'MOVE') {
-        const moves = faceMoves((frame.mapping[e.move?.[0]] || '') + (e.move?.slice(1) || ''), explorerMoveLabels);
+        const moves = faceMoves((frame.mapping[e.move?.[0]] || '') + (e.move?.slice(1) || ''));
         for (const move of moves) enqueue({target, moves:[move], received:now()});
       }
       if (target && e.type === 'GYRO' && reference) {
-        const pose = multiply(explorerBase, gyroDelta());
-        const enabled = packingNeutral();
-        if (enabled && !compensating) explorerNeutral.reset(savedNeutral);
-        compensating = enabled;
-        rotate(matrix(enabled ? explorerNeutral.apply(pose,latestGyro,now()) : pose));
-      }
-      neutral.pause();
+        const pose = calibratedPose(correction);
+        // Keep the learned camera alignment across views. This preference
+        // controls whether resting in a packing view can refine it further.
+        if(packingNeutral())rotate(matrix(neutral.apply(pose,latestGyro,now())));
+        else { neutral.pause(); rotate(matrix(neutral.orient(pose))); }
+      } else if(!target)neutral.pause();
       stopSmoothing();
       return;
     }
@@ -251,14 +257,14 @@ export function createBluetoothCube({connect, availability, play, active, explor
       if (calibration !== 'calibrating' || calibrationStep !== 3 || !hasBoard()) return false;
       if (!dragged) { report('Drag the displayed cube to edit your natural grip before confirming.'); return false; }
       if (!latestGyro) { report('Waiting for fresh orientation data. Gently move the physical cube, then confirm.'); return false; }
-      reference = latestGyro; savedNeutral=quaternion(orientation()); explorerBase=savedNeutral;compensating=false;
+      reference = latestGyro; savedNeutral=quaternion(orientation());
       if(calibrationKind==='full')correction=[0,0,0,1];
       base=multiply(savedNeutral,inverse(correction)); neutral.reset(savedNeutral); stopSmoothing(); clear(); pairing.gyro(calibratedSample(latestGyro));
       capture = null; calibration = 'ready'; report('Cube calibrated. Ready to play.'); return true;
     },
     resetUfr() { const started=startCalibration('ufr');if(started)this.beginCalibration();return started; },
     resetGyro() { const started=startCalibration('gyro');if(started)this.beginCalibration();return started; },
-    suspend() { clear(); neutral.pause(); explorerNeutral.pause(); stopSmoothing(); },
+    suspend() { clear(); neutral.pause(); stopSmoothing(); },
     recalibrate() { return startCalibration('full'); },
     disconnect,
     setMode(value) {

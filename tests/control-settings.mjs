@@ -5,7 +5,7 @@ import {createSettingsStore} from '../web/ui/settings-store.js';
 const saved=new Map();globalThis.localStorage={getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v)};
 const {controlSettings,bindControlSettings,setControlSetting,resetControlSettings}=await import('../web/input/control-settings.js');
 const root=explorer=>{
- const elements=Object.fromEntries(Object.keys(controlSettings).filter(k=>explorer||k!=='wideTurns').map(k=>[explorer&&k==='perspectiveCamera'?'explorerCamera':k,{checked:false,value:'',addEventListener(t,f){this.change=f;}}]));
+ const elements=Object.fromEntries(Object.keys(controlSettings).map(k=>[explorer&&k==='perspectiveCamera'?'explorerCamera':k,{checked:false,value:'',addEventListener(t,f){this.change=f;}}]));
  return {elements,getElementById:k=>elements[k]};
 };
 const game=root(false),explorer=root(true);let updates=0;
@@ -26,7 +26,7 @@ assert(!game.elements.hoverRings.checked);assert(game.elements.ringLabels.disabl
 game.elements.showArrows.checked=true;game.elements.showArrows.change();
 assert(explorer.elements.showArrows.checked);assert(!explorer.elements.arrowGuides.disabled);
 explorer.elements.explorerCamera.value='orthographic';explorer.elements.explorerCamera.change();assert(!game.elements.perspectiveCamera.checked);
-setControlSetting('wideTurns',true);assert(explorer.elements.wideTurns.checked);
+game.elements.wideTurns.checked=true;game.elements.wideTurns.change();assert(explorer.elements.wideTurns.checked);
 assert(JSON.parse(saved.get('stack-it-up.controls')).values.wideTurns);
 game.elements.turnAnimationSpeed.value='2.5';game.elements.turnAnimationSpeed.change();
 assert.equal(controlSettings.turnAnimationSpeed,2.5);
@@ -58,7 +58,7 @@ assert.equal(createSettingsStore(controlsSchema,globalThis.localStorage).values.
 assert.equal(setControlSetting('bluetoothNeutralTolerance',NaN),false);
 resetControlSettings('bluetoothNeutralTolerance');
 assert.equal(controlSettings.bluetoothNeutralTolerance,createSettingsStore(controlsSchema).values.bluetoothNeutralTolerance);
-for(const [key,value,unit] of [['bluetoothNeutralDelay',375,' ms'],['bluetoothNeutralSpeed',3.5,'x'],['bluetoothNeutralCutoff',18,' degrees/s'],['bluetoothGyroResponse',250,' ms'],['bluetoothGyroSpeed',240,' degrees/s'],['bluetoothGyroAcceleration',1500,' degrees/s²']]){
+for(const [key,value,unit] of [['bluetoothNeutralDelay',375,' ms'],['bluetoothNeutralSpeed',20,'x'],['bluetoothGyroTightness',6,'x'],['bluetoothNeutralCutoff',18,' degrees/s'],['bluetoothGyroResponse',10,' ms'],['bluetoothGyroResponse',500,' ms'],['bluetoothGyroSpeed',240,' degrees/s'],['bluetoothGyroAcceleration',1500,' degrees/s²']]){
  game.elements[key+'Value']={textContent:''};
  game.elements[key].value=String(value);game.elements[key].change();
  assert.equal(controlSettings[key],value);

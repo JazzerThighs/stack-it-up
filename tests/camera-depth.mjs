@@ -3,6 +3,10 @@ import {visualSettings} from '../web/render/visual-settings.js';
 visualSettings.ditherTransparency=0;
 import assert from 'node:assert/strict';
 import {CAMERA_DISTANCE,projectPoint,pointerRay} from '../web/render/camera.js';
+import {PackingCube} from '../web/explorer/cube-view.js';
+import {faceLabels,faces} from '../web/render/geometry.js';
+import {explorerMoveLabels,flipCameraFrame} from '../web/engine/coordinates.js';
+import {cubeRotations} from '../web/input/orbit-math.js';
 import {Renderer} from '../web/render/renderer.js';
 import {renderPackets} from '../web/render/pipeline.js';
 const r={perspective:true,yaw:.7,pitch:.4,unit:100,canvas:{getBoundingClientRect:()=>({left:0,top:0,width:600,height:600})}};
@@ -16,6 +20,18 @@ for(const point of [[1,1,1],[-1,0,1],[0,-1,-1],[1.5,0,0],[0,0,0]]) {
 r.orientation=[1,0,0,0,1,0,0,0,1];
 assert(projectPoint(r,[1,0,1])[0]>projectPoint(r,[1,0,-1])[0]);
 r.perspective=false;assert.equal(projectPoint(r,[1,0,1])[0],projectPoint(r,[1,0,-1])[0]);
+const game={},packing={};
+Renderer.prototype.resetView.call(game);
+PackingCube.prototype.resetView.call(packing);
+for(const gameOrientation of [game.orientation,...cubeRotations]){
+ const packingOrientation=gameOrientation===game.orientation?packing.orientation:flipCameraFrame(gameOrientation);
+ for(const [i,label] of faceLabels.entries()){
+  const center=index=>{const [axis,side]=faces[index],p=[0,0,0];p[axis]=side-1;return p;};
+  const a=projectPoint({orientation:gameOrientation,perspective:true},center(i));
+  const b=projectPoint({orientation:packingOrientation,perspective:true},center(explorerMoveLabels.indexOf(label)));
+  assert(a.every((v,k)=>Math.abs(v-b[k])<1e-8),label+' camera position and depth');
+ }
+}
 // Each custom category has independent depth, and transparent draws write it.
 let depth=true,clears=0;const draws=[],uploads=[];
 const gl={DEPTH_TEST:1,LEQUAL:2,STENCIL_TEST:3,BLEND:4,LINES:5,TRIANGLES:6,SRC_ALPHA:7,ONE_MINUS_SRC_ALPHA:8,DEPTH_BUFFER_BIT:9,

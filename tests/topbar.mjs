@@ -10,7 +10,7 @@ assert(!html.includes('id="bluetoothDialog"'));
 const settings=html.match(/<dialog id="settingsDialog"[\s\S]*?<\/dialog>/)[0];
 const input=settings.match(/<fieldset id="cubeInputSettings">([\s\S]*?)<\/fieldset>/)[1];
 let previous=-1;
-for(const id of ['gameInputSource','bluetoothConnect','bluetoothDisconnect','bluetoothCalibrate','bluetoothShowAll','bluetoothMac','bluetoothWideWindow','bluetoothWideReset','bluetoothSliceWindow','bluetoothSliceReset','bluetoothGyroSmoothing']) {
+for(const id of ['gameInputSource','bluetoothConnect','bluetoothDisconnect','bluetoothCalibrate','bluetoothStatus','bluetoothShowAll','bluetoothMac','bluetoothWideWindow','bluetoothWideReset','bluetoothSliceWindow','bluetoothSliceReset','bluetoothGyroSmoothing']) {
   const index=input.indexOf('id="'+id+'"');
   assert(index>previous,id+' should appear in order on the Input page');
   previous=index;

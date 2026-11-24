@@ -27,3 +27,29 @@ s.reset(id);assert.deepEqual(s.step(1).pose,id,'reset removes old target and vel
 // Quaternion sign changes describe the same pose and must not create a spin.
 s.reset(target);s.target(target.map(x=>-x));assert(s.step(1/60).done);
 console.log('PASS: eased gyro starts, speed/acceleration limits, frame-rate consistency, reversals, rest and reset.');
+const remaining=[];
+for(const tightness of [1,2,8]){
+ const spring=createGyroSmoothing();spring.reset(id);spring.target(target);
+ let error=distance(id,target);
+ for(let frame=0;frame<6;frame++){
+  const next=distance(spring.settle(1/60,tightness).pose,target);
+  assert(next<error,'gesture return approaches without overshoot');error=next;
+ }
+ remaining.push(error);
+}
+assert(remaining[2]<remaining[1]&&remaining[1]<remaining[0],'tightening shortens the return');
+
+function ordinaryError(tightness,response){
+ const spring=createGyroSmoothing({tightness:()=>tightness,response:()=>response});
+ spring.reset(id);
+ const smallTurn=axisAngle([0,1,0],5*rad);
+ spring.target(smallTurn);
+ let result;
+ for(let i=0;i<6;i++)result=spring.step(1/120);
+ const error=distance(result.pose,smallTurn);
+ for(let i=0;i<600&&!result.done;i++)result=spring.step(1/120);
+ assert(result.done,'ordinary gyro settles even at maximum tightness and minimum easing time');
+ return error;
+}
+assert(ordinaryError(8,500)<ordinaryError(1,500),'regular tightness speeds up tracking');
+ordinaryError(8,10);

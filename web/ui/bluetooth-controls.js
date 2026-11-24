@@ -85,6 +85,7 @@ export function bindBluetoothControls({root = document, ...options}) {
   let library, current;
   const refresh = () => {
     const {mode, connecting, connected, message} = current;
+    $('bluetoothActions').hidden = mode !== 'bluetooth';
     $('bluetoothOptions').hidden = mode !== 'bluetooth';
     $('bluetoothConnect').disabled = mode !== 'bluetooth' || !supported || !library || connecting || connected;
     $('bluetoothDisconnect').disabled = !connecting && !connected;
@@ -106,6 +107,8 @@ export function bindBluetoothControls({root = document, ...options}) {
     sliceWindow: () => controlSettings.bluetoothSliceWindow,
     packingNeutral: () => controlSettings.bluetoothPackingNeutral,
     smoothing: () => controlSettings.bluetoothGyroSmoothing,
+    gestureTightness: () => controlSettings.bluetoothGestureTightness,
+    smoothingTightness: () => controlSettings.bluetoothGyroTightness,
     smoothingResponse: () => controlSettings.bluetoothGyroResponse,
     smoothingSpeed: () => controlSettings.bluetoothGyroSpeed,
     smoothingAcceleration: () => controlSettings.bluetoothGyroAcceleration,
@@ -113,6 +116,7 @@ export function bindBluetoothControls({root = document, ...options}) {
     neutralDelay: () => controlSettings.bluetoothNeutralDelay,
     neutralSpeed: () => controlSettings.bluetoothNeutralSpeed,
     neutralTolerance: () => controlSettings.bluetoothNeutralTolerance,
+    gestureTolerance: () => controlSettings.bluetoothGestureTolerance,
     wideWindow: () => controlSettings.bluetoothWideWindow,
     availability: () => globalThis.navigator.bluetooth.getAvailability?.(),
     connect: async onStatus => {

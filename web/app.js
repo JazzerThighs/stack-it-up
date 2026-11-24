@@ -683,8 +683,8 @@ bluetoothCube = bindBluetoothControls({
     return cube ? flipCameraFrame(cube.orientation) : renderers[0].orientation;
   },
   rotate: orientation => {
+    stopOrbitMotion();
     if ($('explorerPage').hidden) {
-      stopOrbitMotion();
       orbitCamera(0, 0, orientation);
       return;
     }

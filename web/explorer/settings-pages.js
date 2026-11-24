@@ -1,3 +1,4 @@
+import {openSharedSettings} from '../ui/shared-settings.js';
 import {refreshStyleTuning} from '../ui/style-tuning.js';
 import {assemblyUsesSolids} from '../render/assembly.js';
 import {createSettingsBrowser,matchesSettings} from '../ui/settings-browser.js';
@@ -35,7 +36,14 @@ export function initializeExplorerSettings(root) {
   $('packingPicker').append(legacy);
   const controls=page('Controls',home);
   help(controls,'Shared with the game. Changes apply to both apps.');
-  const input=page('Input',controls);unpack(input,$('explorerInputSettings'));
+  if(root.host){
+    const input=document.createElement('button');
+    input.type='button';input.className='explorer-page-link';input.textContent='Input >';
+    input.onclick=()=>openSharedSettings('game','cubeInputSettings');
+    add(controls,input);
+  }else{
+    unpack(page('Input',controls),$('explorerInputSettings'));
+  }
   const hover=page('Hover feedback',controls);unpack(hover,$('explorerHoverSettings'));
   const camera=page('Camera',controls);add(camera,$('explorerCamera').closest('label'),$('freeOrbit').closest('label'));
   const settling=page('Orbit controls',camera);
