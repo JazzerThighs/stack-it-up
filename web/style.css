@@ -1657,9 +1657,6 @@ main {
   bottom: 0;
   height: 100%;
   width: 50%;
-  transition:
-    left 0.4s ease-in-out,
-    width 0.4s ease-in-out;
 }
 .views #controlViewport {
   left: 0;
@@ -2224,9 +2221,8 @@ summary:focus-visible {
   }
 }
 
-/* Keep HUDs fixed; only the two viewports separate. */
-.views .viewport,
-.views.combined .viewport {
+/* Animate explicit split/combine actions. Face maps and HUD reflows resize immediately. */
+.views:where(.view-moving:not(.show-face-map)) .viewport {
   transition:
     left 0.4s ease-in-out,
     top 0.4s ease-in-out,
