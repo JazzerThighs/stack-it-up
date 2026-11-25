@@ -11,6 +11,10 @@
  * Empty per-view objects have profile IDs; layerOrder has one ID for the whole list.
  */
 export function createStartupDefaults() {
+  // Touch Camera Mode: "classic" = Classic free orbit, "confined" = XYZ Orbit.
+  const touchCameraMode = "classic"; // SID 7000: orbit.touchCameraMode
+  if (!["classic", "confined"].includes(touchCameraMode)) throw Error("Invalid Touch Camera Mode: " + touchCameraMode);
+
   return {
     // Independent view overrides. Empty entries inherit the shared defaults below.
     // Keys: active, stack, family, start, target. Each accepts appearance fields,
@@ -193,8 +197,8 @@ export function createStartupDefaults() {
       // "xyz" = XYZ Orbit.
       "mouseBoth": "xyz", // SID 7003: orbit.mouseBoth
       "mouseBothEnabled": true, // SID 7004: orbit.mouseBothEnabled
-      "orbitSettling": true, // SID 7005: orbit.orbitSettling
-      "orbitConfined": true, // SID 7006: orbit.orbitConfined
+      "orbitSettling": touchCameraMode === "confined", // SID 7005: orbit.orbitSettling
+      "orbitConfined": touchCameraMode === "confined", // SID 7006: orbit.orbitConfined
       "orbitSnap": true, // SID 7007: orbit.orbitSnap
       "orbitDiagonalRoll": true, // SID 7008: orbit.orbitDiagonalRoll
       "orbitAxisLock": true, // SID 7009: orbit.orbitAxisLock
