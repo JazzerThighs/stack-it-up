@@ -53,6 +53,9 @@ const main=doc.getElementById('settingsDialog'),setup=doc.getElementById('setupD
 const originalQueue=doc.getElementById('poolPiece10'),originalRules=doc.getElementById('gameplaySettings');
 openSettingsPage();assert(!doc.querySelector('.pager-home').hidden);
 const visibleUnits=()=>doc.querySelectorAll('[data-page-unit]').filter(e=>{for(let p=e;p;p=p.parentElement)if(p.hidden||p.classes.has('pager-hidden')||p.classes.has('pager-container')&&!p.classes.has('pager-route'))return false;return true;});
+openSettingsPage('howToPlay');
+assert(visibleUnits().some(e=>e.textContent.includes('Your first placement')));
+assert(visibleUnits().some(e=>e.textContent.includes('Top out')));
 openSettingsPage('piecePoolOptions');
 assert.equal(doc.querySelectorAll('.settings-page-footer').length,0);
 assert(!main.querySelector('.settings-page-toolbar').children.some(e=>e.textContent==='Categories'));

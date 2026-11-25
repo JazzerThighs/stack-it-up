@@ -97,6 +97,7 @@
               </div>
               <div id="forecastReplayBar" class="forecast-replay" hidden><span id="forecastReplayStatus" role="status"></span><button id="forecastStep">Next action</button><button id="forecastRestore">Restore starting puzzle</button><button id="forecastExit">Exit replay</button></div>
 <div class="stage-tools">
+                <button id="openHowToPlay" type="button" aria-haspopup="dialog" aria-controls="settingsDialog">How to play</button>
                 <span id="nextPieceControls" hidden><label for="nextPiece">Next</label><select id="nextPiece"><option value="1">O</option><option value="2">T</option><option value="3">L</option><option value="4">J</option><option value="5">S</option><option value="6">Z</option><option value="7">B — Branch</option><option value="8">D — Right screw</option><option value="9">F — Left screw</option><option value="10">J/L - Either shape</option><option value="11">S/Z - Either shape</option></select><button id="setNextPiece">Set next</button></span><button id="lockBands" aria-pressed="false" title="Switch from turning to clicking white bandaged groups into the stack">Lock white pieces</button>
                 <button id="turnWidth" aria-pressed="false" title="Face turns: regular or two layers. Hold Shift while dragging for wide turns.">Regular turns</button>
                 <button id="orbitDragToggle" class="touch-orbit-toggle" type="button">XYZ Orbit</button><button id="resetView" title="Reset camera">↺ View</button
@@ -1110,27 +1111,37 @@
               Pink outlines mark active pieces overlapping the stack.
             </p>
           </details>
-          <details class="help">
-            <summary>
-              How to play <span>Rules & keyboard controls</span>
-            </summary>
+          <details class="help" id="howToPlay">
+            <summary>How to play <span>Building, clearing and controls</span></summary>
             <div class="help-grid">
-              <div>
-                <h2>Placement</h2>
-                <p>Build the current piece on a face, or B/D/F around the core. Choose a highlighted placement when several fit. Active cubies may cross the stack; locking requires empty cells.</p>
-              </div>
-              <div>
-                <h2>Clears</h2>
-                <p>Matching planes clear together. Gravity and freed pieces follow your rules. Freed cubies lock when the current piece succeeds.</p>
-              </div>
-              <div>
-                <h2>Keyboard</h2>
-                <p>Face keys: U D F B L R. Slices: M E S. Shift reverses a key turn; The wide-turn button selects wide moves. C holds; Ctrl/Cmd+Z undoes when allowed.</p>
-              </div>
-              <div>
-                <h2>Spawning and top out</h2>
-                <p>All pieces can use core gaps. A sole fit places automatically when freed groups are ready. Multiple core-only fits give pale spheres and an orientation selector; preview, then confirm. Normal spawns keep centers adjacent, allowing stack overlap when empty slots cannot accommodate them. No valid placement means top out.</p>
-              </div>
+              <section>
+                <h2>Your first placement</h2>
+                <p>Turn cube's sides to align the active cubies with the desired shape. Look at <strong>Build</strong> for the shape you need. Slices & Wide Turns are needed to move centers relative to the Stack.</p>
+              </section>
+              <section>
+                <h2>Read the stack</h2>
+                <p>The active cubies move with your turns. Pieces you have already placed stay in the stack. Active cubies can pass through occupied cells while you work, but every cell in your finished shape must be empty in the stack. Use <strong>Split Stack</strong> to inspect the two separately.</p>
+              </section>
+              <section>
+                <h2>Turn a layer or look around</h2>
+                <p>With the default mouse controls, drag a sticker to turn a layer. Right-drag or drag the background to look at another side. A camera rotation lets you inspect the back of your shape without moving any cubies relative to the stack.</p>
+                <p>On the keyboard, U and D turn the upper and lower faces, F and B the front and back, and L and R the left and right. Hold Shift to reverse a key turn. M, E and S turn the middle slices in the same directions as L, D and F. Switch <strong>Regular turns</strong> to <strong>Wide turns</strong> to move an outer face and its adjacent layer together.</p>
+              </section>
+              <section>
+                <h2>Lock the shape</h2>
+                <p>A single valid fit locks automatically once any freed pieces are ready. If a turn makes several placements possible, hover over or focus a highlighted choice to preview it, then select where to lock. The chosen piece joins the stack and the queue advances.</p>
+              </section>
+              
+              <section>
+                <h2>Clear a plane to make room</h2>
+                <p>A plane is a 3-by-3 layer through the cube. Under full-plane rules, filling all nine cells of an eligible face or middle slice clears that layer from the stack. If ring clears are enabled, filling its eight perimeter cells is enough. Several planes can clear on one placement.</p>
+                <p>Your gravity rules determine how the remaining pieces fall. If your rules release pieces, the white cubies move with the active ones. Fit those groups into empty cells too. When early locking is enabled, use <strong>Lock white pieces</strong> to place a ready group before finishing the Build shape.</p>
+              </section>
+              <section>
+                <h2>Play into the center</h2>
+                <p>The Branch and the two Screw shapes extend through three dimensions. Even a flat piece can fit through the core when the outside is crowded. If pale spheres appear with an orientation selector, cycle through the previews and confirm the fit you want.</p>
+                <p>When the incoming piece has no legal placement left, the game ends in <strong>Top out</strong>. Undo your last turn to try a different placement, or start a new game. The keyboard shortcut for Undo is Ctrl+Z (Cmd+Z on Mac).</p>
+              </section>
             </div>
           </details>
         </div>

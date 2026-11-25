@@ -85,11 +85,11 @@ export function createStartupDefaults() {
       "lightCubies": 1, // SID 4024: appearance.lightCubies
       "lightSolids": 1, // SID 4025: appearance.lightSolids
       "lightOther": 1, // SID 4026: appearance.lightOther
-      "jellyCornerO": 0, // SID 4027: appearance.jellyCornerO
+      "jellyCornerO": 1, // SID 4027: appearance.jellyCornerO
       "jellyBevel": 15, // SID 4028: appearance.jellyBevel
       "jellyProfile": 2, // SID 4029: appearance.jellyProfile
       "jellyElbows": 100, // SID 4030: appearance.jellyElbows
-      "jellyOpening": 24, // SID 4031: appearance.jellyOpening
+      "jellyOpening": 4, // SID 4031: appearance.jellyOpening
       "cubieScale": 100, // SID 4032: appearance.cubieScale
       "transparencyGrain": 1, // SID 4033: appearance.transparencyGrain
       "transparencyResponse": 1 // SID 4034: appearance.transparencyResponse
@@ -136,7 +136,7 @@ export function createStartupDefaults() {
       "gameStackSize": 100, // SID 5007: display.gameStackSize
       "familySize": 100, // SID 5008: display.familySize
       // Width and height of each face/slice grid, in pixels (64 through 200).
-      "overlapThickness": 1, // SID 5013: display.overlapThickness
+      "overlapThickness": 5, // SID 5013: display.overlapThickness
       "faceMapSize": 104, // SID 5009: display.faceMapSize
       "practiceStartSize": 100, // SID 5010: display.practiceStartSize
       "practiceTargetSize": 100, // SID 5011: display.practiceTargetSize
@@ -145,25 +145,25 @@ export function createStartupDefaults() {
       // "slate" = Slate blue.
       // "violet" = Violet.
       // "amber" = Amber.
-      "uiTheme": "violet" // SID 5012: display.uiTheme
+      "uiTheme": "teal" // SID 5012: display.uiTheme
     },
     "controls": {
-      "turnAnimationSpeed": 1, // SID 6001: controls.turnAnimationSpeed
-      "bluetoothSliceWindow": 40, // SID 6002: controls.bluetoothSliceWindow
-      "bluetoothPackingNeutral": false, // SID 6022: controls.bluetoothPackingNeutral
+      "turnAnimationSpeed": 10, // SID 6001: controls.turnAnimationSpeed
+      "bluetoothSliceWindow": 125, // SID 6002: controls.bluetoothSliceWindow
+      "bluetoothPackingNeutral": true, // SID 6022: controls.bluetoothPackingNeutral
       "bluetoothGyroSmoothing": true, // SID 6003: controls.bluetoothGyroSmoothing
-      "bluetoothGyroTightness": 1, // SID 6025: controls.bluetoothGyroTightness
+      "bluetoothGyroTightness": 4, // SID 6025: controls.bluetoothGyroTightness
       "bluetoothWideSensitivity": 3, // SID 6026: controls.bluetoothWideSensitivity
-      "bluetoothGestureTolerance": 20, // SID 6024: controls.bluetoothGestureTolerance
-      "bluetoothGestureTightness": 2, // SID 6023: controls.bluetoothGestureTightness
+      "bluetoothGestureTolerance": 25, // SID 6024: controls.bluetoothGestureTolerance
+      "bluetoothGestureTightness": 4, // SID 6023: controls.bluetoothGestureTightness
       "bluetoothGyroResponse": 180, // SID 6004: controls.bluetoothGyroResponse
-      "bluetoothGyroSpeed": 180, // SID 6005: controls.bluetoothGyroSpeed
-      "bluetoothGyroAcceleration": 1200, // SID 6006: controls.bluetoothGyroAcceleration
+      "bluetoothGyroSpeed": 250, // SID 6005: controls.bluetoothGyroSpeed
+      "bluetoothGyroAcceleration": 2000, // SID 6006: controls.bluetoothGyroAcceleration
       "bluetoothNeutralCutoff": 6, // SID 6007: controls.bluetoothNeutralCutoff
-      "bluetoothNeutralDelay": 125, // SID 6008: controls.bluetoothNeutralDelay
-      "bluetoothNeutralSpeed": 2.5, // SID 6009: controls.bluetoothNeutralSpeed
+      "bluetoothNeutralDelay": 0, // SID 6008: controls.bluetoothNeutralDelay
+      "bluetoothNeutralSpeed": 4.0, // SID 6009: controls.bluetoothNeutralSpeed
       "bluetoothNeutralTolerance": 10, // SID 6010: controls.bluetoothNeutralTolerance
-      "bluetoothWideWindow": 150, // SID 6011: controls.bluetoothWideWindow
+      "bluetoothWideWindow": 250, // SID 6011: controls.bluetoothWideWindow
       "hoverRings": true, // SID 6012: controls.hoverRings
       "ringLabels": false, // SID 6013: controls.ringLabels
       "hoverOutline": false, // SID 6014: controls.hoverOutline
@@ -172,7 +172,7 @@ export function createStartupDefaults() {
       "arrowGuides": false, // SID 6017: controls.arrowGuides
       "classicControls": false, // SID 6018: controls.classicControls
       "freeOrbit": true, // SID 6019: controls.freeOrbit
-      "perspectiveCamera": false, // SID 6020: controls.perspectiveCamera
+      "perspectiveCamera": true, // SID 6020: controls.perspectiveCamera
       "wideTurns": false // SID 6021: controls.wideTurns
     },
     "orbit": {

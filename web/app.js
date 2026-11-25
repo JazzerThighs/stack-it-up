@@ -633,6 +633,7 @@ $("gravityMode").onchange = () => {
   engine.game_set_gravity(+$("gravityMode").value);
   update();
 };
+$("openHowToPlay").onclick = () => openSharedSettings("game", "howToPlay");
 $("settingsOpen").onclick = () => openSharedSettings($("gamePage").hidden?'explorer':'game');
 $("settingsClose").onclick = () => $("settingsDialog").close();
 const requestNew = $("new").onclick;
